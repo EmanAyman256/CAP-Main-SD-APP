@@ -1,0 +1,65 @@
+<mvc:View controllerName="project1.controller.ModelServices"
+    xmlns="sap.m"
+     xmlns:mvc="sap.ui.core.mvc"
+      xmlns:sap.m="sap.m"
+    xmlns:f="sap.f"
+    xmlns:w="sap.ui.integration.widgets"
+    xmlns:tnt="sap.tnt"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:table="sap.ui.table"
+    xmlns:layout="sap.ui.layout"
+    xmlns:core="sap.ui.core"
+        xmlns:m="sap.m"
+        xmlns:u="sap.ui.unified"
+        	xmlns:macros="sap.fe.macros">
+    <Page id="_IDGenPage7"  title="Model Services">
+    	
+       
+       <Table id="modelServicesTable" items="{/Models}" >
+            <columns>
+                <Column id="_IDGenColumn11">
+                    <Text id="_IDGenText21" text="modelServ.Spec" />
+                </Column>
+                <Column id="_IDGenColumn12">
+                    <Text id="_IDGenText22" text="blockingIndicator" />
+                </Column>
+                 <Column id="_IDGenColumn13">
+                    <Text id="_IDGenText23" text="ServiceSelection" />
+                </Column>
+                 <Column id="_IDGenColumn14">
+                    <Text id="_IDGenText24" text="Description" />
+                </Column>
+                   <Column id="_IDGenColumn15">
+                    <Text id="_IDGenText25" text="SearchTerm" />
+                </Column>
+                <Column id="_IDGenColumn16">
+                    <Text id="_IDGenText26" text="Currency" />
+                </Column>
+                <Column id="_IDGenColumn17">
+                    <Text id="_IDGenText27" text="Services" />
+                </Column>
+                <Column id="_IDGenColumn18">
+                    <Text id="_IDGenText28" text="Actions" />
+                </Column>
+            </columns>
+            <items>
+                <ColumnListItem id="_IDGenColumnListItem2">
+                    <cells>
+                        <Text id="_IDGenText29" text="{modelServSpec}" />
+                        <Text id="_IDGenText30" text="{blockingIndicator}" />
+                        <Text id="_IDGenText31" text="{serviceSelection}" />
+                        <Text id="_IDGenText32" text="{description}" />
+                        <Text id="_IDGenText33" text="{searchTerm}" />
+                        <Text id="_IDGenText34" text="{currencyCode}" />
+                         <Button id="_IDGenButton17" icon="sap-icon://share" press="" text="Services" />
+                        <HBox id="_IDGenHBox6">
+                            <Button id="_IDGenButton18" icon="sap-icon://edit" press="onEdit" />
+                            <Button id="_IDGenButton19" icon="sap-icon://delete" press="onDelete" />
+                        </HBox>
+                    </cells>
+                </ColumnListItem>
+            </items>
+        
+        </Table>
+    </Page>
+</mvc:View>

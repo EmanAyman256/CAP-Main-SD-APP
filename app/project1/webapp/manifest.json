@@ -113,10 +113,20 @@
           "pattern": "model",
           "target": "model"
         },
+          {
+          "name": "modelServices",
+          "pattern": "modelServices",
+          "target": "modelServices"
+        },
          {
           "name": "formula",
           "pattern": "formula",
           "target": "formula"
+        },
+         {
+          "name": "addModel",
+          "pattern": "addModel",
+          "target": "addModel"
         },
         
          {
@@ -137,8 +147,14 @@
         "model": {
           "viewName": "Model"
         },
+        "modelServices": {
+          "viewName": "ModelServices"
+        },
         "formula": {
           "viewName": "Formula"
+        },
+        "addModel":{
+          "viewName": "AddModel"
         },
         "TargetView1": {
           "id": "View1",

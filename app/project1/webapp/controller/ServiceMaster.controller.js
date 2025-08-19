@@ -4,16 +4,16 @@ sap.ui.define([
     "use strict";
 
     return Controller.extend("project1.controller.ServiceMaster", {
-         onInit: function () {
-            var oModel = new sap.ui.model.json.JSONModel({
-                ServiceTypes: [
-                    { Code: "test1", Description: "test", CreatedOn: "2025-08-18" },
-                    { Code: "st2", Description: "desc", CreatedOn: "2025-08-18" }
+        onInit: function () {
+            var oserviceModel = new sap.ui.model.json.JSONModel({
+                ServiceMaster: [
+                    { Code: "test1", SearchTerm: "Test", Description: "test", lastChangeDate: "19-8-2025", serviceType: "Test1", CreatedOn: "2025-08-18" },
+                    { Code: "st2", SearchTerm: "Test ST2", Description: "desc", lastChangeDate: "19-8-2025", serviceType: "Test2", CreatedOn: "2025-08-18" }
                 ],
                 newCode: "",
                 newDescription: ""
             });
-            this.getView().setModel(oModel);
+            this.getView().setModel(oserviceModel);
         },
         onAdd: function () {
             var oModel = this.getView().getModel();
@@ -29,23 +29,7 @@ sap.ui.define([
                 oModel.setProperty("/newDescription", "");
             }
         },
-        // onAdd: function () {
-        //     // Logic to add new service type
-        //     var oModel = this.getView().getModel();
-        //     var newCode = oModel.getProperty("/newCode");
-        //     var newDescription = oModel.getProperty("/newDescription");
-        //     // Add to OData service
-        //     oModel.create("/ServiceTypes", {
-        //         Code: newCode,
-        //         Description: newDescription,
-        //         CreatedOn: new Date().toISOString().split('T')[0]
-        //     }, {
-        //         success: function () {
-        //             oModel.setProperty("/newCode", "");
-        //             oModel.setProperty("/newDescription", "");
-        //         }
-        //     });
-        // },
+    
         onEdit: function (oEvent) {
             // Logic to edit service type
         },

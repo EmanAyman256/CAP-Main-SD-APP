@@ -9,7 +9,7 @@ sap.ui.define([
 ], function (Controller, MessageBox, Dialog, Input, Button, Label, VBox) {
     "use strict";
 
-    return Controller.extend("project1.controller.Model", {
+    return Controller.extend("project1.controller.ModelServices", {
          onInit: function () {
             var oModel = new sap.ui.model.json.JSONModel({
                 Models: [
@@ -66,10 +66,6 @@ sap.ui.define([
         //Navigate to Add Model View
         onPress(){
              this.getOwnerComponent().getRouter().navTo("addModel");
-        },
-
-        onNavigateToModelServices() {
-            this.getOwnerComponent().getRouter().navTo("modelServices");
         }
         
     });
