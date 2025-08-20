@@ -1,7 +1,8 @@
-<mvc:View controllerName="project1.controller.ServiceType"
-    xmlns="sap.m"
-    xmlns:mvc="sap.ui.core.mvc"
-    xmlns:sap.m="sap.m"
+<mvc:View
+    controllerName="project1.controller.Formula"
+     xmlns="sap.m"
+     xmlns:mvc="sap.ui.core.mvc"
+      xmlns:sap.m="sap.m"
     xmlns:f="sap.f"
     xmlns:w="sap.ui.integration.widgets"
     xmlns:tnt="sap.tnt"
@@ -9,20 +10,70 @@
     xmlns:table="sap.ui.table"
     xmlns:layout="sap.ui.layout"
     xmlns:core="sap.ui.core"
-    xmlns:m="sap.m"
-    xmlns:u="sap.ui.unified"
-    xmlns:macros="sap.fe.macros">
-    <Page id="_IDGenPage5" title="Formula">
-       
-        <!-- <VBox id="_IDGenVBox">
-            <Input id="_IDGenInput" placeholder="Code" value="{/newCode}" />
-            <Input id="_IDGenInput1" placeholder="Description" value="{/newDescription}" />
-            <Button id="_IDGenButton3" text="Add" press="onAdd" type="Emphasized" />
-        </VBox> -->
-         <!-- <HBox id="_IDGenHBox1">
-            <Input id="_IDGenInput1" placeholder="Code" value="{/newCode}" width="200px" />
-            <Input id="_IDGenInput2" placeholder="Description" value="{/newDescription}" width="200px" />
-            <Button id="_IDGenButton3" text="Add" press="onAdd" type="Emphasized" />
-        </HBox> -->
+        xmlns:m="sap.m"
+        xmlns:u="sap.ui.unified"
+        	xmlns:macros="sap.fe.macros">
+    <Page id="_IDGenPage8" title="Formula">
+        <Wizard id="wizard">
+            <steps>
+                <!-- Step 1: Formula Details -->
+                <WizardStep id="step1" title="Create" validated="true">
+                    <VBox id="_IDGenVBox1">
+                        <Label id="_IDGenLabel8" text="Formula Name *" />
+                        <Input id="formulaNameInput" placeholder="Enter Formula Name" required="true" />
+                        <Label id="_IDGenLabel10" text="Description *" />
+                        <TextArea id="formulaDescriptionInput" placeholder="Enter Description" required="true" />
+                        <Label id="_IDGenLabel17" text="NumberOfParams *" />
+                      
+                        <Input id="NumberOfParamsInput" placeholder="Enter Number of Parameters" required="true" type="Number" value="{/paramCount}" liveChange="onParamCountChange" />
+                    </VBox>
+                </WizardStep>
+                <!-- Step 2: Set Parameters -->
+                 <WizardStep id="step2" title="Set Parameters" validated="true">
+                    <VBox id="_IDGenVBox8" />
+                </WizardStep>
+               
+                <!-- Step 3: Relation -->
+                   <WizardStep id="step3" title="Relation" validated="true">
+                    <VBox id="_IDGenVBox11">
+                        <Label id="_IDGenLabel11" text="Parameters You Entered" />
+                        <Text id="paramIdsText" text="{/paramIdsText}" />
+                        <Label id="_IDGenLabel12" text="Relation Details" />
+                        <HBox id="_IDGenHBox1">
+                            <TextArea id="relationInput" placeholder="Enter Relation (e.g., P1 + P2)" value="{/relationText}" width="300px" />
+                            <ComboBox id="operationCombo" items="{/operations}" selectionChange="onOperationSelect">
+                                <core:Item id="_IDGenItem" key="{key}" text="{text}" />
+                            </ComboBox>
+                        </HBox>
+                    </VBox>
+                </WizardStep>
+             <!-- <WizardStep id="step3" title="Relation" validated="true">
+                    <VBox id="_IDGenVBox11">
+                        <Label id="_IDGenLabel11" text="Parameters You Entered" />
+                        <Text id="paramIdsText" text="{/paramIdsText}" />
+                        <Label id="_IDGenLabel12" text="Relation Details" />
+                        <TextArea id="relationInput" placeholder="Enter Relation Details" />
+                    </VBox>
+                </WizardStep> -->
+                <!-- Step 4: Test -->
+                <WizardStep id="step4" title="Test & Save" validated="true">
+                    <VBox id="_IDGenVBox10">
+                        <Label id="_IDGenLabel15" text="Review Formula" />
+                        <Text id="_IDGenText35" text="{/formulaReview}" />
+                        <Button id="_IDGenButton21" text="Save Formula" press="onSaveFormula" type="Emphasized" />
+                    </VBox>
+                </WizardStep>
+            </steps>
+        </Wizard>
+
+         <Bar id="_IDGenBar1">
+            <contentLeft>
+                <!-- <Button id="_IDGenButton22" text="< Back id="_IDGenBack"" press="onBack" visible="{= ${wizard>/currentStep} !== 'step1' }" /> -->
+            </contentLeft>
+            <contentRight>
+                <Button id="_IDGenButton23" text="Next Step >" press="onNext" visible="{= ${wizard>/currentStep} !== 'step4' }" />
+                <Button id="_IDGenButton24" text="Finish" press="onFinishWizard" visible="{= ${wizard>/currentStep} === 'step4' }" type="Emphasized" />
+            </contentRight>
+        </Bar>
     </Page>
 </mvc:View>

@@ -3,7 +3,7 @@ sap.ui.define([
 ], function (Controller) {
     "use strict";
 
-    return Controller.extend("project1.controller.ServiceMaster", {
+    return Controller.extend("project1.controller.AddServiceMaster", {
         onInit: function () {
             var oserviceModel = new sap.ui.model.json.JSONModel({
                 ServiceMaster: [

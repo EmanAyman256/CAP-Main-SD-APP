@@ -18,7 +18,7 @@
        	<HBox id="_IDGenVBox" class="sapUiSmallMargin" justifyContent="Center">
 			<SearchField id="_IDGenSearchField"  class="sapUiSmallMargin" width="55%" />
             <Button id="_IDGenButton8" text="Create"
-						press="onPress" class="sapUiSmallMargin"
+						press="onNavigateToAddServiceMaster" class="sapUiSmallMargin"
 						ariaDescribedBy="defaultButtonDescription genericButtonDescription">
 				
 				</Button>
