@@ -41,9 +41,18 @@
                         <Label id="_IDGenLabel12" text="Relation Details" />
                         <HBox id="_IDGenHBox1">
                             <TextArea id="relationInput" placeholder="Enter Relation (e.g., P1 + P2)" value="{/relationText}" width="300px" />
-                            <ComboBox id="operationCombo" items="{/operations}" selectionChange="onOperationSelect">
+                           <HBox id="_IDGenHBox12" class="sapUiSmallMargin">
+                                <Button id="_IDGenButton20" text="+" press="onAddOperation" />
+                                <Button id="_IDGenButton22" text="-" press="onAddOperation" />
+                                <Button id="_IDGenButton25" text="*" press="onAddOperation" />
+                                <Button id="_IDGenButton26" text="/" press="onAddOperation" />
+                                <Button id="_IDGenButton28" text="^" press="onAddOperation" />
+                                <Button id="_IDGenButton29" text="π" press="onAddOperation" />
+                                <Button id="_IDGenButton30" text="%" press="onAddOperation" />
+                            </HBox>
+                            <!-- <ComboBox id="operationCombo" items="{/operations}" selectionChange="onOperationSelect">
                                 <core:Item id="_IDGenItem" key="{key}" text="{text}" />
-                            </ComboBox>
+                            </ComboBox> -->
                         </HBox>
                     </VBox>
                 </WizardStep>
@@ -56,7 +65,7 @@
                     </VBox>
                 </WizardStep> -->
                 <!-- Step 4: Test -->
-                <WizardStep id="step4" title="Test & Save" validated="true">
+                <WizardStep id="step4" title="Test" validated="true">
                     <VBox id="_IDGenVBox10">
                         <Label id="_IDGenLabel15" text="Review Formula" />
                         <Text id="_IDGenText35" text="{/formulaReview}" />

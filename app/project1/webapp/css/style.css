@@ -1,1 +1,13 @@
 /* Enter your custom styles here */
+.marginTop{
+    margin-top: 8px;
+}
+.marginEnd{
+    margin-right: 10px;
+}
+.marginStart{
+    margin-left: 50px;
+}
+.Center{
+    align-items: center;
+}

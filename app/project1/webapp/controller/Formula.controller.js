@@ -18,11 +18,20 @@ sap.ui.define([
                     { key: "+", text: "+" },
                     { key: "-", text: "-" },
                     { key: "*", text: "*" },
-                    { key: "/", text: "/" }
+                    { key: "/", text: "/" },
+                    { key: "^", text: "^" },
+                    { key: "%", text: "%" },
+                    { key: "π", text: "π" },
                 ]
             });
             this.getView().setModel(oModel);
-            this.getView().getModel().setProperty("/wizard/currentStep", "step1"); // Track current step
+            this.getView().getModel().setProperty("/wizard/currentStep", "step1"); 
+        },
+        onAddOperation: function (oEvent) {
+            var oTextArea = this.getView().byId("relationInput");
+            var operation = oEvent.getSource().getText();
+            var currentValue = oTextArea.getValue();
+            oTextArea.setValue(currentValue + " " + operation + " ");
         },
         onParamCountChange: function (oEvent) {
             var oModel = this.getView().getModel();
