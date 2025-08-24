@@ -16,7 +16,7 @@ sap.ui.define([
             this.getOwnerComponent().getRouter().navTo("model");
         },
         onNavigateToFormula() {
-            this.getOwnerComponent().getRouter().navTo("formula");
+            this.getOwnerComponent().getRouter().navTo("formulas");
         }
 
     });

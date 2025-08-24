@@ -1,11 +1,13 @@
 sap.ui.define([
-    "sap/ui/core/mvc/Controller"
-], function (Controller) {
+    "sap/ui/core/mvc/Controller",
+    "sap/ui/model/json/JSONModel",
+    "sap/m/MessageToast"
+], function (Controller,JSONModel,MessageToast) {
     "use strict";
 
     return Controller.extend("project1.controller.AddServiceMaster", {
-        onInit: function () {
-            var oserviceModel = new sap.ui.model.json.JSONModel({
+  onInit: function () {
+            var oserviceModel = new JSONModel({
                 ServiceMaster: [
                     { Code: "test1", SearchTerm: "Test", Description: "test", lastChangeDate: "19-8-2025", serviceType: "Test1", CreatedOn: "2025-08-18" },
                     { Code: "st2", SearchTerm: "Test ST2", Description: "desc", lastChangeDate: "19-8-2025", serviceType: "Test2", CreatedOn: "2025-08-18" }
@@ -15,19 +17,78 @@ sap.ui.define([
             });
             this.getView().setModel(oserviceModel);
         },
-        onAdd: function () {
+
+        onAddPress: function () {
+            // Get the model
             var oModel = this.getView().getModel();
-            var newCode = oModel.getProperty("/newCode");
-            var newDescription = oModel.getProperty("/newDescription");
-            if (newCode && newDescription) {
-                oModel.getProperty("/ServiceTypes").push({
-                    Code: newCode,
-                    Description: newDescription,
-                    CreatedOn: new Date().toISOString().split('T')[0]
-                });
-                oModel.setProperty("/newCode", "");
-                oModel.setProperty("/newDescription", "");
+            var oData = oModel.getData();
+            
+            // Get values from input fields and controls
+            var sServiceNumber = this.byId("_IDGenInput1").getValue(); // Service Number
+            var sSearchTerm = this.byId("_IDGenInput2").getValue(); // Search Term
+            var sDescription = this.byId("_IDGenInput3").getValue(); // Description
+            var sServiceText = this.byId("_IDGenInput4").getValue(); // Service Text
+            var bShortTextChange = this.byId("_IDGenCheckBox1").getSelected(); // Short Text Change Allowed
+            var bDeletionIndicator = this.byId("_IDGenCheckBox3").getSelected(); // Deletion Indicator
+            var sServiceType = this.byId("_IDGenSelect").getSelectedKey(); // Service Type
+            var sBaseUOM = this.byId("_IDGenSelect1").getSelectedKey(); // Base Unit of Measurement
+            var sToBeConvertedNumber = this.byId("_IDGenInput5").getValue(); // To Be Converted Number
+            var sToBeConvertedUOM = this.byId("_IDGenSelect2").getSelectedKey(); // To Be Converted UOM
+            var sConvertedNumber = this.byId("_IDGenInput9").getValue(); // Converted Number
+            var sConvertedUOM = this.byId("_IDGenSelect3").getSelectedKey(); // Converted UOM
+            var bMainItem = this.byId("_IDGenCheckBox4").getSelected(); // Main Item
+            var sMaterialGroup = this.byId("_IDGenSelect4").getSelectedKey(); // Material Group
+
+            // Validate required fields
+            if (!sSearchTerm || !sDescription || !sServiceText) {
+                MessageToast.show("Please fill all required fields: Search Term, Description, and Service Text.");
+                return;
             }
+
+            // Create new entry
+            var oNewEntry = {
+                Code: sServiceNumber || "NEW" + Date.now(), // Generate a unique code if not provided
+                SearchTerm: sSearchTerm,
+                Description: sDescription,
+                ServiceText: sServiceText,
+                lastChangeDate: new Date().toLocaleDateString("en-GB"), // e.g., "24-8-2025"
+                serviceType: sServiceType || "Default",
+                CreatedOn: new Date().toLocaleDateString("en-GB"),
+                ShortTextChangeAllowed: bShortTextChange,
+                DeletionIndicator: bDeletionIndicator,
+                BaseUnitOfMeasurement: sBaseUOM || "",
+                ToBeConvertedNumber: sToBeConvertedNumber || "",
+                ToBeConvertedUOM: sToBeConvertedUOM || "",
+                ConvertedNumber: sConvertedNumber || "",
+                ConvertedUOM: sConvertedUOM || "",
+                MainItem: bMainItem,
+                MaterialGroup: sMaterialGroup || ""
+            };
+
+            // Add new entry to ServiceMaster array
+            oData.ServiceMaster.push(oNewEntry);
+
+            // Update the model
+            oModel.setData(oData);
+
+            // Clear input fields (optional)
+            this.byId("_IDGenInput1").setValue("");
+            this.byId("_IDGenInput2").setValue("");
+            this.byId("_IDGenInput3").setValue("");
+            this.byId("_IDGenInput4").setValue("");
+            this.byId("_IDGenInput5").setValue("");
+            this.byId("_IDGenInput9").setValue("");
+            this.byId("_IDGenCheckBox1").setSelected(false);
+            this.byId("_IDGenCheckBox3").setSelected(false);
+            this.byId("_IDGenCheckBox4").setSelected(false);
+            this.byId("_IDGenSelect").setSelectedKey("");
+            this.byId("_IDGenSelect1").setSelectedKey("");
+            this.byId("_IDGenSelect2").setSelectedKey("");
+            this.byId("_IDGenSelect3").setSelectedKey("");
+            this.byId("_IDGenSelect4").setSelectedKey("");
+
+            // Show success message
+            MessageToast.show("Service added successfully!");
         },
     onNavigateToAddServiceMaster() {
             this.getOwnerComponent().getRouter().navTo("addServiceMaster");

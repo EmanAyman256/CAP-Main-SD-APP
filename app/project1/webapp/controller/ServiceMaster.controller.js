@@ -15,20 +15,7 @@ sap.ui.define([
             });
             this.getView().setModel(oserviceModel);
         },
-        onAdd: function () {
-            var oModel = this.getView().getModel();
-            var newCode = oModel.getProperty("/newCode");
-            var newDescription = oModel.getProperty("/newDescription");
-            if (newCode && newDescription) {
-                oModel.getProperty("/ServiceTypes").push({
-                    Code: newCode,
-                    Description: newDescription,
-                    CreatedOn: new Date().toISOString().split('T')[0]
-                });
-                oModel.setProperty("/newCode", "");
-                oModel.setProperty("/newDescription", "");
-            }
-        },
+    
     onNavigateToAddServiceMaster() {
             this.getOwnerComponent().getRouter().navTo("addServiceMaster");
         },

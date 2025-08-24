@@ -124,6 +124,11 @@
           "target": "formula"
         },
          {
+          "name": "formulas",
+          "pattern": "formulas",
+          "target": "formulas"
+        },
+         {
           "name": "addModel",
           "pattern": "addModel",
           "target": "addModel"
@@ -157,6 +162,9 @@
         },
         "formula": {
           "viewName": "Formula"
+        },
+        "formulas": {
+          "viewName": "Formulas"
         },
         "addModel":{
           "viewName": "AddModel"

@@ -30,15 +30,19 @@
                 </WizardStep>
                 <!-- Step 2: Set Parameters -->
                  <WizardStep id="step2" title="Set Parameters" validated="true">
-                    <VBox id="_IDGenVBox8" />
+                <VBox id="_IDGenVBox8" />
+                    <HBox id="_IDGenHBox18" justifyContent="SpaceBetween">
+                        
+                        <Button id="_IDGenButton32" text="Add Parameters" press="updateParamIdsText" type="Emphasized" />
+                    </HBox>
                 </WizardStep>
                
                 <!-- Step 3: Relation -->
                    <WizardStep id="step3" title="Relation" validated="true">
                     <VBox id="_IDGenVBox11">
-                        <Label id="_IDGenLabel11" text="Parameters You Entered" />
+                        <Label id="_IDGenLabel11" text="Parameters You Entered:" />
                         <Text id="paramIdsText" text="{/paramIdsText}" />
-                        <Label id="_IDGenLabel12" text="Relation Details" />
+                        <Label id="_IDGenLabel12" text="Relation Details" class="sapUiSmallTopMargin" />
                         <HBox id="_IDGenHBox1">
                             <TextArea id="relationInput" placeholder="Enter Relation (e.g., P1 + P2)" value="{/relationText}" width="300px" />
                            <HBox id="_IDGenHBox12" class="sapUiSmallMargin">
@@ -56,22 +60,21 @@
                         </HBox>
                     </VBox>
                 </WizardStep>
-             <!-- <WizardStep id="step3" title="Relation" validated="true">
-                    <VBox id="_IDGenVBox11">
-                        <Label id="_IDGenLabel11" text="Parameters You Entered" />
-                        <Text id="paramIdsText" text="{/paramIdsText}" />
-                        <Label id="_IDGenLabel12" text="Relation Details" />
-                        <TextArea id="relationInput" placeholder="Enter Relation Details" />
-                    </VBox>
-                </WizardStep> -->
+           
                 <!-- Step 4: Test -->
-                <WizardStep id="step4" title="Test" validated="true">
+               
+                  <WizardStep id="step4" title="Test" validated="true">
                     <VBox id="_IDGenVBox10">
-                        <Label id="_IDGenLabel15" text="Review Formula" />
                         <Text id="_IDGenText35" text="{/formulaReview}" />
+                        <VBox id="testInputsContainer" />
+                        <HBox id="_IDGenHBox19" justifyContent="SpaceBetween">
+                        
+                        <Button id="_IDGenButton31" text="Show Result" press="onShowResult" type="Emphasized" class="sapUiSmallRightMargin" />
                         <Button id="_IDGenButton21" text="Save Formula" press="onSaveFormula" type="Emphasized" />
+                        </HBox>
                     </VBox>
                 </WizardStep>
+             
             </steps>
         </Wizard>
 

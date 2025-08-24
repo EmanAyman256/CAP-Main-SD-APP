@@ -18,11 +18,11 @@
                         <Label id="_IDGenLabel7"  text="Service Number (ID):"  class="sapUiSmallMargin" />
                         <Input id="_IDGenInput1" type="Number" width="200px" class="sapUiSmallMargin"/>
                         <Label id="_IDGenLabel9"   text="Search Term" class="sapUiSmallMargin" required="true" />
-                        <Input id="_IDGenInput2" required="true" type="Number" width="200px" class="sapUiSmallMargin"/>
+                        <Input id="_IDGenInput2" required="true"  width="200px" class="sapUiSmallMargin"/>
                         <Label id="_IDGenLabel18"   text="Description" class="sapUiSmallMargin" required="true" />
-                        <Input id="_IDGenInput3" required="true" type="Number" width="200px" class="sapUiSmallMargin"/>
+                        <Input id="_IDGenInput3" required="true"  width="200px" class="sapUiSmallMargin"/>
                         <Label id="_IDGenLabel19"   text="Service Text" class="sapUiSmallMargin" />
-                        <Input id="_IDGenInput4"  required="true" type="Number" width="200px" class="sapUiSmallMargin"/>
+                        <Input id="_IDGenInput4"  required="true" width="200px" class="sapUiSmallMargin"/>
           </HBox>
            <HBox id="_IDGenHBox10"  class="sapUiSmallMargin">
                         <Label id="_IDGenLabel16" text="Short Text Change Allowed:" class="sapUiSmallMargin" />
@@ -81,7 +81,6 @@
           
 				</Select>
     </VBox>
-       
     </HBox>
     <HBox id="_IDGenHBox15" >
      <VBox id="_IDGenVBox13" class="sapUiSmallMargin"  >
@@ -90,8 +89,7 @@
     </VBox>
  <VBox id="_IDGenVBox15"   class="sapUiSmallMargin"  >
       <Label id="_IDGenLabel24"    text="Select  Converted UOM:"  class="sapUiSmallMarginStart" />
-
-    <Select id="_IDGenSelect3" 
+      <Select id="_IDGenSelect3" 
             class="sapUiSmallMarginStart"
             width="200px" 
 						forceSelection="false"
@@ -119,7 +117,7 @@
 
     </HBox>
 <HBox id="_IDGenHBox17" justifyContent="Center" class="sapUiSmallMargin">
-        <Button id="_IDGenButton27" text="Add" />
+        <Button id="_IDGenButton27" text="Add" press="onAddPress"/>
     </HBox>    </Panel>
     </Page>
 </mvc:View>
