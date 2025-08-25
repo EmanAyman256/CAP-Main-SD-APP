@@ -11,55 +11,321 @@
     xmlns:core="sap.ui.core"
         xmlns:m="sap.m"
         xmlns:u="sap.ui.unified"
-        	xmlns:macros="sap.fe.macros">
+        	xmlns:macros="sap.fe.macros"
+            
+            >
     <Page id="_IDGenPage7"  title="Model Services">
     	
-       
-       <Table id="modelServicesTable" items="{/Models}" >
-            <columns>
-                <Column id="_IDGenColumn11">
-                    <Text id="_IDGenText21" text="modelServ.Spec" />
-                </Column>
-                <Column id="_IDGenColumn12">
-                    <Text id="_IDGenText22" text="blockingIndicator" />
-                </Column>
-                 <Column id="_IDGenColumn13">
-                    <Text id="_IDGenText23" text="ServiceSelection" />
-                </Column>
-                 <Column id="_IDGenColumn14">
-                    <Text id="_IDGenText24" text="Description" />
-                </Column>
-                   <Column id="_IDGenColumn15">
-                    <Text id="_IDGenText25" text="SearchTerm" />
-                </Column>
-                <Column id="_IDGenColumn16">
-                    <Text id="_IDGenText26" text="Currency" />
-                </Column>
-                <Column id="_IDGenColumn17">
-                    <Text id="_IDGenText27" text="Services" />
-                </Column>
-                <Column id="_IDGenColumn18">
-                    <Text id="_IDGenText28" text="Actions" />
-                </Column>
-            </columns>
-            <items>
-                <ColumnListItem id="_IDGenColumnListItem2">
-                    <cells>
-                        <Text id="_IDGenText29" text="{modelServSpec}" />
-                        <Text id="_IDGenText30" text="{blockingIndicator}" />
-                        <Text id="_IDGenText31" text="{serviceSelection}" />
-                        <Text id="_IDGenText32" text="{description}" />
-                        <Text id="_IDGenText33" text="{searchTerm}" />
-                        <Text id="_IDGenText34" text="{currencyCode}" />
-                         <Button id="_IDGenButton17" icon="sap-icon://share" press="" text="Services" />
-                        <HBox id="_IDGenHBox6">
-                            <Button id="_IDGenButton18" icon="sap-icon://edit" press="onEdit" />
-                            <Button id="_IDGenButton19" icon="sap-icon://delete" press="onDelete" />
-                        </HBox>
-                    </cells>
-                </ColumnListItem>
-            </items>
-        
-        </Table>
+         <VBox id="_IDGenVBox17">
+            <Button id="_IDGenButton36" text="Add New Service" press="onToggleAddDialog" class="customTopMargin" />
+              <table:Table id="modelServicesTable" rows="{/Models}" visibleRowCount="10" minAutoRowCount="5" enableColumnReordering="true" columnHeaderHeight="40">
+                <table:columns>
+                    <table:Column id="_IDGenColumn29" width="100px">
+                        <table:label><Text id="_IDGenText54" text="Line" /></table:label>
+                        <table:template><Text id="_IDGenText28" text="{line}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn30" width="100px">
+                        <table:label><Text id="_IDGenText55" text="Service.No" /></table:label>
+                        <table:template><Text id="_IDGenText29" text="{serviceNo}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn31" width="100px">
+                        <table:label><Text id="_IDGenText56" text="ShortText" /></table:label>
+                        <table:template><Text id="_IDGenText30" text="{shortText}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn32" width="100px">
+                        <table:label><Text id="_IDGenText57" text="Quantity" /></table:label>
+                        <table:template><Text id="_IDGenText31" text="{quantity}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn33" width="100px">
+                        <table:label><Text id="_IDGenText58" text="Formula" /></table:label>
+                        <table:template><Text id="_IDGenText32" text="{formula}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn34" width="120px">
+                        <table:label><Text id="_IDGenText59" text="Formula Parameters" /></table:label>
+                        <table:template><Text id="_IDGenText33" text="{formulaParameters}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn35" width="100px">
+                        <table:label><Text id="_IDGenText60" text="GrossPrice" /></table:label>
+                        <table:template><Text id="_IDGenText34" text="{grossPrice}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn36" width="100px">
+                        <table:label><Text id="_IDGenText61" text="Net Value" /></table:label>
+                        <table:template><Text id="_IDGenText62" text="{netValue}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn37" width="120px">
+                        <table:label><Text id="_IDGenText63" text="UnitOfMeasure*" /></table:label>
+                        <table:template><Text id="_IDGenText64" text="{unitOfMeasure}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn38" width="80px">
+                        <table:label><Text id="_IDGenText65" text="Crcy" /></table:label>
+                        <table:template><Text id="_IDGenText66" text="{crcy}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn11" width="120px">
+                        <table:label><Text id="_IDGenText67" text="OverF.Percentage" /></table:label>
+                        <table:template><Text id="_IDGenText68" text="{overFPercentage}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn12" width="120px">
+                        <table:label><Text id="_IDGenText69" text="PriceChangeAllowed" /></table:label>
+                        <table:template><Text id="_IDGenText39" text="{priceChangeAllowed}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn13" width="120px">
+                        <table:label><Text id="_IDGenText70" text="UnlimitedOverF" /></table:label>
+                        <table:template><Text id="_IDGenText71" text="{unlimitedOverF}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn14" width="150px">
+                        <table:label><Text id="_IDGenText72" text="PricePerUnitOfMeasurement" /></table:label>
+                        <table:template><Text id="_IDGenText73" text="{pricePerUnitOfMeasurement}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn15" width="100px">
+                        <table:label><Text id="_IDGenText74" text="Mat Group" /></table:label>
+                        <table:template><Text id="_IDGenText75" text="{matGroup}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn16" width="100px">
+                        <table:label><Text id="_IDGenText76" text="Service Type" /></table:label>
+                        <table:template><Text id="_IDGenText43" text="{serviceType}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn17" width="120px">
+                        <table:label><Text id="_IDGenText77" text="External.Service.No" /></table:label>
+                        <table:template><Text id="_IDGenText44" text="{externalServiceNo}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn18" width="100px">
+                        <table:label><Text id="_IDGenText78" text="Service Text" /></table:label>
+                        <table:template><Text id="_IDGenText45" text="{serviceText}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn39" width="100px">
+                        <table:label><Text id="_IDGenText79" text="Line Text" /></table:label>
+                        <table:template><Text id="_IDGenText46" text="{lineText}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn40" width="120px">
+                        <table:label><Text id="_IDGenText80" text="PersonnelNumber" /></table:label>
+                        <table:template><Text id="_IDGenText47" text="{personnelNumber}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn21" width="100px">
+                        <table:label><Text id="_IDGenText21" text="Line Type" /></table:label>
+                        <table:template><Text id="_IDGenText48" text="{lineType}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn41" width="100px">
+                        <table:label><Text id="_IDGenText22" text="Line Number" /></table:label>
+                        <table:template><Text id="_IDGenText49" text="{lineNumber}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn23" width="80px">
+                        <table:label><Text id="_IDGenText23" text="Alt" /></table:label>
+                        <table:template><Text id="_IDGenText50" text="{alt}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn24" width="100px">
+                        <table:label><Text id="_IDGenText24" text="Bidder's Line" /></table:label>
+                        <table:template><Text id="_IDGenText51" text="{biddersLine}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn25" width="100px">
+                        <table:label><Text id="_IDGenText25" text="Supp.Line" /></table:label>
+                        <table:template><Text id="_IDGenText52" text="{suppLine}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn26" width="100px">
+                        <table:label><Text id="_IDGenText26" text="Cstg Ls" /></table:label>
+                        <table:template><Text id="_IDGenText53" text="{cstgLs}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn27" width="150px">
+                        <table:label><Text id="_IDGenText27" text="Actions" /></table:label>
+                        <table:template>
+                            <HBox id="_IDGenHBox6">
+                                <Button id="_IDGenButton17" icon="sap-icon://edit" press="onEdit" />
+                                <Button id="_IDGenButton18" icon="sap-icon://delete" press="onDelete" />
+                                <Button id="_IDGenButton19" icon="sap-icon://share" press="onViewServices" text="Services" />
+                            </HBox>
+                        </table:template>
+                    </table:Column>
+                </table:columns>
+            </table:Table>
+
+
+
+            <!-- <Table id="modelServicesTable" items="{/Models}">
+                <columns>
+                    <Column id="1"><Text id="_IDGenText62" text="Line" /></Column>
+                    <Column id="2"><Text id="_IDGenText63" text="Service.No" /></Column>
+                    <Column id="3"><Text id="_IDGenText64" text="ShortText" /></Column>
+                    <Column id="4"><Text id="_IDGenText65" text="Quantity" /></Column>
+                    <Column id="5"><Text id="_IDGenText66" text="Formula" /></Column>
+                    <Column id="6"><Text id="_IDGenText67" text="Formula Parameters" /></Column>
+                    <Column id="7"><Text id="_IDGenText68" text="GrossPrice" /></Column>
+                    <Column id="8"><Text id="_IDGenText69" text="Net Value" /></Column>
+                    <Column id="9"><Text id="_IDGenText70" text="UnitOfMeasure*" /></Column>
+                    <Column id="10"><Text id="_IDGenText71" text="Crcy" /></Column>
+                    <Column id="_IDGenColumn11"><Text id="_IDGenText72" text="OverF.Percentage" /></Column>
+                    <Column id="_IDGenColumn12"><Text id="_IDGenText73" text="PriceChangeAllowed" /></Column>
+                    <Column id="_IDGenColumn13"><Text id="_IDGenText74" text="UnlimitedOverF" /></Column>
+                    <Column id="_IDGenColumn14"><Text id="_IDGenText75" text="PricePerUnitOfMeasurement" /></Column>
+                    <Column id="_IDGenColumn15"><Text id="_IDGenText76" text="Mat Group" /></Column>
+                    <Column id="_IDGenColumn16"><Text id="_IDGenText77" text="Service Type" /></Column>
+                    <Column id="_IDGenColumn17"><Text id="_IDGenText78" text="External.Service.No" /></Column>
+                    <Column id="_IDGenColumn18"><Text id="_IDGenText79" text="Service Text" /></Column>
+                    <Column id="19"><Text id="_IDGenText80" text="Line Text" /></Column>
+                    <Column id="20"><Text id="_IDGenText81" text="PersonnelNumber" /></Column>
+                    <Column id="21"><Text id="_IDGenText21" text="Line Type" /></Column>
+                    <Column id="22"><Text id="_IDGenText22" text="Line Number" /></Column>
+                    <Column id="23"><Text id="_IDGenText23" text="Alt" /></Column>
+                    <Column id="_IDGenColumn24"><Text id="_IDGenText24" text="Bidder's Line" /></Column>
+                    <Column id="_IDGenColumn25"><Text id="_IDGenText25" text="Supp.Line" /></Column>
+                    <Column id="_IDGenColumn26"><Text id="_IDGenText26" text="Cstg Ls" /></Column>
+                    <Column id="_IDGenColumn27"><Text id="_IDGenText27" text="Actions" /></Column>
+                </columns>
+                <items>
+                    <ColumnListItem id="_IDGenColumnListItem2">
+                        <cells>
+                            <Text id="_IDGenText28" text="{line}" />
+                            <Text id="_IDGenText29" text="{serviceNo}" />
+                            <Text id="_IDGenText30" text="{shortText}" />
+                            <Text id="_IDGenText31" text="{quantity}" />
+                            <Text id="_IDGenText32" text="{formula}" />
+                            <Text id="_IDGenText33" text="{formulaParameters}" />
+                            <Text id="_IDGenText34" text="{grossPrice}" />
+                            <Text id="_IDGenText55" text="{netValue}" />
+                            <Text id="_IDGenText56" text="{unitOfMeasure}" />
+                            <Text id="_IDGenText57" text="{crcy}" />
+                            <Text id="_IDGenText58" text="{overFPercentage}" />
+                            <Text id="_IDGenText39" text="{priceChangeAllowed}" />
+                            <Text id="_IDGenText59" text="{unlimitedOverF}" />
+                            <Text id="_IDGenText60" text="{pricePerUnitOfMeasurement}" />
+                            <Text id="_IDGenText61" text="{matGroup}" />
+                            <Text id="_IDGenText43" text="{serviceType}" />
+                            <Text id="_IDGenText44" text="{externalServiceNo}" />
+                            <Text id="_IDGenText45" text="{serviceText}" />
+                            <Text id="_IDGenText46" text="{lineText}" />
+                            <Text id="_IDGenText47" text="{personnelNumber}" />
+                            <Text id="_IDGenText48" text="{lineType}" />
+                            <Text id="_IDGenText49" text="{lineNumber}" />
+                            <Text id="_IDGenText50" text="{alt}" />
+                            <Text id="_IDGenText51" text="{biddersLine}" />
+                            <Text id="_IDGenText52" text="{suppLine}" />
+                            <Text id="_IDGenText53" text="{cstgLs}" />
+                            <HBox id="_IDGenHBox6">
+                                <Button id="_IDGenButton17" icon="sap-icon://edit" press="onEdit" />
+                                <Button id="_IDGenButton18" icon="sap-icon://delete" press="onDelete" />
+                                <Button id="_IDGenButton19" icon="sap-icon://share" press="onViewServices" text="Services" />
+                            </HBox>
+                        </cells>
+                    </ColumnListItem>
+                </items>
+            </Table> -->
+        </VBox>
+
+         <Dialog id="addServiceDialog" title="Add New Model Service" visible="{/dialogVisible}">
+            <table:Table id="addServiceTable" rows="{/dummy}" visibleRowCount="1" minAutoRowCount="1" columnHeaderHeight="40" width="100%">
+                <table:columns>
+                    <table:Column id="_IDGenColumn42" width="100px">
+                        <table:label><Label id="_IDGenLabel15" text="Line *"/></table:label>
+                        <table:template><Input id="dialogLine" placeholder="Enter Line"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn43" width="100px">
+                        <table:label><Label id="_IDGenLabel25" text="Service.No *"/></table:label>
+                        <table:template><Input id="dialogServiceNo" placeholder="Enter Service No"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn44" width="100px">
+                        <table:label><Label id="_IDGenLabel28" text="ShortText *"/></table:label>
+                        <table:template><Input id="dialogShortText" placeholder="Enter Short Text"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn45" width="100px">
+                        <table:label><Label id="_IDGenLabel29" text="Quantity *"/></table:label>
+                        <table:template><Input id="dialogQuantity" placeholder="Enter Quantity"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn46" width="100px">
+                        <table:label><Label id="_IDGenLabel30" text="Formula *"/></table:label>
+                        <table:template><Input id="dialogFormula" placeholder="Enter Formula"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn47" width="120px">
+                        <table:label><Label id="_IDGenLabel31" text="Formula Parameters *"/></table:label>
+                        <table:template><Input id="dialogFormulaParameters" placeholder="Enter Formula Parameters"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn48" width="100px">
+                        <table:label><Label id="_IDGenLabel32" text="GrossPrice *"/></table:label>
+                        <table:template><Input id="dialogGrossPrice" placeholder="Enter Gross Price"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn49" width="100px">
+                        <table:label><Label id="_IDGenLabel33" text="Net Value *"/></table:label>
+                        <table:template><Input id="dialogNetValue" placeholder="Enter Net Value"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn50" width="120px">
+                        <table:label><Label id="_IDGenLabel34" text="UnitOfMeasure* *"/></table:label>
+                        <table:template><Input id="dialogUnitOfMeasure" placeholder="Enter Unit Of Measure"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn51" width="80px">
+                        <table:label><Label id="_IDGenLabel35" text="Crcy *"/></table:label>
+                        <table:template><Input id="dialogCrcy" placeholder="Enter Crcy"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn52" width="120px">
+                        <table:label><Label id="_IDGenLabel36" text="OverF.Percentage *"/></table:label>
+                        <table:template><Input id="dialogOverFPercentage" placeholder="Enter OverF Percentage"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn53" width="120px">
+                        <table:label><Label id="_IDGenLabel37" text="PriceChangeAllowed *"/></table:label>
+                        <table:template><Input id="dialogPriceChangeAllowed" placeholder="Enter Price Change Allowed"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn54" width="120px">
+                        <table:label><Label id="_IDGenLabel38" text="UnlimitedOverF *"/></table:label>
+                        <table:template><Input id="dialogUnlimitedOverF" placeholder="Enter Unlimited OverF"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn55" width="150px">
+                        <table:label><Label id="_IDGenLabel39" text="PricePerUnitOfMeasurement *"/></table:label>
+                        <table:template><Input id="dialogPricePerUnitOfMeasurement" placeholder="Enter Price Per Unit"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn56" width="100px">
+                        <table:label><Label id="_IDGenLabel40" text="Mat Group *"/></table:label>
+                        <table:template><Input id="dialogMatGroup" placeholder="Enter Mat Group"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn57" width="100px">
+                        <table:label><Label id="_IDGenLabel41" text="Service Type *"/></table:label>
+                        <table:template><Input id="dialogServiceType" placeholder="Enter Service Type"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn58" width="120px">
+                        <table:label><Label id="_IDGenLabel42" text="External.Service.No *"/></table:label>
+                        <table:template><Input id="dialogExternalServiceNo" placeholder="Enter External Service No"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn59" width="100px">
+                        <table:label><Label id="_IDGenLabel43" text="Service Text *"/></table:label>
+                        <table:template><Input id="dialogServiceText" placeholder="Enter Service Text"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn60" width="100px">
+                        <table:label><Label id="_IDGenLabel44" text="Line Text *"/></table:label>
+                        <table:template><Input id="dialogLineText" placeholder="Enter Line Text"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn61" width="120px">
+                        <table:label><Label id="_IDGenLabel45" text="PersonnelNumber *"/></table:label>
+                        <table:template><Input id="dialogPersonnelNumber" placeholder="Enter Personnel Number"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn62" width="100px">
+                        <table:label><Label id="_IDGenLabel46" text="Line Type *"/></table:label>
+                        <table:template><Input id="dialogLineType" placeholder="Enter Line Type"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn63" width="100px">
+                        <table:label><Label id="_IDGenLabel47" text="Line Number *"/></table:label>
+                        <table:template><Input id="dialogLineNumber" placeholder="Enter Line Number"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn64" width="80px">
+                        <table:label><Label id="_IDGenLabel48" text="Alt *"/></table:label>
+                        <table:template><Input id="dialogAlt" placeholder="Enter Alt"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn65" width="100px">
+                        <table:label><Label id="_IDGenLabel49" text="Bidder's Line *"/></table:label>
+                        <table:template><Input id="dialogBiddersLine" placeholder="Enter Bidder's Line"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn66" width="100px">
+                        <table:label><Label id="_IDGenLabel50" text="Supp.Line *"/></table:label>
+                        <table:template><Input id="dialogSuppLine" placeholder="Enter Supp Line"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn67" width="100px">
+                        <table:label><Label id="_IDGenLabel51" text="Cstg Ls *"/></table:label>
+                        <table:template><Input id="dialogCstgLs" placeholder="Enter Cstg Ls"/></table:template>
+                    </table:Column>
+                    <table:Column id="_IDGenColumn68" width="150px">
+                        <table:label><Label id="_IDGenLabel52" text=""/></table:label>
+                        <table:template><Label id="_IDGenLabel53" text=""/></table:template>
+                    </table:Column>
+                </table:columns>
+            </table:Table>
+            <buttons>
+                <Button id="_IDGenButton37" text="Add Record" press="onAddRecord"/>
+                <Button id="_IDGenButton38" text="Cancel" press="onCancelDialog"/>
+            </buttons>
+        </Dialog>
     </Page>
 </mvc:View>
