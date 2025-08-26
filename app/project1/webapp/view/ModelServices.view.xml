@@ -14,11 +14,71 @@
         	xmlns:macros="sap.fe.macros"
             
             >
-    <Page id="_IDGenPage7"  title="Model Services">
+    <Page id="_IDGenPage7"  title="Model Services"  enableScrolling="true" class="sapUiContentPadding">
     	
          <VBox id="_IDGenVBox17">
-            <Button id="_IDGenButton36" text="Add New Service" press="onToggleAddDialog" class="customTopMargin" />
+ 
+   <!-- <Panel id="_IDGenPanel5" headerText="Service Management" expandable="true" expanded="true">
+                <VBox id="_IDGenVBox16">
+                    <HBox id="_IDGenHBox21">
+                        <Label id="_IDGenLabel54" text="Filter by Service No:"/>
+                        <Input id="filterServiceNo" placeholder="Enter Service No" width="200px"/>
+                        <Button id="_IDGenButton19" text="Search" press="onSearch" type="Emphasized"/>
+                    </HBox>
+                    <HBox id="_IDGenHBox22">
+                        <Label id="_IDGenLabel55" text="Total Records:"/>
+                        <Text id="totalRecords" text="{= ${/Models}.length }" />
+                    </HBox>
+                </VBox>
+    </Panel> -->
+
+     <Panel id="_IDGenPanel5" expandable="true" expanded="true" class="customPanel sapUiSmallMargin" >
+                <headerToolbar>
+                    <Toolbar id="_IDGenToolbar">
+                        <Title id="_IDGenTitle" text="Service Management Dashboard" level="H2"/>
+                        <ToolbarSpacer id="_IDGenToolbarSpacer"/>
+                        <Button id="_IDGenButton19" icon="sap-icon://filter" text="Filter Options" press="onToggleFilter"/>
+                    </Toolbar>
+                </headerToolbar>
+                <VBox id="_IDGenVBox16">
+                   <HBox id="_IDGenHBox23" >
+                    <!-- <form:SimpleForm id="_IDGenSimpleForm1" layout="ResponsiveGridLayout" labelSpanL="3" labelSpanM="3" emptySpanL="1" emptySpanM="1">
+                        <form:content> -->
+                            <Label id="_IDGenLabel55" text="Short Text:" class="sapUiSmallMargin"/>
+                            <Input id="filterShortText" placeholder=" Short Text"  width="200px" class="sapUiSmallMargin"/>
+                            <Label id="_IDGenLabel56" text="Total Value:" class="sapUiSmallMargin"/>
+                            <Input id="filterQuantity" placeholder="Total Value" width="200px" class="sapUiSmallMargin"/>
+                              <Button id="_IDGenButton41" text="Export to Excel" class="sapUiSmallMargin" press="onExport" type="Transparent" icon="sap-icon://excel-attachment"/>
+                        <!-- </form:content>
+                    </form:SimpleForm> -->
+                    </HBox>
+                    <HBox id="_IDGenHBox21" justifyContent="SpaceBetween" class="summarySection">
+                        <VBox id="_IDGenVBox18">
+                            <Label id="_IDGenLabel57" text="Total Records:"/>
+                            <Text id="totalRecords" text="{= ${/Models}.length }" />
+                        </VBox>
+                        <HBox id="_IDGenHBox22">
+                            <Button id="_IDGenButton39" text="Search" press="onSearch" type="Emphasized"/>
+                            <Button id="_IDGenButton40" text="Reset" press="onReset" type="Transparent"/>
+                        </HBox>
+                    </HBox>
+                </VBox>
+            </Panel>
+
+            <Button id="_IDGenButton36" text="Add New Service" press="onOpenAddDialog" class="customTopMargin" />
               <table:Table id="modelServicesTable" rows="{/Models}" visibleRowCount="10" minAutoRowCount="5" enableColumnReordering="true" columnHeaderHeight="40">
+                    <!-- <headerToolbar>
+					<OverflowToolbar id="otbSubheader">
+						<Title id="_IDGenTitle1" text="Products" level="H2" />
+						<ToolbarSpacer id="_IDGenToolbarSpacer2" />
+						<Button id="editButton" text="Edit" type="Transparent"
+							press="onEdit" />
+						<Button id="saveButton" text="Save" type="Transparent"
+							press="onSave" visible="false" />
+						<Button id="cancelButton" text="Cancel" type="Transparent"
+							press="onCancel" visible="false" />
+					</OverflowToolbar>
+				</headerToolbar> -->
                 <table:columns>
                     <table:Column id="_IDGenColumn29" width="100px">
                         <table:label><Text id="_IDGenText54" text="Line" /></table:label>
@@ -130,7 +190,6 @@
                             <HBox id="_IDGenHBox6">
                                 <Button id="_IDGenButton17" icon="sap-icon://edit" press="onEdit" />
                                 <Button id="_IDGenButton18" icon="sap-icon://delete" press="onDelete" />
-                                <Button id="_IDGenButton19" icon="sap-icon://share" press="onViewServices" text="Services" />
                             </HBox>
                         </table:template>
                     </table:Column>
@@ -209,7 +268,7 @@
             </Table> -->
         </VBox>
 
-         <Dialog id="addServiceDialog" title="Add New Model Service" visible="{/dialogVisible}">
+         <Dialog id="addServiceDialog" title="Add New Model Service" >
             <table:Table id="addServiceTable" rows="{/dummy}" visibleRowCount="1" minAutoRowCount="1" columnHeaderHeight="40" width="100%">
                 <table:columns>
                     <table:Column id="_IDGenColumn42" width="100px">
@@ -324,7 +383,7 @@
             </table:Table>
             <buttons>
                 <Button id="_IDGenButton37" text="Add Record" press="onAddRecord"/>
-                <Button id="_IDGenButton38" text="Cancel" press="onCancelDialog"/>
+                <Button id="_IDGenButton38" text="Cancel" press="onCloseDialog"/>
             </buttons>
         </Dialog>
     </Page>
