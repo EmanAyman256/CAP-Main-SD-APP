@@ -52,13 +52,64 @@ sap.ui.define([
         //         }
         //     });
         // },
-       onEdit: function (oEvent) {
-            var oBindingContext = oEvent.getSource().getBindingContext();
-            if (oBindingContext) {
-                var oModel = this.getView().getModel();
-                var sPath = oBindingContext.getPath();
-                oModel.setProperty(sPath + "/editMode", true);
+        onEdit: function (oEvent) {
+            var oButton = oEvent.getSource();
+            var oContext = oButton.getParent().getParent().getBindingContext(); // Navigate to ColumnListItem context
+
+            if (!oContext) {
+                MessageBox.warning("Error: Unable to retrieve row data");
+                return;
             }
+
+            var oSelectedData = oContext.getObject();
+            var oModel = this.getView().getModel();
+
+            // Create Edit Dialog if not exists
+            if (!this._oEditDialog) {
+                this._oEditDialog = new Dialog({
+                    title: "Edit Service Type",
+                    titleAlignment: "Center",
+                    contentWidth: "600px",
+                    content: new VBox({}),
+                    beginButton: new Button({
+                        text: "Save",
+                        type: "Emphasized",
+                        press: () => {
+                            // Read values back from inputs
+                            var aContent = this._oEditDialog.getContent()[0].getItems();
+                            oSelectedData.Code = aContent[1].getValue();
+                            oSelectedData.Description = aContent[3].getValue();
+
+                            // Refresh model so table updates
+                            oModel.refresh(true);
+
+                            this._oEditDialog.close();
+                        }
+                    }),
+                    endButton: new Button({
+                        text: "Cancel",
+                        press: () => this._oEditDialog.close()
+                    })
+                });
+
+                this.getView().addDependent(this._oEditDialog);
+            }
+
+            // Fill dialog content with selected data
+            this._oEditDialog.removeAllContent();
+            this._oEditDialog.addContent(
+                new VBox({
+                    items: [
+                        new Label({ text: "Code", design: "Bold" }),
+                        new Input({ value: oSelectedData.Code }),
+
+                        new Label({ text: "Description", design: "Bold" }),
+                        new Input({ value: oSelectedData.Description }),
+                    ]
+                })
+            );
+
+            this._oEditDialog.open();
         },
         onSave: function (oEvent) {
             var oBindingContext = oEvent.getSource().getBindingContext();

@@ -38,7 +38,79 @@ sap.ui.define([
         },
        
         onEdit: function (oEvent) {
-            // Logic to edit service type
+            var oButton = oEvent.getSource();
+            var oContext = oButton.getParent().getParent().getBindingContext(); // Navigate to ColumnListItem context
+
+            if (!oContext) {
+                MessageBox.warning("Error: Unable to retrieve row data");
+                return;
+            }
+
+            var oSelectedData = oContext.getObject();
+            var oModel = this.getView().getModel();
+
+            // Create Edit Dialog if not exists
+            if (!this._oEditDialog) {
+                this._oEditDialog = new Dialog({
+                    title: "Edit Model",
+                    titleAlignment: "Center",
+                    contentWidth: "600px",
+                    content: new VBox({}),
+                    beginButton: new Button({
+                        text: "Save",
+                        type: "Emphasized",
+                        press: () => {
+                            // Read values back from inputs
+                            var aContent = this._oEditDialog.getContent()[0].getItems();
+                            oSelectedData.modelServSpec = aContent[1].getValue();
+                            oSelectedData.blockingIndicator = aContent[3].getValue();
+                            oSelectedData.serviceSelection = aContent[5].getValue();
+                            oSelectedData.description = aContent[7].getValue();
+                            oSelectedData.searchTerm = aContent[9].getValue();
+                            oSelectedData.currencyCode = aContent[11].getValue();
+
+                            // Refresh model so table updates
+                            oModel.refresh(true);
+
+                            this._oEditDialog.close();
+                        }
+                    }),
+                    endButton: new Button({
+                        text: "Cancel",
+                        press: () => this._oEditDialog.close()
+                    })
+                });
+
+                this.getView().addDependent(this._oEditDialog);
+            }
+
+            // Fill dialog content with selected data
+            this._oEditDialog.removeAllContent();
+            this._oEditDialog.addContent(
+                new VBox({
+                    items: [
+                        new Label({ text: "modelServSpec", design: "Bold" }),
+                        new Input({ value: oSelectedData.modelServSpec }),
+
+                        new Label({ text: "blockingIndicator", design: "Bold" }),
+                        new Input({ value: oSelectedData.blockingIndicator }),
+
+                        new Label({ text: "serviceSelection", design: "Bold" }),
+                        new Input({ value: oSelectedData.serviceSelection }),
+
+                        new Label({ text: "description", design: "Bold" }),
+                        new Input({ value: oSelectedData.description }),
+
+                        new Label({ text: "searchTerm", design: "Bold" }),
+                        new Input({ value: oSelectedData.searchTerm }),
+
+                        new Label({ text: "currencyCode", design: "Bold" }),
+                        new Input({ value: oSelectedData.currencyCode })
+                    ]
+                })
+            );
+
+            this._oEditDialog.open();
         },
        onDelete: function (oEvent) {
             var oBindingContext = oEvent.getSource().getBindingContext();

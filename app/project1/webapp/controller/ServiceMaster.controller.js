@@ -8,8 +8,8 @@ sap.ui.define([
     "sap/ui/export/library"
 ], function (Controller, Dialog, VBox, Text, Button, Spreadsheet, exportLibrary) {
     "use strict";
-
     return Controller.extend("project1.controller.ServiceMaster", {
+      
         onInit: function () {
             var oserviceModel = new sap.ui.model.json.JSONModel({
                 ServiceMaster: [
@@ -21,7 +21,6 @@ sap.ui.define([
             });
             this.getView().setModel(oserviceModel);
         },
-
         onNavigateToAddServiceMaster() {
             this.getOwnerComponent().getRouter().navTo("addServiceMaster");
         },
@@ -100,10 +99,6 @@ sap.ui.define([
             );
 
             this._oEditDialog.open();
-        },
-
-        onDelete: function (oEvent) {
-            // Logic to delete service type
         },
         onShowDetails: function () {
             var oTable = this.byId("serviceMaster");
@@ -286,125 +281,26 @@ sap.ui.define([
                 });
         },
         onSearch: function (oEvent) {
-    var sQuery = oEvent.getParameter("newValue"); // النص اللي اتكتب في SearchField
-    var oTable = this.byId("serviceMaster");
-    var oBinding = oTable.getBinding("items");
+            var sQuery = oEvent.getParameter("newValue"); // النص اللي اتكتب في SearchField
+            var oTable = this.byId("serviceMaster");
+            var oBinding = oTable.getBinding("items");
 
-    if (sQuery && sQuery.length > 0) {
-        // فلترة على أكتر من عمود
-        var oFilter1 = new sap.ui.model.Filter("Code", sap.ui.model.FilterOperator.Contains, sQuery);
-        var oFilter2 = new sap.ui.model.Filter("SearchTerm", sap.ui.model.FilterOperator.Contains, sQuery);
-        var oFilter3 = new sap.ui.model.Filter("Description", sap.ui.model.FilterOperator.Contains, sQuery);
+            if (sQuery && sQuery.length > 0) {
+                // فلترة على أكتر من عمود
+                var oFilter1 = new sap.ui.model.Filter("Code", sap.ui.model.FilterOperator.Contains, sQuery);
+                var oFilter2 = new sap.ui.model.Filter("SearchTerm", sap.ui.model.FilterOperator.Contains, sQuery);
+                var oFilter3 = new sap.ui.model.Filter("Description", sap.ui.model.FilterOperator.Contains, sQuery);
 
-        var oCombinedFilter = new sap.ui.model.Filter({
-            filters: [oFilter1, oFilter2, oFilter3],
-            and: false // OR logic
-        });
+                var oCombinedFilter = new sap.ui.model.Filter({
+                    filters: [oFilter1, oFilter2, oFilter3],
+                    and: false // OR logic
+                });
 
-        oBinding.filter([oCombinedFilter]);
-    } else {
-        oBinding.filter([]); 
-     }
-}
-
-
-
-
-
-
-
-        // onShowDetails: function (){
-        //     // Logic to Show Details of Selected Service
-
-        //     var oTable = this.byId("serviceMaster");
-        //     var oSelectedItem = oTable.getSelectedItem();
-        //     if (oSelectedItem) {
-        //         var oContext = oSelectedItem.getBindingContext();
-        //         if (oContext) {
-        //             var oSelectedData = oContext.getObject();
-        //             if(oSelectedData){
-        //                 var code = oSelectedData.Code;
-        //                 var createdOn = oSelectedData.CreatedOn;
-        //                 var searchTerm = oSelectedData.SearchTerm;
-        //                 var description = oSelectedData.Description;
-        //                 var serviceType = oSelectedData.serviceType;
-        //                 var lastChangedDate = oSelectedData.lastChangeDate;
-        //             }
-        //         }
-        //     }
-        //     else
-        //     {
-        //         sap.m.MessageBox.warning("Please, Select an item");
-        //     }
-        //     if(!this._oValueHelpDialog){
-        //         this._oValueHelpDialog = new Dialog({
-        //             title : "Service Master: "+ code,
-        //             titleAlignment: "Center",
-        //             contentWidth : "800px",
-
-        //             content: new sap.m.VBox({
-        //                 items: [
-        //                     new VBox({}),
-        //                     new sap.m.VBox({
-        //                         items: [
-        //                             new sap.m.Label({ text: "Service Master Code" , design: "Bold"}),
-        //                             new sap.m.Input({ value: code || "" , editable: false }),
-
-        //                         ]
-        //                     }),
-        //                     new VBox({}),
-        //                     new sap.m.VBox({
-        //                         items: [
-        //                             new sap.m.Label({ text: "Search Term" , design: "Bold"}),
-        //                             new sap.m.Input({ value: searchTerm || "" , editable: false }),
-        //                         ]
-        //                     }),
-        //                     new VBox({}),
-        //                     new sap.m.VBox({
-        //                         items: [
-        //                             new sap.m.Label({ text: "Description" , design: "Bold"}),
-        //                             new sap.m.Input({ value: description || "" , editable: false }),
-        //                         ]
-        //                     }),
-        //                     new VBox({}),
-        //                     new sap.m.VBox({
-        //                         items: [
-        //                             new sap.m.Label({ text: "Last Changed Date" , design: "Bold"}),
-        //                             new sap.m.Input({ value: lastChangedDate || "" , editable: false }), 
-        //                         ]
-        //                     }),
-        //                     new VBox({}),
-        //                     new sap.m.VBox({
-        //                         items: [
-        //                             new sap.m.Label({ text: "Service Type" , design: "Bold"}),
-        //                             new sap.m.Input({ value: serviceType || "" , editable: false }),
-        //                         ]
-        //                     }),
-        //                     new VBox({}),
-        //                     new sap.m.VBox({
-        //                         items: [
-        //                             new sap.m.Label({ text: "Created On" , design: "Bold"}),
-        //                             new sap.m.Input({ value: createdOn || "" , editable: false }),
-        //                         ]
-        //                     }),
-        //                     new VBox({}),
-        //                 ]
-        //            }),
-
-        //             endButton: new sap.m.Button({
-        //                 text: "Close",
-        //                 press: () => {
-        //                     this._oValueHelpDialog.close();
-        //                 }
-        //             })
-
-        //         })
-        //     }
-        //     //To avoid showing empty Dialog in Case of no selection
-        //     if(oSelectedItem ){
-        //         this.getView().addDependent(this._oValueHelpDialog);
-        //          this._oValueHelpDialog.open(); 
-        //     }
-        // }
+                oBinding.filter([oCombinedFilter]);
+            } else {
+                oBinding.filter([]);
+            }
+        }
+        
     });
 });

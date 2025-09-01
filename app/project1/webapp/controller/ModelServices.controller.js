@@ -12,13 +12,14 @@ sap.ui.define([
     "sap/m/Column",
     "sap/m/ColumnListItem",
     "sap/ui/export/Spreadsheet",
+    "sap/ui/export/library",
+     "sap/ui/layout/form/SimpleForm",
 
-], function (Controller, MessageBox, MessageToast, Spreadsheet, Dialog, Input, Button, Label, VBox, HBox, Table, Column, ColumnListItem) {
+], function (Controller, MessageBox, MessageToast,SimpleForm, Spreadsheet, exportLibrary, Dialog, Input, Button, Label, VBox, HBox, Table, Column, ColumnListItem) {
     "use strict";
 
     return Controller.extend("project1.controller.ModelServices", {
         onInit: function () {
-            // console.log("MessageToast loaded:", MessageToast);
             var oOriginalData = {
                 Models: [
                     {
@@ -193,14 +194,6 @@ sap.ui.define([
             }
         },
 
-        onEdit: function (oEvent) {
-            var oContext = oEvent.getSource().getParent().getBindingContext();
-            if (oContext) {
-                var modelData = oContext.getProperty();
-                MessageToast.show("Edit: " + modelData.line);
-
-            }
-        },
         onDetails: function (oEvent) {
             var oContext = oEvent.getSource().getParent().getBindingContext();
             if (oContext) {
@@ -219,11 +212,88 @@ sap.ui.define([
 
             }
         },
+        
         onCloseDetailsDialog: function () {
             var oDialog = this.getView().byId("detailsDialog");
             if (oDialog) {
                 oDialog.close();
             }
+           
+        },
+         onEdit: function (oEvent) {
+            var oContext = oEvent.getSource().getParent().getBindingContext();
+            if (oContext) {
+                var modelData = oContext.getProperty();
+                //MessageToast.show("Details: " + modelData.line);
+
+                var oModel = this.getView().getModel();
+                oModel.setProperty("/selectedLine", modelData);
+
+                var oDialog = this.getView().byId("editDialog");
+                if (oDialog) {
+                    oDialog.open();
+                } else {
+                    console.error("edit dialog not found");
+                }
+
+            }
+        },
+           onSaveEditDialog: function () {
+            var oModel = this.getView().getModel();
+            var oDialog = this.getView().byId("editDialog");
+            if (oDialog) {
+                var oForm = oDialog.getContent()[0].getItems()[0];
+                var aContent = oForm.getContent();
+                var selectedLine = oModel.getProperty("/selectedLine");
+
+                selectedLine.line = aContent[1].getValue();
+                selectedLine.serviceNo = aContent[3].getValue();
+                selectedLine.shortText = aContent[5].getValue();
+                selectedLine.quantity = aContent[7].getValue();
+                selectedLine.formula = aContent[9].getValue();
+                selectedLine.formulaParameters = aContent[11].getValue();
+                selectedLine.grossPrice = aContent[13].getValue();
+                selectedLine.netValue = aContent[15].getValue();
+                selectedLine.unitOfMeasure = aContent[17].getValue();
+                selectedLine.crcy = aContent[19].getValue();
+                selectedLine.overFPercentage = aContent[21].getValue();
+                selectedLine.priceChangeAllowed = aContent[23].getValue();
+                selectedLine.unlimitedOverF = aContent[25].getValue();
+                selectedLine.pricePerUnitOfMeasurement = aContent[27].getValue();
+                selectedLine.matGroup = aContent[29].getValue();
+                selectedLine.serviceType = aContent[31].getValue();
+                selectedLine.externalServiceNo = aContent[33].getValue();
+                selectedLine.serviceText = aContent[35].getValue();
+                selectedLine.lineText = aContent[37].getValue();
+                selectedLine.personnelNumber = aContent[39].getValue();
+                selectedLine.lineType = aContent[41].getValue();
+                selectedLine.lineNumber = aContent[43].getValue();
+                selectedLine.alt = aContent[45].getValue();
+                selectedLine.biddersLine = aContent[47].getValue();
+                selectedLine.suppLine = aContent[49].getValue();
+                selectedLine.cstgLs = aContent[51].getValue();
+
+                // Update the original data in the Models array
+                var models = oModel.getProperty("/Models");
+                var index = models.findIndex(function (item) {
+                    return item.line === oModel.getProperty("/selectedLine/line");
+                });
+                if (index !== -1) {
+                    models[index] = Object.assign({}, selectedLine);
+                    oModel.setProperty("/Models", models);
+                }
+
+                oModel.refresh(true);
+                oDialog.close();
+                MessageToast.show("Changes saved successfully");
+            }
+        },
+        onCloseEditDialog: function () {
+            var oDialog = this.getView().byId("editDialog");
+            if (oDialog) {
+                oDialog.close();
+            }
+          
         },
         onDelete: function (oEvent) {
             var oBindingContext = oEvent.getSource().getBindingContext();
@@ -359,7 +429,7 @@ sap.ui.define([
                 // Reset to original models when input is empty
                 oModel.setProperty("/Models", oModel.getProperty("/originalModels"));
             }
-          //  MessageToast.show("Filtered by Line: " + (filterValue || "All"));
+            //  MessageToast.show("Filtered by Line: " + (filterValue || "All"));
         },
         onSearch: function () {
             var oModel = this.getView().getModel();
@@ -377,9 +447,17 @@ sap.ui.define([
             }
             MessageToast.show("Filtered by Line: " + (filterValue || "All"));
         },
-       
+
         onExport: function () {
             var oModel = this.getView().getModel();
+            var aData = oModel.getProperty("/Models");
+
+            if (!aData || aData.length === 0) {
+                sap.m.MessageBox.warning("No data available to export");
+                return;
+            }
+
+            // Define the Excel columns
             var aColumns = [
                 { label: "Line", property: "line", type: "String" },
                 { label: "Service No", property: "serviceNo", type: "String" },
@@ -409,21 +487,69 @@ sap.ui.define([
                 { label: "Costing LS", property: "cstgLs", type: "String" }
             ];
 
+            // Settings for Spreadsheet
             var oSettings = {
                 workbook: { columns: aColumns },
-                dataSource: oModel.getProperty("/Models"),
-                fileName: "ModelServices_Export_" + new Date().toISOString().slice(0, 10) + ".xlsx",
-                worker: false // Set to true for large datasets if supported
+                dataSource: aData,
+                fileName: "ModelServices.xlsx",
+                worker: false // set to true for large datasets
             };
 
             var oSheet = new Spreadsheet(oSettings);
-            oSheet.build().then(function () {
-                MessageToast.show("Export to Excel completed.");
-            }).catch(function (oError) {
-                MessageToast.show("Error during export: " + oError.message);
-            }).finally(function () {
-                oSheet.destroy();
-            });
-        }
+            oSheet.build()
+                .then(() => {
+                    sap.m.MessageToast.show("Export as excel shhet finished!");
+                })
+                .finally(() => {
+                    oSheet.destroy();
+                });
+        },
+        // onExport: function () {
+        //     var oModel = this.getView().getModel();
+        //     var aColumns = [
+        //         { label: "Line", property: "line", type: "String" },
+        //         { label: "Service No", property: "serviceNo", type: "String" },
+        //         { label: "Short Text", property: "shortText", type: "String" },
+        //         { label: "Quantity", property: "quantity", type: "Number" },
+        //         { label: "Formula", property: "formula", type: "String" },
+        //         { label: "Formula Parameters", property: "formulaParameters", type: "String" },
+        //         { label: "Gross Price", property: "grossPrice", type: "Number" },
+        //         { label: "Net Value", property: "netValue", type: "Number" },
+        //         { label: "Unit of Measure", property: "unitOfMeasure", type: "String" },
+        //         { label: "Currency", property: "crcy", type: "String" },
+        //         { label: "Over F. Percentage", property: "overFPercentage", type: "String" },
+        //         { label: "Price Change Allowed", property: "priceChangeAllowed", type: "String" },
+        //         { label: "Unlimited Over F", property: "unlimitedOverF", type: "String" },
+        //         { label: "Price Per Unit", property: "pricePerUnitOfMeasurement", type: "Number" },
+        //         { label: "Material Group", property: "matGroup", type: "String" },
+        //         { label: "Service Type", property: "serviceType", type: "String" },
+        //         { label: "External Service No", property: "externalServiceNo", type: "String" },
+        //         { label: "Service Text", property: "serviceText", type: "String" },
+        //         { label: "Line Text", property: "lineText", type: "String" },
+        //         { label: "Personnel Number", property: "personnelNumber", type: "String" },
+        //         { label: "Line Type", property: "lineType", type: "String" },
+        //         { label: "Line Number", property: "lineNumber", type: "String" },
+        //         { label: "Alt", property: "alt", type: "String" },
+        //         { label: "Bidder's Line", property: "biddersLine", type: "String" },
+        //         { label: "Supplier Line", property: "suppLine", type: "String" },
+        //         { label: "Costing LS", property: "cstgLs", type: "String" }
+        //     ];
+
+        //     var oSettings = {
+        //         workbook: { columns: aColumns },
+        //         dataSource: oModel.getProperty("/Models"),
+        //         fileName: "ModelServices_Export_" + new Date().toISOString().slice(0, 10) + ".xlsx",
+        //         worker: false // Set to true for large datasets if supported
+        //     };
+
+        //     var oSheet = new Spreadsheet(oSettings);
+        //     oSheet.build().then(function () {
+        //         MessageToast.show("Export to Excel completed.");
+        //     }).catch(function (oError) {
+        //         MessageToast.show("Error during export: " + oError.message);
+        //     }).finally(function () {
+        //         oSheet.destroy();
+        //     });
+        // }
     });
 });
