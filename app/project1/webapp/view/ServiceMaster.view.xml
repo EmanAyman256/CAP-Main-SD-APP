@@ -1,7 +1,8 @@
-<mvc:View controllerName="project1.controller.ServiceMaster"
+<mvc:View
+    controllerName="project1.controller.ServiceMaster"
     xmlns="sap.m"
-     xmlns:mvc="sap.ui.core.mvc"
-      xmlns:sap.m="sap.m"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:sap.m="sap.m"
     xmlns:f="sap.f"
     xmlns:w="sap.ui.integration.widgets"
     xmlns:tnt="sap.tnt"
@@ -9,84 +10,156 @@
     xmlns:table="sap.ui.table"
     xmlns:layout="sap.ui.layout"
     xmlns:core="sap.ui.core"
-        xmlns:m="sap.m"
-        xmlns:u="sap.ui.unified"
-        	xmlns:macros="sap.fe.macros">
-    <Page id="_IDGenPage3" title="Service Master">
-    <Panel id="_IDGenPanel">
-    
-       	<HBox id="_IDGenVBox" class="sapUiSmallMargin" justifyContent="Center">
-			<SearchField id="_IDGenSearchField"  class="sapUiSmallMargin" width="55%" />
-            <Button id="_IDGenButton8" text="Create"
-						press="onNavigateToAddServiceMaster" class="sapUiSmallMargin"
-						ariaDescribedBy="defaultButtonDescription genericButtonDescription">
-				
-				</Button>
-                <Button id="_IDGenButton9" text="Details"
-						press="onShowDetails" class="sapUiSmallMargin"
-						ariaDescribedBy="defaultButtonDescription genericButtonDescription">
-					
-				</Button>
-                  <Button id="_IDGenButton10" text="Edit"
-						press="onEdit" class="sapUiSmallMargin"
-						ariaDescribedBy="defaultButtonDescription genericButtonDescription">
-					
-				</Button>
-                   <Button id="_IDGenButton11" text="Copy"
-						press="onCopy" class="sapUiSmallMargin"
-						ariaDescribedBy="defaultButtonDescription genericButtonDescription">
-					
-				</Button>
-                   <Button id="_IDGenButton12" text="Export"
-						press="onPress" class="sapUiSmallMargin"
-						ariaDescribedBy="defaultButtonDescription genericButtonDescription">
-					
-				</Button>
-		</HBox>
-</Panel>
-     <Table id="serviceMaster" items="{/ServiceMaster}" mode="SingleSelectMaster">
+    xmlns:m="sap.m"
+    xmlns:u="sap.ui.unified"
+    xmlns:macros="sap.fe.macros"
+>
+    <Page
+        id="_IDGenPage3"
+        title="Service Master"
+    >
+        <Panel id="_IDGenPanel">
+            <HBox
+                id="_IDGenVBox"
+                class="sapUiSmallMargin"
+                justifyContent="Center"
+            >
+                <SearchField
+                    id="_IDGenSearchField"
+                    class="sapUiSmallMargin"
+                    width="55%"
+                    liveChange="onSearch"
+                />
+                <Button
+                    id="_IDGenButton8"
+                    text="Create"
+                    press="onNavigateToAddServiceMaster"
+                    class="sapUiSmallMargin"
+                    ariaDescribedBy="defaultButtonDescription genericButtonDescription"
+                />
+                <Button
+                    id="_IDGenButton9"
+                    text="Details"
+                    press="onShowDetails"
+                    class="sapUiSmallMargin"
+                    ariaDescribedBy="defaultButtonDescription genericButtonDescription"
+                />
+                <Button
+                    id="_IDGenButton10"
+                    text="Edit"
+                    press="onEdit"
+                    class="sapUiSmallMargin"
+                    ariaDescribedBy="defaultButtonDescription genericButtonDescription"
+                />
+                <Button
+                    id="_IDGenButton11"
+                    text="Copy"
+                    press="onCopy"
+                    class="sapUiSmallMargin"
+                    ariaDescribedBy="defaultButtonDescription genericButtonDescription"
+                />
+                <Button
+                    id="_IDGenButton12"
+                    text="Export"
+                    press="onExport"
+                    class="sapUiSmallMargin"
+                    ariaDescribedBy="defaultButtonDescription genericButtonDescription"
+                />
+            </HBox>
+        </Panel>
+        <Table
+            id="serviceMaster"
+            items="{/ServiceMaster}"
+            mode="SingleSelectMaster"
+        >
             <columns>
-            
                 <Column id="_idGenColumn1">
-                    <Text id="_idGenText" text="Service Master Code " />
+                    <Text
+                        id="_idGenText"
+                        text="Service Master Code "
+                    />
                 </Column>
                 <Column id="_idGenColumn2">
-                    <Text id="_idGenText1" text="Search Term" />
+                    <Text
+                        id="_idGenText1"
+                        text="Search Term"
+                    />
                 </Column>
-                 <Column id="_idGenColumn5">
-                    <Text id="_idGenText8" text="Description" />
+                <Column id="_idGenColumn5">
+                    <Text
+                        id="_idGenText8"
+                        text="Description"
+                    />
                 </Column>
-                 <Column id="_idGenColumn6">
-                    <Text id="_idGenText9" text="Last Change Date" />
+                <Column id="_idGenColumn6">
+                    <Text
+                        id="_idGenText9"
+                        text="Last Change Date"
+                    />
                 </Column>
-                   <Column id="_idGenColumn7">
-                    <Text id="_idGenText10" text="Service Type" />
+                <Column id="_idGenColumn7">
+                    <Text
+                        id="_idGenText10"
+                        text="Service Type"
+                    />
                 </Column>
                 <Column id="_idGenColumn3">
-                    <Text id="_idGenText2" text="Created On" />
+                    <Text
+                        id="_idGenText2"
+                        text="Created On"
+                    />
                 </Column>
                 <Column id="_idGenColumn4">
-                    <Text id="_idGenText3" text="Actions" />
+                    <Text
+                        id="_idGenText3"
+                        text="Actions"
+                    />
                 </Column>
             </columns>
             <items>
                 <ColumnListItem id="_idGenColumnListItem">
                     <cells>
-                        <Text id="_idGenText4" text="{Code}" />
-                        <Text id="_idGenText5" text="{SearchTerm}" />
-                        <Text id="_idGenText7" text="{Description}" />
-                        <Text id="_idGenText13" text="{lastChangeDate}" />
-                        <Text id="_idGenText14" text="{serviceType}" />
-                        <Text id="_idGenText6" text="{CreatedOn}" />
+                        <Text
+                            id="_idGenText4"
+                            text="{Code}"
+                        />
+                        <Text
+                            id="_idGenText5"
+                            text="{SearchTerm}"
+                        />
+                        <Text
+                            id="_idGenText7"
+                            text="{Description}"
+                        />
+                        <Text
+                            id="_idGenText13"
+                            text="{lastChangeDate}"
+                        />
+                        <Text
+                            id="_idGenText14"
+                            text="{serviceType}"
+                        />
+                        <Text
+                            id="_idGenText6"
+                            text="{CreatedOn}"
+                        />
                         <HBox id="_idGenHBox">
-                            <Button id="_idGenButton1" icon="sap-icon://edit" press="onEdit" class="sapUiSmallMargin" />
-                            <Button id="_idGenButton2" icon="sap-icon://delete" press="onDelete" class="sapUiSmallMargin" />
+                            <Button
+                                id="_idGenButton1"
+                                icon="sap-icon://edit"
+                                press="onEdit"
+                                class="sapUiSmallMargin"
+                            />
+                            <Button
+                                id="_idGenButton2"
+                                icon="sap-icon://delete"
+                                press="onDelete"
+                                class="sapUiSmallMargin"
+                            />
                         </HBox>
                     </cells>
                 </ColumnListItem>
             </items>
-        
         </Table>
-      
     </Page>
 </mvc:View>
