@@ -44,7 +44,6 @@ sap.ui.define([
                 MessageToast.show("Please fill all required fields: Search Term, Description, and Service Text.");
                 return;
             }
-
             // Create new entry
             var oNewEntry = {
                 Code: sServiceNumber || "NEW" + Date.now(), // Generate a unique code if not provided

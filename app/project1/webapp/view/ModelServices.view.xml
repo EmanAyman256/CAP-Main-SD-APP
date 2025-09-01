@@ -15,7 +15,9 @@
             
             >
     <Page id="_IDGenPage7"  title="Model Services"  enableScrolling="true" class="sapUiContentPadding">
-    	
+    <headerContent>
+    	  <Button id="_IDGenButton36" icon="sap-icon://add" tooltip="Add" text="Add New Model Service" press="onOpenAddDialog" class="customTopMargin" />
+          </headerContent>
          <VBox id="_IDGenVBox17">
  
    <!-- <Panel id="_IDGenPanel5" headerText="Service Management" expandable="true" expanded="true">
@@ -33,13 +35,13 @@
     </Panel> -->
 
      <Panel id="_IDGenPanel5" expandable="true" expanded="true" class="customPanel sapUiSmallMargin" >
-                <headerToolbar>
+                <!-- <headerToolbar>
                     <Toolbar id="_IDGenToolbar">
                         <Title id="_IDGenTitle" text="Service Management Dashboard" level="H2"/>
                         <ToolbarSpacer id="_IDGenToolbarSpacer"/>
                         <Button id="_IDGenButton19" icon="sap-icon://filter" text="Filter Options" press="onToggleFilter"/>
                     </Toolbar>
-                </headerToolbar>
+                </headerToolbar> -->
                 <VBox id="_IDGenVBox16">
                    <HBox id="_IDGenHBox23" >
                     <!-- <form:SimpleForm id="_IDGenSimpleForm1" layout="ResponsiveGridLayout" labelSpanL="3" labelSpanM="3" emptySpanL="1" emptySpanM="1">
@@ -49,23 +51,25 @@
                             <Label id="_IDGenLabel56" text="Total Value:" class="sapUiSmallMargin"/>
                             <Input id="filterQuantity" placeholder="Total Value" width="200px" class="sapUiSmallMargin"/>
                               <Button id="_IDGenButton41" text="Export to Excel" class="sapUiSmallMargin" press="onExport" type="Transparent" icon="sap-icon://excel-attachment"/>
+                              <Button id="_IDGenButton42" text="Import from Excel" class="sapUiSmallMargin" press="onExport" type="Transparent" icon="sap-icon://excel-attachment"/>
                         <!-- </form:content>
                     </form:SimpleForm> -->
                     </HBox>
                     <HBox id="_IDGenHBox21" justifyContent="SpaceBetween" class="summarySection">
                         <VBox id="_IDGenVBox18">
-                            <Label id="_IDGenLabel57" text="Total Records:"/>
-                            <Text id="totalRecords" text="{= ${/Models}.length }" />
+                            <!-- <Label id="_IDGenLabel57" text="Total Records:"/>
+                            <Text id="totalRecords" text="{= ${/Models}.length }" /> -->
+                            <HBox id="_IDGenHBox24">
+                        <Input id="filterLine" placeholder="Search for line..." width="200px" change="onChangeFilterLine"/>
+                        <!-- <Button id="_IDGenButton44" text="Search" press="onSearch" type="Emphasized"/> -->
+                    </HBox>
                         </VBox>
-                        <HBox id="_IDGenHBox22">
-                            <Button id="_IDGenButton39" text="Search" press="onSearch" type="Emphasized"/>
-                            <Button id="_IDGenButton40" text="Reset" press="onReset" type="Transparent"/>
-                        </HBox>
+                        
                     </HBox>
                 </VBox>
             </Panel>
 
-            <Button id="_IDGenButton36" text="Add New Service" press="onOpenAddDialog" class="customTopMargin" />
+          
               <table:Table id="modelServicesTable" rows="{/Models}" visibleRowCount="10" minAutoRowCount="5" enableColumnReordering="true" columnHeaderHeight="40">
                     <!-- <headerToolbar>
 					<OverflowToolbar id="otbSubheader">
@@ -188,7 +192,8 @@
                         <table:label><Text id="_IDGenText27" text="Actions" /></table:label>
                         <table:template>
                             <HBox id="_IDGenHBox6">
-                                <Button id="_IDGenButton17" icon="sap-icon://edit" press="onEdit" />
+                                <Button id="_IDGenButton17" icon="sap-icon://information" press="onDetails" />
+                                <Button id="_IDGenButton19" icon="sap-icon://edit" press="onEdit" />
                                 <Button id="_IDGenButton18" icon="sap-icon://delete" press="onDelete" />
                             </HBox>
                         </table:template>
@@ -384,6 +389,71 @@
             <buttons>
                 <Button id="_IDGenButton37" text="Add Record" press="onAddRecord"/>
                 <Button id="_IDGenButton38" text="Cancel" press="onCloseDialog"/>
+            </buttons>
+        </Dialog>
+
+        <!-- New Dialog for Line Details -->
+        <Dialog id="detailsDialog" title="Line Details">
+            <VBox id="_IDGenVBox20">
+                <form:SimpleForm id="detailsForm" layout="ResponsiveGridLayout" labelSpanL="4" labelSpanM="4" emptySpanL="0" emptySpanM="0">
+                    <form:content>
+                        <Label id="_IDGenLabel54" text="Line:"/>
+                        <Text id="detailLine" text="{/selectedLine/line}"/>
+                        <Label id="_IDGenLabel58" text="Service No:"/>
+                        <Text id="detailServiceNo" text="{/selectedLine/serviceNo}"/>
+                        <Label id="_IDGenLabel59" text="Short Text:"/>
+                        <Text id="detailShortText" text="{/selectedLine/shortText}"/>
+                        <Label id="_IDGenLabel60" text="Quantity:"/>
+                        <Text id="detailQuantity" text="{/selectedLine/quantity}"/>
+                        <Label id="_IDGenLabel61" text="Formula:"/>
+                        <Text id="detailFormula" text="{/selectedLine/formula}"/>
+                        <Label id="_IDGenLabel62" text="Formula Parameters:"/>
+                        <Text id="detailFormulaParameters" text="{/selectedLine/formulaParameters}"/>
+                        <Label id="_IDGenLabel63" text="Gross Price:"/>
+                        <Text id="detailGrossPrice" text="{/selectedLine/grossPrice}"/>
+                        <Label id="_IDGenLabel64" text="Net Value:"/>
+                        <Text id="detailNetValue" text="{/selectedLine/netValue}"/>
+                        <Label id="_IDGenLabel65" text="Unit of Measure:"/>
+                        <Text id="detailUnitOfMeasure" text="{/selectedLine/unitOfMeasure}"/>
+                        <Label id="_IDGenLabel66" text="Currency:"/>
+                        <Text id="detailCrcy" text="{/selectedLine/crcy}"/>
+                        <Label id="_IDGenLabel67" text="Over F. Percentage:"/>
+                        <Text id="detailOverFPercentage" text="{/selectedLine/overFPercentage}"/>
+                        <Label id="_IDGenLabel68" text="Price Change Allowed:"/>
+                        <Text id="detailPriceChangeAllowed" text="{/selectedLine/priceChangeAllowed}"/>
+                        <Label id="_IDGenLabel69" text="Unlimited Over F:"/>
+                        <Text id="detailUnlimitedOverF" text="{/selectedLine/unlimitedOverF}"/>
+                        <Label id="_IDGenLabel70" text="Price Per Unit:"/>
+                        <Text id="detailPricePerUnitOfMeasurement" text="{/selectedLine/pricePerUnitOfMeasurement}"/>
+                        <Label id="_IDGenLabel71" text="Material Group:"/>
+                        <Text id="detailMatGroup" text="{/selectedLine/matGroup}"/>
+                        <Label id="_IDGenLabel72" text="Service Type:"/>
+                        <Text id="detailServiceType" text="{/selectedLine/serviceType}"/>
+                        <Label id="_IDGenLabel73" text="External Service No:"/>
+                        <Text id="detailExternalServiceNo" text="{/selectedLine/externalServiceNo}"/>
+                        <Label id="_IDGenLabel74" text="Service Text:"/>
+                        <Text id="detailServiceText" text="{/selectedLine/serviceText}"/>
+                        <Label id="_IDGenLabel75" text="Line Text:"/>
+                        <Text id="detailLineText" text="{/selectedLine/lineText}"/>
+                        <Label id="_IDGenLabel76" text="Personnel Number:"/>
+                        <Text id="detailPersonnelNumber" text="{/selectedLine/personnelNumber}"/>
+                        <Label id="_IDGenLabel77" text="Line Type:"/>
+                        <Text id="detailLineType" text="{/selectedLine/lineType}"/>
+                        <Label id="_IDGenLabel78" text="Line Number:"/>
+                        <Text id="detailLineNumber" text="{/selectedLine/lineNumber}"/>
+                        <Label id="_IDGenLabel79" text="Alt:"/>
+                        <Text id="detailAlt" text="{/selectedLine/alt}"/>
+                        <Label id="_IDGenLabel80" text="Bidder's Line:"/>
+                        <Text id="detailBiddersLine" text="{/selectedLine/biddersLine}"/>
+                        <Label id="_IDGenLabel81" text="Supplier Line:"/>
+                        <Text id="detailSuppLine" text="{/selectedLine/suppLine}"/>
+                        <Label id="_IDGenLabel82" text="Costing LS:"/>
+                        <Text id="detailCstgLs" text="{/selectedLine/cstgLs}"/>
+                    </form:content>
+                </form:SimpleForm>
+            </VBox>
+            <buttons>
+                <Button id="_IDGenButton43" text="Close" press="onCloseDetailsDialog"/>
             </buttons>
         </Dialog>
     </Page>

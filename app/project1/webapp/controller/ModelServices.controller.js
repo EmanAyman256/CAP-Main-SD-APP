@@ -19,9 +19,7 @@ sap.ui.define([
     return Controller.extend("project1.controller.ModelServices", {
         onInit: function () {
             // console.log("MessageToast loaded:", MessageToast);
-            var oModel = new sap.ui.model.json.JSONModel({
-                // dialogVisible: false,
-                dummy: [{}],
+            var oOriginalData = {
                 Models: [
                     {
                         line: "001",
@@ -80,8 +78,78 @@ sap.ui.define([
                         cstgLs: "CL2"
                     }
                 ],
+                dummy: [{}],
+                selectedLine: {},
+                originalModels: [] // Added to store the original dataset
+            };
+            // Initialize Models with original data and store originalModels
+            oOriginalData.originalModels = JSON.parse(JSON.stringify(oOriginalData.Models));
+            var oModel = new sap.ui.model.json.JSONModel(oOriginalData);
+            // var oModel = new sap.ui.model.json.JSONModel({
+            //     // dialogVisible: false,
+            //     dummy: [{}],
+            //     selectedLine: {}, // holds the selected line data for the details dialog,
 
-            });
+            //     Models: [
+            //         {
+            //             line: "001",
+            //             serviceNo: "S001",
+            //             shortText: "Service 1",
+            //             quantity: "10",
+            //             formula: "F1",
+            //             formulaParameters: "P1,P2",
+            //             grossPrice: "100.00",
+            //             netValue: "90.00",
+            //             unitOfMeasure: "EA",
+            //             crcy: "USD",
+            //             overFPercentage: "5%",
+            //             priceChangeAllowed: "Yes",
+            //             unlimitedOverF: "No",
+            //             pricePerUnitOfMeasurement: "10.00",
+            //             matGroup: "MG1",
+            //             serviceType: "ST1",
+            //             externalServiceNo: "ES001",
+            //             serviceText: "Service Text 1",
+            //             lineText: "Line Text 1",
+            //             personnelNumber: "P001",
+            //             lineType: "LT1",
+            //             lineNumber: "1",
+            //             alt: "A1",
+            //             biddersLine: "B001",
+            //             suppLine: "S001",
+            //             cstgLs: "CL1"
+            //         },
+            //         {
+            //             line: "002",
+            //             serviceNo: "S002",
+            //             shortText: "Service 2",
+            //             quantity: "20",
+            //             formula: "F2",
+            //             formulaParameters: "P3,P4",
+            //             grossPrice: "200.00",
+            //             netValue: "180.00",
+            //             unitOfMeasure: "EA",
+            //             crcy: "EUR",
+            //             overFPercentage: "10%",
+            //             priceChangeAllowed: "No",
+            //             unlimitedOverF: "Yes",
+            //             pricePerUnitOfMeasurement: "20.00",
+            //             matGroup: "MG2",
+            //             serviceType: "ST2",
+            //             externalServiceNo: "ES002",
+            //             serviceText: "Service Text 2",
+            //             lineText: "Line Text 2",
+            //             personnelNumber: "P002",
+            //             lineType: "LT2",
+            //             lineNumber: "2",
+            //             alt: "A2",
+            //             biddersLine: "B002",
+            //             suppLine: "S002",
+            //             cstgLs: "CL2"
+            //         }
+            //     ],
+
+            // });
             // for edit 
             // this.oEditableTemplate = new ColumnListItem({
             //     cells: [
@@ -100,6 +168,15 @@ sap.ui.define([
             //     ]
             // });
             this.getView().setModel(oModel);
+
+            var style = document.createElement('style');
+            style.type = 'text/css';
+            style.innerHTML = `
+                .myCustomStyle .customTopMargin {
+                    margin-top: 1rem;
+                }
+            `;
+            document.getElementsByTagName('head')[0].appendChild(style);
         },
         onAdd: function () {
             var oModel = this.getView().getModel();
@@ -117,6 +194,36 @@ sap.ui.define([
         },
 
         onEdit: function (oEvent) {
+            var oContext = oEvent.getSource().getParent().getBindingContext();
+            if (oContext) {
+                var modelData = oContext.getProperty();
+                MessageToast.show("Edit: " + modelData.line);
+
+            }
+        },
+        onDetails: function (oEvent) {
+            var oContext = oEvent.getSource().getParent().getBindingContext();
+            if (oContext) {
+                var modelData = oContext.getProperty();
+                //MessageToast.show("Details: " + modelData.line);
+
+                var oModel = this.getView().getModel();
+                oModel.setProperty("/selectedLine", modelData);
+
+                var oDialog = this.getView().byId("detailsDialog");
+                if (oDialog) {
+                    oDialog.open();
+                } else {
+                    console.error("Details dialog not found");
+                }
+
+            }
+        },
+        onCloseDetailsDialog: function () {
+            var oDialog = this.getView().byId("detailsDialog");
+            if (oDialog) {
+                oDialog.close();
+            }
         },
         onDelete: function (oEvent) {
             var oBindingContext = oEvent.getSource().getBindingContext();
@@ -237,81 +344,40 @@ sap.ui.define([
                 this.getView().byId("dialogCstgLs").setValue("");
             }
         },
+
+        onChangeFilterLine: function (oEvent) {
+            var oModel = this.getView().getModel();
+            var filterValue = oEvent.getParameter("value");
+
+            if (filterValue) {
+                // Filter the original models based on the line value
+                var filteredModels = oModel.getProperty("/originalModels").filter(function (model) {
+                    return model.line.toLowerCase().includes(filterValue.toLowerCase());
+                });
+                oModel.setProperty("/Models", filteredModels);
+            } else {
+                // Reset to original models when input is empty
+                oModel.setProperty("/Models", oModel.getProperty("/originalModels"));
+            }
+          //  MessageToast.show("Filtered by Line: " + (filterValue || "All"));
+        },
         onSearch: function () {
             var oModel = this.getView().getModel();
-            var filterValue = this.getView().byId("filterServiceNo").getValue();
-            var filteredModels = oModel.getProperty("/Models").filter(function (model) {
-                return model.serviceNo.toLowerCase().includes(filterValue.toLowerCase());
-            });
-            oModel.setProperty("/Models", filteredModels);
-            MessageToast.show("Filtered by Service No: " + filterValue);
-        },
+            var filterValue = this.getView().byId("filterLine").getValue();
 
-        onReset: function () {
-            var oModel = this.getView().getModel();
-            oModel.setProperty("/Models", [
-                {
-                    line: "001",
-                    serviceNo: "S001",
-                    shortText: "Service 1",
-                    quantity: "10",
-                    formula: "F1",
-                    formulaParameters: "P1,P2",
-                    grossPrice: "100.00",
-                    netValue: "90.00",
-                    unitOfMeasure: "EA",
-                    crcy: "USD",
-                    overFPercentage: "5%",
-                    priceChangeAllowed: "Yes",
-                    unlimitedOverF: "No",
-                    pricePerUnitOfMeasurement: "10.00",
-                    matGroup: "MG1",
-                    serviceType: "ST1",
-                    externalServiceNo: "ES001",
-                    serviceText: "Service Text 1",
-                    lineText: "Line Text 1",
-                    personnelNumber: "P001",
-                    lineType: "LT1",
-                    lineNumber: "1",
-                    alt: "A1",
-                    biddersLine: "B001",
-                    suppLine: "S001",
-                    cstgLs: "CL1"
-                },
-                {
-                    line: "002",
-                    serviceNo: "S002",
-                    shortText: "Service 2",
-                    quantity: "20",
-                    formula: "F2",
-                    formulaParameters: "P3,P4",
-                    grossPrice: "200.00",
-                    netValue: "180.00",
-                    unitOfMeasure: "EA",
-                    crcy: "EUR",
-                    overFPercentage: "10%",
-                    priceChangeAllowed: "No",
-                    unlimitedOverF: "Yes",
-                    pricePerUnitOfMeasurement: "20.00",
-                    matGroup: "MG2",
-                    serviceType: "ST2",
-                    externalServiceNo: "ES002",
-                    serviceText: "Service Text 2",
-                    lineText: "Line Text 2",
-                    personnelNumber: "P002",
-                    lineType: "LT2",
-                    lineNumber: "2",
-                    alt: "A2",
-                    biddersLine: "B002",
-                    suppLine: "S002",
-                    cstgLs: "CL2"
-                }
-            ]);
-            this.getView().byId("filterServiceNo").setValue("");
-            this.getView().byId("filterShortText").setValue("");
-            this.getView().byId("filterQuantity").setValue("");
-            MessageToast.show("Filters reset and data restored.");
+            if (filterValue) {
+                // Filter the models based on the line value
+                var filteredModels = oModel.getProperty("/originalModels").filter(function (model) {
+                    return model.line.toLowerCase().includes(filterValue.toLowerCase());
+                });
+                oModel.setProperty("/Models", filteredModels);
+            } else {
+                // Reset to original models when filter is empty
+                oModel.setProperty("/Models", oModel.getProperty("/originalModels"));
+            }
+            MessageToast.show("Filtered by Line: " + (filterValue || "All"));
         },
+       
         onExport: function () {
             var oModel = this.getView().getModel();
             var aColumns = [

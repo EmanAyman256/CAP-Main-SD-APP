@@ -23,17 +23,17 @@
 				
 				</Button>
                 <Button id="_IDGenButton9" text="Details"
-						press="onPress" class="sapUiSmallMargin"
+						press="onShowDetails" class="sapUiSmallMargin"
 						ariaDescribedBy="defaultButtonDescription genericButtonDescription">
 					
 				</Button>
                   <Button id="_IDGenButton10" text="Edit"
-						press="onPress" class="sapUiSmallMargin"
+						press="onEdit" class="sapUiSmallMargin"
 						ariaDescribedBy="defaultButtonDescription genericButtonDescription">
 					
 				</Button>
                    <Button id="_IDGenButton11" text="Copy"
-						press="onPress" class="sapUiSmallMargin"
+						press="onCopy" class="sapUiSmallMargin"
 						ariaDescribedBy="defaultButtonDescription genericButtonDescription">
 					
 				</Button>
@@ -44,8 +44,9 @@
 				</Button>
 		</HBox>
 </Panel>
-     <Table id="serviceMaster" items="{/ServiceMaster}" >
+     <Table id="serviceMaster" items="{/ServiceMaster}" mode="SingleSelectMaster">
             <columns>
+            
                 <Column id="_idGenColumn1">
                     <Text id="_idGenText" text="Service Master Code " />
                 </Column>
