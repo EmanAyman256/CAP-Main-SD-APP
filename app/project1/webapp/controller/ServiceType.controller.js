@@ -10,11 +10,11 @@ sap.ui.define([
     "use strict";
 
     return Controller.extend("project1.controller.ServiceType", {
-         onInit: function () {
+        onInit: function () {
             var oModel = new sap.ui.model.json.JSONModel({
                 ServiceTypes: [
-                    { Code: "test1", Description: "test", CreatedOn: "2025-08-18",editMode: false  },
-                    { Code: "st2", Description: "desc", CreatedOn: "2025-08-18",editMode: false  }
+                    { Code: "test1", Description: "test", CreatedOn: "2025-08-18", editMode: false },
+                    { Code: "st2", Description: "desc", CreatedOn: "2025-08-18", editMode: false }
                 ],
                 newCode: "",
                 newDescription: ""
@@ -35,23 +35,7 @@ sap.ui.define([
                 oModel.setProperty("/newDescription", "");
             }
         },
-        // onAdd: function () {
-        //     // Logic to add new service type
-        //     var oModel = this.getView().getModel();
-        //     var newCode = oModel.getProperty("/newCode");
-        //     var newDescription = oModel.getProperty("/newDescription");
-        //     // Add to OData service
-        //     oModel.create("/ServiceTypes", {
-        //         Code: newCode,
-        //         Description: newDescription,
-        //         CreatedOn: new Date().toISOString().split('T')[0]
-        //     }, {
-        //         success: function () {
-        //             oModel.setProperty("/newCode", "");
-        //             oModel.setProperty("/newDescription", "");
-        //         }
-        //     });
-        // },
+
         onEdit: function (oEvent) {
             var oButton = oEvent.getSource();
             var oContext = oButton.getParent().getParent().getBindingContext(); // Navigate to ColumnListItem context
@@ -75,10 +59,9 @@ sap.ui.define([
                         text: "Save",
                         type: "Emphasized",
                         press: () => {
-                            // Read values back from inputs
-                            var aContent = this._oEditDialog.getContent()[0].getItems();
-                            oSelectedData.Code = aContent[1].getValue();
-                            oSelectedData.Description = aContent[3].getValue();
+                            var aContent = this._oEditDialog.getContent()[0].getContent(); // SimpleForm content
+                            oSelectedData.Code = aContent[1].getValue();        // Input after first Label
+                            oSelectedData.Description = aContent[3].getValue(); // Input after second Label
 
                             // Refresh model so table updates
                             oModel.refresh(true);
@@ -91,35 +74,25 @@ sap.ui.define([
                         press: () => this._oEditDialog.close()
                     })
                 });
-
                 this.getView().addDependent(this._oEditDialog);
             }
-
             // Fill dialog content with selected data
             this._oEditDialog.removeAllContent();
             this._oEditDialog.addContent(
-                new VBox({
-                    items: [
+                new sap.ui.layout.form.SimpleForm({
+                    editable: true,
+                    layout: "ResponsiveGridLayout",
+                    content: [
                         new Label({ text: "Code", design: "Bold" }),
                         new Input({ value: oSelectedData.Code }),
-
                         new Label({ text: "Description", design: "Bold" }),
-                        new Input({ value: oSelectedData.Description }),
+                        new Input({ value: oSelectedData.Description })
                     ]
                 })
             );
-
             this._oEditDialog.open();
         },
-        onSave: function (oEvent) {
-            var oBindingContext = oEvent.getSource().getBindingContext();
-            if (oBindingContext) {
-                var oModel = this.getView().getModel();
-                var sPath = oBindingContext.getPath();
-                oModel.setProperty(sPath + "/editMode", false);
-                // Changes are automatically saved due to two-way binding
-            }
-        },
+
         onDelete: function (oEvent) {
             var oBindingContext = oEvent.getSource().getBindingContext();
             if (oBindingContext) {
@@ -142,15 +115,18 @@ sap.ui.define([
                 });
             }
         },
-         onOpenAddServiceTypeDialog: function () {
+        onOpenAddServiceTypeDialog: function () {
             var oModel = this.getView().getModel();
             var oDialog = new Dialog({
                 title: "Add New Service Type",
-                content: new VBox({
-                    items: [
-                        new Label({ text: "Code" }),
+                content: new sap.ui.layout.form.SimpleForm({
+                    editable: true,
+                    layout: "ResponsiveGridLayout",
+                    content: [
+                        new Label({ text: "Code", design: "Bold" }),
                         new Input({ value: "{/newCode}", placeholder: "Enter Code" }),
-                        new Label({ text: "Description" }),
+
+                        new Label({ text: "Description", design: "Bold" }),
                         new Input({ value: "{/newDescription}", placeholder: "Enter Description" })
                     ]
                 }),

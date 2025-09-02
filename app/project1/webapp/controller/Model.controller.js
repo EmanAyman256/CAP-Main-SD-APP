@@ -10,12 +10,12 @@ sap.ui.define([
     "use strict";
 
     return Controller.extend("project1.controller.Model", {
-         onInit: function () {
+        onInit: function () {
             var oModel = new sap.ui.model.json.JSONModel({
                 Models: [
-                    { modelServSpec: "model1", blockingIndicator: true,serviceSelection:true, description: "model 1 desc",searchTerm:"term",currencyCode:1},
-                    { modelServSpec: "model2", blockingIndicator: true,serviceSelection:false, description: "model 2 desc",searchTerm:"term2",currencyCode:2},
-                   
+                    { modelServSpec: "model1", blockingIndicator: true, serviceSelection: true, description: "model 1 desc", searchTerm: "term", currencyCode: 1 },
+                    { modelServSpec: "model2", blockingIndicator: true, serviceSelection: false, description: "model 2 desc", searchTerm: "term2", currencyCode: 2 },
+
                 ],
                 newCode: "",
                 newDescription: ""
@@ -36,10 +36,10 @@ sap.ui.define([
                 oModel.setProperty("/newDescription", "");
             }
         },
-       
+
         onEdit: function (oEvent) {
             var oButton = oEvent.getSource();
-            var oContext = oButton.getParent().getParent().getBindingContext(); // Navigate to ColumnListItem context
+            var oContext = oButton.getParent().getParent().getBindingContext();
 
             if (!oContext) {
                 MessageBox.warning("Error: Unable to retrieve row data");
@@ -51,23 +51,52 @@ sap.ui.define([
 
             // Create Edit Dialog if not exists
             if (!this._oEditDialog) {
+                // keep references for inputs
+                this._oModelServSpecInput = new Input();
+                this._oBlockingIndicatorInput = new Input();
+                this._oServiceSelectionInput = new Input();
+                this._oDescriptionInput = new Input();
+                this._oSearchTermInput = new Input();
+                this._oCurrencyCodeInput = new Input();
+
                 this._oEditDialog = new Dialog({
                     title: "Edit Model",
                     titleAlignment: "Center",
                     contentWidth: "600px",
-                    content: new VBox({}),
+                    content: new sap.ui.layout.form.SimpleForm({
+                        editable: true,
+                        layout: "ResponsiveGridLayout",
+                        content: [
+                            new Label({ text: "modelServSpec", design: "Bold" }),
+                            this._oModelServSpecInput,
+
+                            new Label({ text: "blockingIndicator", design: "Bold" }),
+                            this._oBlockingIndicatorInput,
+
+                            new Label({ text: "serviceSelection", design: "Bold" }),
+                            this._oServiceSelectionInput,
+
+                            new Label({ text: "description", design: "Bold" }),
+                            this._oDescriptionInput,
+
+                            new Label({ text: "searchTerm", design: "Bold" }),
+                            this._oSearchTermInput,
+
+                            new Label({ text: "currencyCode", design: "Bold" }),
+                            this._oCurrencyCodeInput
+                        ]
+                    }),
                     beginButton: new Button({
                         text: "Save",
                         type: "Emphasized",
                         press: () => {
-                            // Read values back from inputs
-                            var aContent = this._oEditDialog.getContent()[0].getItems();
-                            oSelectedData.modelServSpec = aContent[1].getValue();
-                            oSelectedData.blockingIndicator = aContent[3].getValue();
-                            oSelectedData.serviceSelection = aContent[5].getValue();
-                            oSelectedData.description = aContent[7].getValue();
-                            oSelectedData.searchTerm = aContent[9].getValue();
-                            oSelectedData.currencyCode = aContent[11].getValue();
+                            // assign updated values back
+                            oSelectedData.modelServSpec = this._oModelServSpecInput.getValue();
+                            oSelectedData.blockingIndicator = this._oBlockingIndicatorInput.getValue();
+                            oSelectedData.serviceSelection = this._oServiceSelectionInput.getValue();
+                            oSelectedData.description = this._oDescriptionInput.getValue();
+                            oSelectedData.searchTerm = this._oSearchTermInput.getValue();
+                            oSelectedData.currencyCode = this._oCurrencyCodeInput.getValue();
 
                             // Refresh model so table updates
                             oModel.refresh(true);
@@ -84,35 +113,18 @@ sap.ui.define([
                 this.getView().addDependent(this._oEditDialog);
             }
 
-            // Fill dialog content with selected data
-            this._oEditDialog.removeAllContent();
-            this._oEditDialog.addContent(
-                new VBox({
-                    items: [
-                        new Label({ text: "modelServSpec", design: "Bold" }),
-                        new Input({ value: oSelectedData.modelServSpec }),
-
-                        new Label({ text: "blockingIndicator", design: "Bold" }),
-                        new Input({ value: oSelectedData.blockingIndicator }),
-
-                        new Label({ text: "serviceSelection", design: "Bold" }),
-                        new Input({ value: oSelectedData.serviceSelection }),
-
-                        new Label({ text: "description", design: "Bold" }),
-                        new Input({ value: oSelectedData.description }),
-
-                        new Label({ text: "searchTerm", design: "Bold" }),
-                        new Input({ value: oSelectedData.searchTerm }),
-
-                        new Label({ text: "currencyCode", design: "Bold" }),
-                        new Input({ value: oSelectedData.currencyCode })
-                    ]
-                })
-            );
+            // Fill inputs with selected data
+            this._oModelServSpecInput.setValue(oSelectedData.modelServSpec);
+            this._oBlockingIndicatorInput.setValue(oSelectedData.blockingIndicator);
+            this._oServiceSelectionInput.setValue(oSelectedData.serviceSelection);
+            this._oDescriptionInput.setValue(oSelectedData.description);
+            this._oSearchTermInput.setValue(oSelectedData.searchTerm);
+            this._oCurrencyCodeInput.setValue(oSelectedData.currencyCode);
 
             this._oEditDialog.open();
         },
-       onDelete: function (oEvent) {
+
+        onDelete: function (oEvent) {
             var oBindingContext = oEvent.getSource().getBindingContext();
             if (oBindingContext) {
                 var sPath = oBindingContext.getPath();
@@ -136,13 +148,13 @@ sap.ui.define([
         },
 
         //Navigate to Add Model View
-        onPress(){
-             this.getOwnerComponent().getRouter().navTo("addModel");
+        onPress() {
+            this.getOwnerComponent().getRouter().navTo("addModel");
         },
 
         onNavigateToModelServices() {
             this.getOwnerComponent().getRouter().navTo("modelServices");
         }
-        
+
     });
 });

@@ -13,13 +13,9 @@
         xmlns:u="sap.ui.unified"
         	xmlns:macros="sap.fe.macros">
     <Page id="_IDGenPage4" title="Models">
-    	<HBox id="_IDGenHBox5" class="sapUiSmallMargin" justifyContent="Center">
-            <Button id="_IDGenButton14" text="Add Model"
-						press="onPress" class="sapUiSmallMargin"
-						ariaDescribedBy="defaultButtonDescription genericButtonDescription">
-				</Button>
-               
-		</HBox>
+        <headerContent>
+			<Button id="_IDGenButton14" icon="sap-icon://add" tooltip="Add" text="New Model" press="onPress" />
+		</headerContent>
        
        <Table id="modelTable" items="{/Models}" >
             <columns>

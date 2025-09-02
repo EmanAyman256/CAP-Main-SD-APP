@@ -49,7 +49,7 @@
                         <Text id="_IDGenText41" text="{Code}" />
                         <Text id="_IDGenText42" text="{Description}" />
                         <HBox id="_IDGenHBox20">
-                            <Button id="_IDGenButton34" icon="sap-icon://information" press="onEdit" />
+                            <Button id="_IDGenButton34" icon="sap-icon://information" press="onDetails" />
                             <Button id="_IDGenButton35" icon="sap-icon://delete" press="onDelete" />
                         </HBox>
                     </cells>

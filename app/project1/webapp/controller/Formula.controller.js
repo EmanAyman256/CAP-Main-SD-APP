@@ -1,5 +1,4 @@
 
-
 sap.ui.define([
     "sap/ui/core/mvc/Controller",
     "sap/m/MessageToast",
@@ -57,9 +56,6 @@ sap.ui.define([
                 });
                 oParamContainer.addItem(oVBox);
             }
-
-           
-
             var params = [];
             for (var j = 0; j < paramCount; j++) {
                 params.push({ id: "", description: "" });
@@ -68,36 +64,14 @@ sap.ui.define([
 
             oModel.setProperty("/params", params);
 
-            // // Update paramIdsText with current ParamIDs (initially empty)
-            // var paramIds = params.map(param => param.id).join(", ");
-            // console.log(paramIds);
-
-            // oModel.setProperty("/paramIdsText", "Parameters: " + (paramIds || "None entered yet"));
-            // oModel.refresh(true); // Force refresh to ensure binding updates
-
-            // // Generate test inputs for Step 4
-            // var oTestContainer = this.getView().byId("testInputsContainer");
-            // oTestContainer.removeAllItems();
-            // var testValues = [];
-            // for (var k = 0; k < paramCount; k++) {
-            //     var paramId = params[k] ? params[k].id : "Param" + (k + 1);
-            //     console.log(paramId);
-
-            //     var oLabel = new Label({ text: paramId + " Value" });
-            //     var oInput = new Input({ value: "{/testValues/" + k + "}", type: "Number" });
-            //     oTestContainer.addItem(oLabel);
-            //     oTestContainer.addItem(oInput);
-            //     testValues.push("");
-            // }
-            // oModel.setProperty("/testValues", testValues);
         },
-        updateParamIdsText: function(){
+        updateParamIdsText: function () {
             var oModel = this.getView().getModel();
-             var paramCount=    oModel.getProperty("/paramCount");
-             console.log(paramCount);
-             
-            var params= oModel.getProperty("/params");
-             // Update paramIdsText with current ParamIDs (initially empty)
+            var paramCount = oModel.getProperty("/paramCount");
+            console.log(paramCount);
+
+            var params = oModel.getProperty("/params");
+            // Update paramIdsText with current ParamIDs (initially empty)
             var paramIds = params.map(param => param.id).join(", ");
             console.log(paramIds);
 
@@ -105,7 +79,7 @@ sap.ui.define([
             oModel.refresh(true); // Force refresh to ensure binding updates
 
 
-             // Generate test inputs for Step 4
+            // Generate test inputs for Step 4
             var oTestContainer = this.getView().byId("testInputsContainer");
             oTestContainer.removeAllItems();
             var testValues = [];
@@ -133,18 +107,79 @@ sap.ui.define([
                 var value = testValues[i] || "0"; // Default to 0 if empty
                 expression = expression.replace(new RegExp(paramId, 'g'), value);
             }
-
             try {
                 var result = eval(expression);
-                MessageToast.show("Result: " + result);
+                // MessageToast.show("Result: " + result);
+                sap.m.MessageBox.information("Result: " + result, {
+                    title: "Calculation Result",
+                    actions: [sap.m.MessageBox.Action.OK],
+                    onClose: function (sAction) {
+                        if (sAction === sap.m.MessageBox.Action.OK) {
+                            console.log("User confirmed result");
+                        }
+                    }
+                });
             } catch (e) {
                 MessageToast.show("Invalid expression: " + e.message);
             }
         },
         onSaveFormula: function () {
-            // Placeholder for saving the formula
-            MessageToast.show("Formula saved successfully!");
+            var oView = this.getView();
+
+            // Get user inputs
+            var sName = oView.byId("formulaNameInput").getValue();
+            var sDescription = oView.byId("formulaDescriptionInput").getValue();
+            var sRelation = oView.byId("relationInput").getValue();
+            console.log(sName);
+
+
+            // Basic validation
+            if (!sName || !sDescription) {
+                sap.m.MessageToast.show("Please fill in all required fields.");
+                return;
+            }
+
+            // Access global/shared model
+            // var oModel = this.getOwnerComponent().getModel(); // assuming you registered it in Component.js
+            // var aFormulas = oModel.getProperty("/Formulas") || [];
+
+            // // Create new formula object
+            // var oNewFormula = {
+            //     Code: sName,                // use Name as Code
+            //     Description: sDescription,  // formula description
+            //     Relation: sRelation         // optional, if you want to keep it
+            // };
+
+            // // Append to existing formulas
+            // aFormulas.push(oNewFormula);
+
+            // // Update the model
+            // oModel.setProperty("/Formulas", aFormulas);
+
+
+            // sap.m.MessageToast.show("Formula saved successfully!");
+            sap.m.MessageBox.success("Formula saved successfully!,Press OK To return to the main page", {
+                title: "Success",
+                actions: [sap.m.MessageBox.Action.OK],
+                onClose: function (sAction) {
+                    if (sAction === sap.m.MessageBox.Action.OK) {
+                        // Navigate back to the main page (formulas list)
+                        var oRouter = sap.ui.core.UIComponent.getRouterFor(this);
+                        oRouter.navTo("formulas");
+                    }
+                }.bind(this) // important to keep controller context
+            });
+
+
+            // Optionally reset wizard inputs
+            oView.byId("formulaNameInput").setValue("");
+            oView.byId("formulaDescriptionInput").setValue("");
+            oView.byId("relationInput").setValue("");
         },
+
+
+
+        // not needed
         onNext: function () {
             var oWizard = this.getView().byId("wizard");
             var currentStep = oWizard.getCurrentStep();
@@ -186,6 +221,7 @@ sap.ui.define([
             var currentValue = oTextArea.getValue();
             oTextArea.setValue(currentValue + " " + selectedKey + " ");
         },
+
         // onSaveFormula: function () {
         //     var oModel = this.getView().getModel();
         //     var formulaName = this.getView().byId("formulaNameInput").getValue();

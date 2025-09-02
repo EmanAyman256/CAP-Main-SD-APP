@@ -1,3 +1,5 @@
+
+
 sap.ui.define([
     "sap/ui/core/mvc/Controller",
     "sap/m/MessageToast",
@@ -13,9 +15,9 @@ sap.ui.define([
     "sap/m/ColumnListItem",
     "sap/ui/export/Spreadsheet",
     "sap/ui/export/library",
-     "sap/ui/layout/form/SimpleForm",
+    "sap/ui/layout/form/SimpleForm",
 
-], function (Controller, MessageBox, MessageToast,SimpleForm, Spreadsheet, exportLibrary, Dialog, Input, Button, Label, VBox, HBox, Table, Column, ColumnListItem) {
+], function (Controller, MessageBox, MessageToast, SimpleForm, Spreadsheet, exportLibrary, Dialog, Input, Button, Label, VBox, HBox, Table, Column, ColumnListItem) {
     "use strict";
 
     return Controller.extend("project1.controller.ModelServices", {
@@ -212,15 +214,15 @@ sap.ui.define([
 
             }
         },
-        
+
         onCloseDetailsDialog: function () {
             var oDialog = this.getView().byId("detailsDialog");
             if (oDialog) {
                 oDialog.close();
             }
-           
+
         },
-         onEdit: function (oEvent) {
+        onEdit: function (oEvent) {
             var oContext = oEvent.getSource().getParent().getBindingContext();
             if (oContext) {
                 var modelData = oContext.getProperty();
@@ -238,7 +240,7 @@ sap.ui.define([
 
             }
         },
-           onSaveEditDialog: function () {
+        onSaveEditDialog: function () {
             var oModel = this.getView().getModel();
             var oDialog = this.getView().byId("editDialog");
             if (oDialog) {
@@ -293,36 +295,43 @@ sap.ui.define([
             if (oDialog) {
                 oDialog.close();
             }
-          
+
         },
+
         onDelete: function (oEvent) {
-            var oBindingContext = oEvent.getSource().getBindingContext();
-            if (oBindingContext) {
-                var sPath = oBindingContext.getPath();
-                var oModel = this.getView().getModel();
-                var oItem = oModel.getProperty(sPath);
+            var oButton = oEvent.getSource();
+            var oContext = oButton.getParent().getParent().getBindingContext();
 
-                MessageBox.confirm("Are you sure you want to delete " + oItem.modelServSpec + "?", {
-                    title: "Confirm Deletion",
-                    onClose: function (oAction) {
-                        if (oAction === MessageBox.Action.OK) {
-                            var aModels = oModel.getProperty("/Models");
-                            var iIndex = aModels.indexOf(oItem);
-                            if (iIndex > -1) {
-                                aModels.splice(iIndex, 1);
-                                oModel.setProperty("/Models", aModels);
-                            }
-                        }
-                    }
-                });
+            if (!oContext) {
+                sap.m.MessageToast.show("Error: Could not determine the row to delete!");
+                return;
             }
+
+            var sPath = oContext.getPath(); // e.g. "/Models/0"
+            var oModel = this.getView().getModel();
+
+            sap.m.MessageBox.confirm("Are you sure you want to delete this record?", {
+                title: "Confirm Deletion",
+                icon: sap.m.MessageBox.Icon.WARNING,
+                actions: [sap.m.MessageBox.Action.YES, sap.m.MessageBox.Action.NO],
+                emphasizedAction: sap.m.MessageBox.Action.YES,
+                onClose: function (sAction) {
+                    if (sAction === sap.m.MessageBox.Action.YES) {
+                        // Remove the object from the model
+                        var aData = oModel.getProperty("/Models");
+                        var iIndex = parseInt(sPath.split("/")[2]); // index from binding path
+                        aData.splice(iIndex, 1); // remove 1 element at index
+                        oModel.setProperty("/Models", aData);
+
+                        sap.m.MessageToast.show("Record deleted successfully.");
+                    }
+                }
+            });
         },
 
-        //Navigate to Add Model View
         onPress() {
             this.getOwnerComponent().getRouter().navTo("addModel");
         },
-
 
         onOpenAddDialog: function () {
             console.log("Opening dialog");
@@ -338,48 +347,41 @@ sap.ui.define([
             var models = oModel.getProperty("/Models") || [];
 
             var newModel = {
-                line: this.getView().byId("dialogLine").getValue(),
-                serviceNo: this.getView().byId("dialogServiceNo").getValue(),
-                shortText: this.getView().byId("dialogShortText").getValue(),
-                quantity: this.getView().byId("dialogQuantity").getValue(),
-                formula: this.getView().byId("dialogFormula").getValue(),
-                formulaParameters: this.getView().byId("dialogFormulaParameters").getValue(),
-                grossPrice: this.getView().byId("dialogGrossPrice").getValue(),
-                netValue: this.getView().byId("dialogNetValue").getValue(),
-                unitOfMeasure: this.getView().byId("dialogUnitOfMeasure").getValue(),
-                crcy: this.getView().byId("dialogCrcy").getValue(),
-                overFPercentage: this.getView().byId("dialogOverFPercentage").getValue(),
-                priceChangeAllowed: this.getView().byId("dialogPriceChangeAllowed").getValue(),
-                unlimitedOverF: this.getView().byId("dialogUnlimitedOverF").getValue(),
-                pricePerUnitOfMeasurement: this.getView().byId("dialogPricePerUnitOfMeasurement").getValue(),
-                matGroup: this.getView().byId("dialogMatGroup").getValue(),
-                serviceType: this.getView().byId("dialogServiceType").getValue(),
-                externalServiceNo: this.getView().byId("dialogExternalServiceNo").getValue(),
-                serviceText: this.getView().byId("dialogServiceText").getValue(),
-                lineText: this.getView().byId("dialogLineText").getValue(),
-                personnelNumber: this.getView().byId("dialogPersonnelNumber").getValue(),
-                lineType: this.getView().byId("dialogLineType").getValue(),
-                lineNumber: this.getView().byId("dialogLineNumber").getValue(),
-                alt: this.getView().byId("dialogAlt").getValue(),
-                biddersLine: this.getView().byId("dialogBiddersLine").getValue(),
-                suppLine: this.getView().byId("dialogSuppLine").getValue(),
-                cstgLs: this.getView().byId("dialogCstgLs").getValue()
+                line: this.byId("dialogLine").getValue(),
+                serviceNo: this.byId("dialogServiceNo").getValue(),
+                shortText: this.byId("dialogShortText").getValue(),
+                quantity: this.byId("dialogQuantity").getValue(),
+                formula: this.byId("dialogFormula").getValue(),
+                formulaParameters: this.byId("dialogFormulaParameters").getValue(),
+                grossPrice: this.byId("dialogGrossPrice").getValue(),
+                netValue: this.byId("dialogNetValue").getValue(),
+                unitOfMeasure: this.byId("dialogUnitOfMeasure").getValue(),
+                crcy: this.byId("dialogCrcy").getValue(),
+                overFPercentage: this.byId("dialogOverFPercentage").getValue(),
+                priceChangeAllowed: this.byId("dialogPriceChangeAllowed").getValue(),
+                unlimitedOverF: this.byId("dialogUnlimitedOverF").getValue(),
+                pricePerUnitOfMeasurement: this.byId("dialogPricePerUnitOfMeasurement").getValue(),
+                matGroup: this.byId("dialogMatGroup").getValue(),
+                serviceType: this.byId("dialogServiceType").getValue(),
+                externalServiceNo: this.byId("dialogExternalServiceNo").getValue(),
+                serviceText: this.byId("dialogServiceText").getValue(),
+                lineText: this.byId("dialogLineText").getValue(),
+                personnelNumber: this.byId("dialogPersonnelNumber").getValue(),
+                lineType: this.byId("dialogLineType").getValue(),
+                lineNumber: this.byId("dialogLineNumber").getValue(),
+                alt: this.byId("dialogAlt").getValue(),
+                biddersLine: this.byId("dialogBiddersLine").getValue(),
+                suppLine: this.byId("dialogSuppLine").getValue(),
+                cstgLs: this.byId("dialogCstgLs").getValue()
             };
             console.log(newModel);
 
+            models.push(newModel);
+            oModel.setProperty("/Models", models);
+            oModel.refresh(true);
 
-            if (Object.values(newModel).every(value => value)) {
-                models.push(newModel);
-                console.log(models);
-
-                oModel.setProperty("/Models", models);
-                oModel.refresh(true);
-                MessageToast.show("Formula saved successfully!");
-                MessageToast.show("Record added successfully!");
-                this.onCloseDialog();
-            } else {
-                MessageToast.show("Please fill in all required fields.");
-            }
+            sap.m.MessageToast.show("Record added successfully!");
+            this.onCloseDialog();
         },
 
         onCloseDialog: function () {
@@ -448,108 +450,132 @@ sap.ui.define([
             MessageToast.show("Filtered by Line: " + (filterValue || "All"));
         },
 
-        onExport: function () {
+        onExportToExcel: function () {
+            var oTable = this.byId("modelServicesTable"); // your table
             var oModel = this.getView().getModel();
-            var aData = oModel.getProperty("/Models");
 
-            if (!aData || aData.length === 0) {
-                sap.m.MessageBox.warning("No data available to export");
-                return;
-            }
-
-            // Define the Excel columns
-            var aColumns = [
-                { label: "Line", property: "line", type: "String" },
-                { label: "Service No", property: "serviceNo", type: "String" },
-                { label: "Short Text", property: "shortText", type: "String" },
-                { label: "Quantity", property: "quantity", type: "Number" },
-                { label: "Formula", property: "formula", type: "String" },
-                { label: "Formula Parameters", property: "formulaParameters", type: "String" },
-                { label: "Gross Price", property: "grossPrice", type: "Number" },
-                { label: "Net Value", property: "netValue", type: "Number" },
-                { label: "Unit of Measure", property: "unitOfMeasure", type: "String" },
-                { label: "Currency", property: "crcy", type: "String" },
-                { label: "Over F. Percentage", property: "overFPercentage", type: "String" },
-                { label: "Price Change Allowed", property: "priceChangeAllowed", type: "String" },
-                { label: "Unlimited Over F", property: "unlimitedOverF", type: "String" },
-                { label: "Price Per Unit", property: "pricePerUnitOfMeasurement", type: "Number" },
-                { label: "Material Group", property: "matGroup", type: "String" },
-                { label: "Service Type", property: "serviceType", type: "String" },
-                { label: "External Service No", property: "externalServiceNo", type: "String" },
-                { label: "Service Text", property: "serviceText", type: "String" },
-                { label: "Line Text", property: "lineText", type: "String" },
-                { label: "Personnel Number", property: "personnelNumber", type: "String" },
-                { label: "Line Type", property: "lineType", type: "String" },
-                { label: "Line Number", property: "lineNumber", type: "String" },
-                { label: "Alt", property: "alt", type: "String" },
-                { label: "Bidder's Line", property: "biddersLine", type: "String" },
-                { label: "Supplier Line", property: "suppLine", type: "String" },
-                { label: "Costing LS", property: "cstgLs", type: "String" }
+            // build column config (headers + property bindings)
+            var aCols = [
+                { label: "line", property: "line" },
+                { label: "serviceNo", property: "serviceNo" },
+                { label: "shortText", property: "shortText" },
+                { label: "quantity", property: "quantity" },
+                { label: "formula", property: "formula" },
+                { label: "formulaParameters", property: "formulaParameters" },
+                { label: "grossPrice", property: "grossPrice" },
+                { label: "netValue", property: "netValue" },
+                { label: "unitOfMeasure", property: "unitOfMeasure" },
+                { label: "crcy", property: "crcy" },
+                { label: "overFPercentage", property: "overFPercentage" },
+                { label: "priceChangeAllowed", property: "priceChangeAllowed" },
+                { label: "unlimitedOverF", property: "unlimitedOverF" },
+                { label: "pricePerUnitOfMeasurement", property: "pricePerUnitOfMeasurement" },
+                { label: "matGroup", property: "matGroup" },
+                { label: "serviceType", property: "serviceType" },
+                { label: "externalServiceNo", property: "externalServiceNo" },
+                { label: "serviceText", property: "serviceText" },
+                { label: "lineText", property: "lineText" },
+                { label: "personnelNumber", property: "personnelNumber" },
+                { label: "lineType", property: "lineType" },
+                { label: "lineNumber", property: "lineNumber" },
+                { label: "alt", property: "alt" },
+                { label: "biddersLine", property: "biddersLine" },
+                { label: "suppLine", property: "suppLine" },
+                { label: "cstgLs", property: "cstgLs" }
             ];
 
-            // Settings for Spreadsheet
+            // data source (your model path)
             var oSettings = {
-                workbook: { columns: aColumns },
-                dataSource: aData,
-                fileName: "ModelServices.xlsx",
-                worker: false // set to true for large datasets
+                workbook: { columns: aCols },
+                dataSource: oModel.getProperty("/Models"), // array of objects
+                fileName: "ModelServices.xlsx"
             };
 
-            var oSheet = new Spreadsheet(oSettings);
-            oSheet.build()
-                .then(() => {
-                    sap.m.MessageToast.show("Export as excel shhet finished!");
-                })
-                .finally(() => {
-                    oSheet.destroy();
-                });
+            var oSpreadsheet = new sap.ui.export.Spreadsheet(oSettings);
+            oSpreadsheet.build().finally(function () {
+                oSpreadsheet.destroy();
+            });
         },
-        // onExport: function () {
-        //     var oModel = this.getView().getModel();
-        //     var aColumns = [
-        //         { label: "Line", property: "line", type: "String" },
-        //         { label: "Service No", property: "serviceNo", type: "String" },
-        //         { label: "Short Text", property: "shortText", type: "String" },
-        //         { label: "Quantity", property: "quantity", type: "Number" },
-        //         { label: "Formula", property: "formula", type: "String" },
-        //         { label: "Formula Parameters", property: "formulaParameters", type: "String" },
-        //         { label: "Gross Price", property: "grossPrice", type: "Number" },
-        //         { label: "Net Value", property: "netValue", type: "Number" },
-        //         { label: "Unit of Measure", property: "unitOfMeasure", type: "String" },
-        //         { label: "Currency", property: "crcy", type: "String" },
-        //         { label: "Over F. Percentage", property: "overFPercentage", type: "String" },
-        //         { label: "Price Change Allowed", property: "priceChangeAllowed", type: "String" },
-        //         { label: "Unlimited Over F", property: "unlimitedOverF", type: "String" },
-        //         { label: "Price Per Unit", property: "pricePerUnitOfMeasurement", type: "Number" },
-        //         { label: "Material Group", property: "matGroup", type: "String" },
-        //         { label: "Service Type", property: "serviceType", type: "String" },
-        //         { label: "External Service No", property: "externalServiceNo", type: "String" },
-        //         { label: "Service Text", property: "serviceText", type: "String" },
-        //         { label: "Line Text", property: "lineText", type: "String" },
-        //         { label: "Personnel Number", property: "personnelNumber", type: "String" },
-        //         { label: "Line Type", property: "lineType", type: "String" },
-        //         { label: "Line Number", property: "lineNumber", type: "String" },
-        //         { label: "Alt", property: "alt", type: "String" },
-        //         { label: "Bidder's Line", property: "biddersLine", type: "String" },
-        //         { label: "Supplier Line", property: "suppLine", type: "String" },
-        //         { label: "Costing LS", property: "cstgLs", type: "String" }
-        //     ];
 
-        //     var oSettings = {
-        //         workbook: { columns: aColumns },
-        //         dataSource: oModel.getProperty("/Models"),
-        //         fileName: "ModelServices_Export_" + new Date().toISOString().slice(0, 10) + ".xlsx",
-        //         worker: false // Set to true for large datasets if supported
-        //     };
+        onImport: function () {
+            var that = this;
+            // Create a hidden file input dynamically
+            var oFileUploader = document.createElement("input");
+            oFileUploader.type = "file";
+            oFileUploader.accept = ".xlsx, .xls";
+            oFileUploader.style.display = "none";
 
-        //     var oSheet = new Spreadsheet(oSettings);
-        //     oSheet.build().then(function () {
-        //         MessageToast.show("Export to Excel completed.");
-        //     }).catch(function (oError) {
-        //         MessageToast.show("Error during export: " + oError.message);
-        //     }).finally(function () {
-        //         oSheet.destroy();
-        //     });
-        // }
+            oFileUploader.addEventListener("change", function (event) {
+                var file = event.target.files[0];
+                if (!file) {
+                    sap.m.MessageToast.show("No file selected!");
+                    return;
+                }
+
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var data = new Uint8Array(e.target.result);
+                    var workbook = XLSX.read(data, { type: "array" });
+
+                    // Assume first sheet contains the data
+                    var firstSheet = workbook.SheetNames[0];
+                    var worksheet = workbook.Sheets[firstSheet];
+
+                    // Convert sheet to JSON
+                    var excelData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                    console.log(excelData);
+                    // Map Excel rows to your Model format
+                    var mappedData = excelData.map(function (row) {
+                        return {
+                            line: row.line || "",
+                            serviceNo: row.serviceNo || "",
+                            shortText: row.shortText || "",
+                            quantity: row.quantity || "",
+                            formula: row.formula || "",
+                            formulaParameters: row.formulaParameters || "",
+                            grossPrice: row.grossPrice || "",
+                            netValue: row.netValue || "",
+                            unitOfMeasure: row.unitOfMeasure || "",
+                            crcy: row.crcy || "",
+                            overFPercentage: row.overFPercentage || "",
+                            priceChangeAllowed: row.priceChangeAllowed || "",
+                            unlimitedOverF: row.unlimitedOverF || "",
+                            pricePerUnitOfMeasurement: row.pricePerUnitOfMeasurement || "",
+                            matGroup: row.matGroup || "",
+                            serviceType: row.serviceType || "",
+                            externalServiceNo: row.externalServiceNo || "",
+                            serviceText: row.serviceText || "",
+                            lineText: row.lineText || "",
+                            personnelNumber: row.personnelNumber || "",
+                            lineType: row.lineType || "",
+                            lineNumber: row.lineNumber || "",
+                            alt: row.alt || "",
+                            biddersLine: row.biddersLine || "",
+                            suppLine: row.suppLine || "",
+                            cstgLs: row.cstgLs || ""
+                        };
+                    });
+                    console.log(mappedData);
+
+                    // Update JSON Model 
+                    var oModel = that.getView().getModel();
+
+                    // Get existing data (if any)
+                    var existingData = oModel.getProperty("/Models") || [];
+
+                    // Merge old data with new mapped data
+                    var mergedData = existingData.concat(mappedData);
+
+                    // Set merged data back to model
+                    oModel.setProperty("/Models", mergedData);
+
+                    sap.m.MessageToast.show("Excel records imported and appended successfully!");
+                };
+                reader.readAsArrayBuffer(file);
+            });
+
+            oFileUploader.click();
+        }
+
     });
 });

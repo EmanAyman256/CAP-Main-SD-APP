@@ -10,18 +10,18 @@ sap.ui.define([
     "use strict";
 
     return Controller.extend("project1.controller.Formulas", {
-         onInit: function () {
+        onInit: function () {
             var oModel = new sap.ui.model.json.JSONModel({
                 Formulas: [
-                    { Code: "test1", Description: "test"  },
-                    { Code: "st2", Description: "desc"  }
+                    { Code: "test1", Description: "test" },
+                    { Code: "st2", Description: "desc" }
                 ],
                 newCode: "",
                 newDescription: ""
             });
             this.getView().setModel(oModel);
         },
-         onNavigateToAddFormula() {
+        onNavigateToAddFormula() {
             this.getOwnerComponent().getRouter().navTo("formula");
         },
         onAdd: function () {
@@ -55,14 +55,54 @@ sap.ui.define([
         //         }
         //     });
         // },
-       onEdit: function (oEvent) {
+        onDetails: function (oEvent) {
             var oBindingContext = oEvent.getSource().getBindingContext();
-            if (oBindingContext) {
-                var oModel = this.getView().getModel();
-                var sPath = oBindingContext.getPath();
-                oModel.setProperty(sPath + "/editMode", true);
+            if (!oBindingContext) {
+                return;
             }
+
+            // Get selected object
+            var oModel = this.getView().getModel();
+            var oData = oBindingContext.getObject();
+
+            // Create a JSONModel for the dialog
+            var oDialogModel = new sap.ui.model.json.JSONModel({
+                Code: oData.Code,
+                Description: oData.Description
+            });
+
+            // Create dialog if it does not exist
+            if (!this._oDetailsDialog) {
+                this._oDetailsDialog = new sap.m.Dialog({
+                    title: "Formula Details",
+                    content: new sap.ui.layout.form.SimpleForm({
+                        editable: false,
+                        content: [
+                            new sap.m.Label({ text: "Code" }),
+                            new sap.m.Text({ text: "{/Code}" }),
+
+                            new sap.m.Label({ text: "Description" }),
+                            new sap.m.Text({ text: "{/Description}" })
+                        ]
+                    }),
+                    endButton: new sap.m.Button({
+                        text: "Close",
+                        press: function () {
+                            this._oDetailsDialog.close();
+                        }.bind(this)
+                    })
+                });
+
+                this.getView().addDependent(this._oDetailsDialog);
+            }
+
+            // Set dialog model
+            this._oDetailsDialog.setModel(oDialogModel);
+
+            // Open dialog
+            this._oDetailsDialog.open();
         },
+
         onSave: function (oEvent) {
             var oBindingContext = oEvent.getSource().getBindingContext();
             if (oBindingContext) {
@@ -94,7 +134,7 @@ sap.ui.define([
                 });
             }
         },
-         onOpenAddServiceTypeDialog: function () {
+        onOpenAddServiceTypeDialog: function () {
             var oModel = this.getView().getModel();
             var oDialog = new Dialog({
                 title: "Add New Service Type",

@@ -77,15 +77,14 @@
              
             </steps>
         </Wizard>
-
+<!-- 
          <Bar id="_IDGenBar1">
             <contentLeft>
-                <!-- <Button id="_IDGenButton22" text="< Back id="_IDGenBack"" press="onBack" visible="{= ${wizard>/currentStep} !== 'step1' }" /> -->
             </contentLeft>
             <contentRight>
                 <Button id="_IDGenButton23" text="Next Step >" press="onNext" visible="{= ${wizard>/currentStep} !== 'step4' }" />
                 <Button id="_IDGenButton24" text="Finish" press="onFinishWizard" visible="{= ${wizard>/currentStep} === 'step4' }" type="Emphasized" />
             </contentRight>
-        </Bar>
+        </Bar> -->
     </Page>
 </mvc:View>
