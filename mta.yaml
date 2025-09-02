@@ -42,6 +42,10 @@ modules:
       - project1.zip
       name: project1
       target-path: resources/
+    - artifacts:
+      - tendering.zip
+      name: tendering
+      target-path: resources/
 - name: mainapp
   type: html5
   path: main-app
@@ -55,6 +59,16 @@ modules:
 - name: project1
   type: html5
   path: app/project1
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: tendering
+  type: html5
+  path: app/tendering
   build-parameters:
     build-result: dist
     builder: custom
