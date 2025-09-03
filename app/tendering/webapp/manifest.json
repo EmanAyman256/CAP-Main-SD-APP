@@ -98,12 +98,21 @@
           "target": [
             "TargetView1"
           ]
+        },
+        {
+          "name": "tendering",
+          "pattern": "tendering",
+          "target": "tendering"
         }
       ],
       "targets": {
         "TargetView1": {
           "id": "View1",
           "name": "View1"
+        },
+        "tendering": {
+          "id": "Tendering",
+          "name": "Tendering"
         }
       }
     },
