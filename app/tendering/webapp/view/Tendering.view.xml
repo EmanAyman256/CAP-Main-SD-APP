@@ -111,11 +111,11 @@
 
           <!-- Footer Row: MainItem Inputs -->
     <m:HBox id="_IDGenHBox6" class="sapUiSmallMargin sapUiTinyMarginTop">
-        <m:Input id="mainItemNo" placeholder="Main Item No" width="10%"/>
-        <m:Input id="mainServiceNo" placeholder="Service No" width="15%"/>
-        <m:Input id="mainDescription" placeholder="Description" width="25%"/>
-        <m:Input id="mainQuantity" placeholder="Quantity" width="15%"/>
-        <m:Input id="mainUOM" placeholder="UOM" width="10%"/>
+        <m:Input id="mainItemNo" placeholder="Main Item No" width="100%"/>
+        <m:Input id="mainServiceNo" placeholder="Service No" width="100%"/>
+        <m:Input id="mainDescription" placeholder="Description" width="100%"/>
+        <m:Input id="mainQuantity" placeholder="Quantity" width="100%"/>
+        <m:Input id="mainUOM" placeholder="UOM" width="100%"/>
         <m:Button id="_IDGenButton7" text="Add Main Item" type="Emphasized" press=".onAddMainItem"/>
     </m:HBox>
 
