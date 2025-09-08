@@ -5,13 +5,11 @@
     xmlns:m="sap.m"
     xmlns:l="sap.ui.layout"
     xmlns:core="sap.ui.core"
-    >
-
+>
     <m:Page id="_IDGenPage1" title="Tendering">
-             <m:VBox id="_IDGenVBox3" class="sapUiMediumMargin">
+        <m:VBox id="_IDGenVBox3" class="sapUiMediumMargin">
             <m:HBox id="_IDGenHBox" justifyContent="SpaceBetween" alignItems="Center">
-                <m:Text id="_IDGenText11" text="Document: 20000010 " class=""/>
-                <!-- {/DocumentNumber} -->
+                <m:Text id="_IDGenText11" text="Document: 20000010 " />
                 <m:HBox id="_IDGenHBox1">
                     <m:Button id="_IDGenButton2" text="Save Document" icon="sap-icon://save" type="Transparent" press=".onSaveDocument"/>
                     <m:Button id="_IDGenButton3" text="Print" icon="sap-icon://print" type="Transparent" press=".onPrint"/>
@@ -25,19 +23,15 @@
                 <m:Text id="_IDGenText13" text="{/TotalValue}"/>
                 <m:Text id="_IDGenText14" text="SAR" class="sapUiSmallMarginBegin"/>
             </m:HBox>
-            </m:VBox>
+        </m:VBox>
 
- <m:VBox id="_IDGenVBox4" class="sapUiMediumMargin">
-           
+        <m:VBox id="_IDGenVBox4" class="sapUiMediumMargin">
             <m:HBox id="_IDGenHBox4" class="sapUiSmallMarginTop" justifyContent="SpaceBetween" alignItems="Center">
-              
                 <m:SearchField 
                     id="searchField" 
                     width="80%" 
                     placeholder="Search..." 
                     search=".onSearch" />
-
-               
                 <m:HBox id="_IDGenHBox5">
                     <m:Input 
                         id="groupInput" 
@@ -50,84 +44,191 @@
                         press=".onApplyProfitMargin" />
                 </m:HBox>
             </m:HBox>
-
         </m:VBox>
 
-<m:VBox id="_IDGenVBox">
-        <TreeTable
-            id="treeTable"
-            rows="{
-                path: '/MainItems',
-                parameters: {
-                    arrayNames: ['children']  
-                }
-            }"
-             selectionMode="Single"
-            visibleRowCount="5"
-            expandFirstLevel="true">
+        <m:VBox id="_IDGenVBox">
+        
+         <m:Toolbar id="_IDGenToolbar2">
+        <m:Button id="_IDGenButton9" text="Add Main Item" press=".onOpenMainDialog" type="Emphasized"/>
+        <m:Button id="_IDGenButton10" text="Add Sub Item" press=".onOpenSubDialog" type="Emphasized"/>
+    </m:Toolbar>
 
-            <columns>
-                <Column id="_IDGenColumn">
-                    <label><m:Text id="_IDGenText1" text="Item No"/></label>
-                    <template>
-                        <m:Text id="_IDGenText2" text="{MainItemNo}{SubItemNo}" />
-                    </template>
-                </Column>
-
-                <Column id="_IDGenColumn1">
-                    <label><m:Text id="_IDGenText3" text="Service No"/></label>
-                    <template>
-                        <m:Text id="_IDGenText4" text="{MainItemNo}{ServiceNo}" />
-                    </template>
-                </Column>
-
-                <Column id="_IDGenColumn2">
-                    <label><m:Text id="_IDGenText5" text="Description"/></label>
-                    <template>
-                        <m:Text id="_IDGenText6" text="{Description}" />
-                    </template>
-                </Column>
-
-                <Column id="_IDGenColumn3">
-                    <label><m:Text id="_IDGenText7" text="Quantity"/></label>
-                    <template>
-                        <m:Text id="_IDGenText8" text="{MainItemNo}{Quantity}" />
-                    </template>
-                </Column>
-
-                <Column id="_IDGenColumn4">
-                    <label><m:Text id="_IDGenText9" text="UOM"/></label>
-                    <template>
-                        <m:Text id="_IDGenText10" text="{UOM}" />
-                    </template>
-                </Column>
-            </columns>
-        </TreeTable>
-
-        <!-- TreeTable as before -->
-
-
-
-
-          <!-- Footer Row: MainItem Inputs -->
-    <m:HBox id="_IDGenHBox6" class="sapUiSmallMargin sapUiTinyMarginTop">
-        <m:Input id="mainItemNo" placeholder="Main Item No" width="100%"/>
-        <m:Input id="mainServiceNo" placeholder="Service No" width="100%"/>
-        <m:Input id="mainDescription" placeholder="Description" width="100%"/>
-        <m:Input id="mainQuantity" placeholder="Quantity" width="100%"/>
-        <m:Input id="mainUOM" placeholder="UOM" width="100%"/>
-        <m:Button id="_IDGenButton7" text="Add Main Item" type="Emphasized" press=".onAddMainItem"/>
-    </m:HBox>
-
-    <!-- Footer Row: SubItem Inputs -->
-    <m:HBox id="_IDGenHBox7" visible="false" class="sapUiSmallMargin sapUiTinyMarginTop">
-        <m:Input id="subItemNo" placeholder="Sub Item No" width="10%"/>
-        <m:Input id="subServiceNo" placeholder="Service No" width="15%"/>
-        <m:Input id="subDescription" placeholder="Description" width="25%"/>
-        <m:Input id="subQuantity" placeholder="Quantity" width="15%"/>
-        <m:Input id="subUOM" placeholder="UOM" width="10%"/>
-        <m:Button id="_IDGenButton8" text="Add Sub Item" type="Emphasized" press=".onAddSubItem"/>
-    </m:HBox>
+            <TreeTable
+                id="treeTable"
+                rows="{
+                    path: '/MainItems',
+                    parameters: {
+                        arrayNames: ['children']  
+                    }
+                }"
+                selectionMode="Single"
+                visibleRowCount="5"
+                expandFirstLevel="true">
+                <columns>
+                    <Column id="_IDGenColumn" width="15%">
+                        <label><m:Text id="_IDGenText1" text="Item No"/></label>
+                        <template>
+                            <m:Text id="_IDGenText2" text="{MainItemNo}{SubItemNo}" />
+                        </template>
+                    </Column>
+                    <Column id="_IDGenColumn1" width="15%">
+                        <label><m:Text id="_IDGenText3" text="Service No"/></label>
+                        <template>
+                            <m:Text id="_IDGenText4" text="{MainItemNo}{ServiceNo}" />
+                        </template>
+                    </Column>
+                    <Column id="_IDGenColumn2" width="40%">
+                        <label><m:Text id="_IDGenText5" text="Description"/></label>
+                        <template>
+                            <m:Text id="_IDGenText6" text="{Description}" />
+                        </template>
+                    </Column>
+                    <Column id="_IDGenColumn3" width="15%">
+                        <label><m:Text id="_IDGenText7" text="Quantity"/></label>
+                        <template>
+                            <m:Text id="_IDGenText8" text="{MainItemNo}{Quantity}" />
+                        </template>
+                    </Column>
+                    <Column id="_IDGenColumn4" width="15%">
+                        <label><m:Text id="_IDGenText9" text="UOM"/></label>
+                        <template>
+                            <m:Text id="_IDGenText10" text="{UOM}" />
+                        </template>
+                    </Column>
+                </columns>
+                <footer >
+                    <m:Toolbar id="_IDGenToolbar1">
+                        <m:HBox id="_IDGenHBox6" alignItems="Center" >
+                            <m:Input id="mainItemNo" placeholder="Main Item No" width="60%" class="sapUiMediumMargin"/>
+                            <m:Input id="mainServiceNo" placeholder="Service No" width="60%" class="sapUiMediumMargin"/>
+                            <m:Input id="mainDescription" placeholder="Description" width="60%" class="sapUiMediumMargin"/>
+                            <m:Input id="mainQuantity" placeholder="Quantity" width="60%" class="sapUiMediumMargin"/>
+                            <m:Input id="mainUOM" placeholder="UOM" width="60%" class="sapUiSmallMarginEnd"/>
+                            <m:Button id="_IDGenButton7" text="Add Main Item" type="Emphasized" press=".onAddMainItem"/>
+                        </m:HBox>
+                        
+                    </m:Toolbar>
+                </footer>
+            </TreeTable>
+            <!-- SubItem Inputs (remains outside footer, toggled by controller) -->
+            <m:HBox id="_IDGenHBox7" visible="false" class="sapUiSmallMargin sapUiTinyMarginTop">
+                <m:Input id="subItemNo" placeholder="Sub Item No" width="15%"/>
+                <m:Input id="subServiceNo" placeholder="Service No" width="15%"/>
+                <m:Input id="subDescription" placeholder="Description" width="40%"/>
+                <m:Input id="subQuantity" placeholder="Quantity" width="15%"/>
+                <m:Input id="subUOM" placeholder="UOM" width="15%"/>
+                <m:Button id="_IDGenButton8" text="Add Sub Item" type="Emphasized" press=".onAddSubItem"/>
+            </m:HBox>
         </m:VBox>
+
+
+
+        <!-- Main Item Dialog -->
+    <m:Dialog id="addMainDialog" title="Add Main Item">
+        <m:VBox id="_IDGenVBox6" class="sapUiSmallMargin">
+            <m:Input id="mainItemNoInput" placeholder="Main Item No"/>
+            <m:Input id="mainServiceNoInput" placeholder="Service No"/>
+            <m:Input id="mainDescriptionInput" placeholder="Description"/>
+            <m:Input id="mainQuantityInput" placeholder="Quantity"/>
+            <m:Input id="mainUOMInput" placeholder="UOM"/>
+        </m:VBox>
+        <m:buttons>
+            <m:Button id="_IDGenButton11" text="Add" press=".onAddMainItem"/>
+            <m:Button id="_IDGenButton12" text="Cancel" press=".onCloseDialog"/>
+        </m:buttons>
+    </m:Dialog>
+
+    <!-- Sub Item Dialog -->
+    <m:Dialog id="addSubDialog" title="Add Sub Item">
+        <m:VBox id="_IDGenVBox7" class="sapUiSmallMargin">
+            <m:Input id="parentMainItemNoInput" placeholder="Main Item No (Parent)"/>
+            <m:Input id="subItemNoInput" placeholder="Sub Item No"/>
+            <m:Input id="subServiceNoInput" placeholder="Service No"/>
+            <m:Input id="subDescriptionInput" placeholder="Description"/>
+            <m:Input id="subQuantityInput" placeholder="Quantity"/>
+            <m:Input id="subUOMInput" placeholder="UOM"/>
+        </m:VBox>
+        <m:buttons>
+            <m:Button id="_IDGenButton13" text="Add" press=".onAddSubItem"/>
+            <m:Button id="_IDGenButton14" text="Cancel" press=".onCloseDialog"/>
+        </m:buttons>
+    </m:Dialog>
+
+
+       <!-- Main Item Dialog -->
+    <!-- <m:Dialog id="addMainDialog" title="Add Main Item">
+        <table:Table id="mainItemDialogTable"
+                     rows="{/dummy}"
+                     visibleRowCount="1"
+                     minAutoRowCount="1"
+                     width="100%">
+            <table:columns>
+                <table:Column id="_IDGenColumn6">
+                    <table:label><m:Label id="_IDGenLabel2" text="Item No"/></table:label>
+                    <table:template><m:Input id="dialogMainItemNo"/></table:template>
+                </table:Column>
+                <table:Column id="_IDGenColumn7">
+                    <table:label><m:Label id="_IDGenLabel3" text="Service No"/></table:label>
+                    <table:template><m:Input id="dialogMainServiceNo"/></table:template>
+                </table:Column>
+                <table:Column id="_IDGenColumn8">
+                    <table:label><m:Label id="_IDGenLabel4" text="Description"/></table:label>
+                    <table:template><m:Input id="dialogMainDescription"/></table:template>
+                </table:Column>
+                <table:Column id="_IDGenColumn9">
+                    <table:label><m:Label id="_IDGenLabel5" text="Quantity"/></table:label>
+                    <table:template><m:Input id="dialogMainQuantity"/></table:template>
+                </table:Column>
+                <table:Column id="_IDGenColumn10">
+                    <table:label><m:Label id="_IDGenLabel6" text="UOM"/></table:label>
+                    <table:template><m:Input id="dialogMainUOM"/></table:template>
+                </table:Column>
+            </table:columns>
+        </table:Table>
+        <m:buttons>
+            <m:Button id="_IDGenButton11" text="Add" press=".onAddMainItem"/>
+            <m:Button id="_IDGenButton12" text="Cancel" press=".onCloseDialog"/>
+        </m:buttons>
+    </m:Dialog>
+
+    
+    <m:Dialog id="addSubDialog" title="Add Sub Item">
+        <table:Table id="subItemDialogTable"
+                     rows="{/dummy}"
+                     visibleRowCount="1"
+                     minAutoRowCount="1"
+                     width="100%">
+            <table:columns>
+                <table:Column id="_IDGenColumn11">
+                    <table:label><m:Label id="_IDGenLabel7" text="Parent Main Item No"/></table:label>
+                    <table:template><m:Input id="dialogParentMainItemNo"/></table:template>
+                </table:Column>
+                <table:Column id="_IDGenColumn12">
+                    <table:label><m:Label id="_IDGenLabel8" text="Sub Item No"/></table:label>
+                    <table:template><m:Input id="dialogSubItemNo"/></table:template>
+                </table:Column>
+                <table:Column id="_IDGenColumn13">
+                    <table:label><m:Label id="_IDGenLabel9" text="Service No"/></table:label>
+                    <table:template><m:Input id="dialogSubServiceNo"/></table:template>
+                </table:Column>
+                <table:Column id="_IDGenColumn14">
+                    <table:label><m:Label id="_IDGenLabel10" text="Description"/></table:label>
+                    <table:template><m:Input id="dialogSubDescription"/></table:template>
+                </table:Column>
+                <table:Column id="_IDGenColumn15">
+                    <table:label><m:Label id="_IDGenLabel11" text="Quantity"/></table:label>
+                    <table:template><m:Input id="dialogSubQuantity"/></table:template>
+                </table:Column>
+                <table:Column id="_IDGenColumn16">
+                    <table:label><m:Label id="_IDGenLabel12" text="UOM"/></table:label>
+                    <table:template><m:Input id="dialogSubUOM"/></table:template>
+                </table:Column>
+            </table:columns>
+        </table:Table>
+        <m:buttons>
+            <m:Button id="_IDGenButton13" text="Add" press=".onAddSubItem"/>
+            <m:Button id="_IDGenButton14" text="Cancel" press=".onCloseDialog"/>
+        </m:buttons>
+    </m:Dialog> -->
     </m:Page>
 </mvc:View>

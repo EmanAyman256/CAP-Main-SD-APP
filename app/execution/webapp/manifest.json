@@ -98,12 +98,23 @@
           "target": [
             "TargetView1"
           ]
+        },
+        {
+          "name": "ExecutionOrderView",
+          "pattern": "ExecutionOrderView",
+          "target": [
+            "ExecutionOrderView"
+          ]
         }
       ],
       "targets": {
         "TargetView1": {
-          "id": "View1",
-          "name": "View1"
+          "id": "Home",
+          "name": "Home"
+        },
+        "ExecutionOrderView": {
+          "id": "ExecutionOrder",
+          "name": "ExecutionOrder"
         }
       }
     },
