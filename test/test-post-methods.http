@@ -1,0 +1,41 @@
+### Test patchSalesQuotationItemPricing
+POST http://localhost:5000/salesquotationpricingcloudpatch/patchSalesQuotationItemPricing
+Content-Type: application/json
+Authorization: Basic QlRQX1VTRVIxOiN5aVZmZUhqRm9sRngzZ0tFd0NCRmNXdllrUHpyUURFTkVBUjhYbjU=
+X-HTTP-Method-Override: PATCH
+
+{
+  "SalesQuotation": "20000015",
+  "SalesQuotationItem": "10",
+  "PricingProcedureStep": "20",
+  "PricingProcedureCounter": "1",
+  "body": "{\n  \"ConditionType\": \"PPR0\",\n  \"ConditionRateValue\": \"100.00\"\n}"
+}
+
+### Test patchSalesOrderItemPricing
+POST http://localhost:5000/salesorderitempricingcloudpost/patchSalesOrderItemPricing
+Content-Type: application/json
+Authorization: Basic QlRQX1VTRVIxOiN5aVZmZUhqRm9sRngzZ0tFd0NCRmNXdllrUHpyUURFTkVBUjhYbjU=
+X-HTTP-Method-Override: PATCH
+
+{
+  "SalesOrder": "3",
+  "SalesOrderItem": "10",
+  "PricingProcedureStep": "20",
+  "PricingProcedureCounter": "1",
+  "body": "{\n  \"ConditionType\": \"PPR0\",\n  \"ConditionRateValue\": \"100.00\"\n}"
+}
+
+### Test patchDebitMemoItemPricing
+POST http://localhost:5000/debitmemopostcloudpatch/patchDebitMemoItemPricing
+Content-Type: application/json
+Authorization: Basic QlRQX1VSEVIxOiN5aVZmZUhqRm9sRngzZ0tFd0NCRmNXdllrUHpyUURFTkVBUjhYbjU=
+X-HTTP-Method-Override: PATCH
+
+{
+  "DebitMemoRequest": "70000001",
+  "DebitMemoRequestItem": "10",
+  "PricingProcedureStep": "20",
+  "PricingProcedureCounter": "1",
+  "body": "{\n  \"ConditionType\": \"PPR0\",\n  \"ConditionRateValue\": \"100.00\"\n}"
+}

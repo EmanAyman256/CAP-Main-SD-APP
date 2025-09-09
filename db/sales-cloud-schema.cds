@@ -1,0 +1,311 @@
+namespace salesdb;
+
+using {
+    managed
+} from '@sap/cds/common';
+
+
+// ------------------- Simple DTO-like classes -------------------
+
+type CalculatedQuantitiesResponse : {
+  actualQuantity     : Decimal;
+  remainingQuantity  : Decimal;
+  total              : Decimal;
+  actualPercentage   : Decimal;
+  totalHeader        : Decimal;
+}
+
+type TempExecutionOrderData : {
+  actualQuantity       : Decimal;
+  remainingQuantity    : Decimal;
+  actualPercentage     : Decimal;
+  totalHeader          : Decimal;
+  total                : Decimal;
+  amountPerUnit        : Decimal;
+  quantities           : array of Decimal;
+  processed            : array of Boolean;
+  currentQuantityIndex : Integer;
+}
+
+type TotalResult : {
+  totalWithProfit : Decimal;
+  amountPerUnit   : Decimal;
+}
+
+type IasUser {
+ userName   : String(255);
+  value          : String(255);
+  familyName     : String(255);
+  givenName      : String(255);
+}
+
+// ------------------- Master Data -------------------
+
+entity Currency: managed{
+  key currencyCode : Integer;
+  code             : String(225)@unique;
+  description      : String not null;
+}
+
+entity LineType : managed{
+  key lineTypeCode : Integer;
+  code             : String(225)@unique;
+  description      : String not null;
+}
+
+entity MaterialGroup : managed{
+  key materialGroupCode : Integer;
+  code                  : String(225)@unique;
+  description           : String not null;
+}
+
+entity PersonnelNumber : managed{
+  key personnelNumberCode : Integer;
+  code                    : String(225) @unique;
+  description             : String not null;
+}
+
+entity UnitOfMeasurement : managed{
+  key unitOfMeasurementCode : Integer;
+  code                      : String(8)@unique;
+  description               : String;
+}
+
+entity ServiceType : managed{
+  key serviceTypeCode : Integer;
+  serviceId           : String(225) @unique;
+  description         : String not null;
+  lastChangeDate      : Date;
+}
+
+// ------------------- Service Number -------------------
+
+entity ServiceNumber : managed{
+  key serviceNumberCode       : Integer;
+  serviceNumberCodeString     : String @unique;
+  noServiceNumber             : Integer;
+  searchTerm                  : String;
+  serviceTypeCode             : String;
+  materialGroupCode           : String;
+  unitOfMeasurementCode       : String;
+  description                 : String;
+  shortTextChangeAllowed      : Boolean;
+  deletionIndicator           : Boolean;
+  mainItem                    : Boolean;
+  numberToBeConverted         : Integer;
+  convertedNumber             : Integer;
+  lastChangeDate              : Date;
+  serviceText                 : String;
+  baseUnitOfMeasurement       : String;
+  toBeConvertedUnitOfMeasurement : String;
+  defaultUnitOfMeasurement    : String;
+
+  modelSpecificationsDetails : Composition of many ModelSpecificationsDetails on modelSpecificationsDetails.serviceNumber = $self;
+  mainItemSet                : Composition of many InvoiceMainItem         on mainItemSet.serviceNumber = $self;
+  subItemSet                 : Composition of many InvoiceSubItem          on subItemSet.serviceNumber = $self;
+  serviceInvoiceMainSet      : Composition of many ServiceInvoiceMain      on serviceInvoiceMainSet.serviceNumber = $self;
+  executionOrderMainSet      : Composition of many ExecutionOrderMain      on executionOrderMainSet.serviceNumber = $self;
+}
+
+// ------------------- Formulas -------------------
+
+entity Formula : managed{
+  key formulaCode       : Integer;
+  formula              : String(4) @unique;
+  description          : String not null;
+  numberOfParameters   : Integer @unique;
+  parameterIds         : array of String;
+  parameterDescriptions: array of String;
+  testParameters       : array of Decimal;
+  formulaLogic         : String;
+  expression           : String;
+  result               : Decimal;
+}
+
+// ------------------- Execution Orders & Invoices -------------------
+
+entity ExecutionOrderMain : managed{
+  key executionOrderMainCode : Integer;
+
+  referenceSDDocument   : String;
+  salesOrderItem        : String;
+  debitMemoRequestItem  : String;
+  salesOrderItemText    : String;
+  referenceId           : String;
+  serviceNumberCode     : Integer;
+  description           : String;
+  unitOfMeasurementCode : String;
+  currencyCode          : String;
+  materialGroupCode     : String;
+  personnelNumberCode   : String;
+  lineTypeCode          : String;
+  serviceTypeCode       : String;
+
+  totalQuantity          : Decimal;
+  remainingQuantity      : Decimal;
+  amountPerUnit          : Decimal;
+  total                  : Decimal;
+  totalHeader            : Decimal;
+  actualQuantity         : Decimal;
+  previousQuantity       : Decimal;
+  actualPercentage       : Decimal;
+  overFulfillmentPercent : Decimal;
+
+  unlimitedOverFulfillment   : Boolean;
+  manualPriceEntryAllowed    : Boolean;
+  externalServiceNumber      : String;
+  serviceText                : String;
+  lineText                   : String;
+  lineNumber                 : String(225) @unique;
+  biddersLine                : Boolean;
+  supplementaryLine          : Boolean;
+  lotCostOne                 : Boolean;
+  doNotPrint                 : Boolean;
+  deletionIndicator          : Boolean;
+
+  serviceNumber     : Association to ServiceNumber;
+  serviceInvoiceMain: Composition of ServiceInvoiceMain;
+}
+
+entity ServiceInvoiceMain : managed{
+  key serviceInvoiceCode : Integer;
+
+  executionOrderMainCode : Integer;
+  referenceSDDocument    : String;
+  debitMemoRequestItem   : String;
+  debitMemoRequestItemText: String;
+  referenceId            : String;
+  serviceNumberCode      : Integer;
+  description            : String;
+  unitOfMeasurementCode  : String;
+  currencyCode           : String;
+  materialGroupCode      : String;
+  personnelNumberCode    : String;
+  lineTypeCode           : String;
+  serviceTypeCode        : String;
+
+  remainingQuantity      : Decimal;
+  quantity               : Decimal;
+  currentPercentage      : Decimal;
+  totalQuantity          : Decimal;
+  amountPerUnit          : Decimal;
+  total                  : Decimal;
+  actualQuantity         : Decimal;
+  actualPercentage       : Decimal;
+  overFulfillmentPercent : Decimal;
+
+  unlimitedOverFulfillment : Boolean;
+  externalServiceNumber    : String;
+  serviceText              : String;
+  lineText                 : String;
+  lineNumber               : String(225) @unique;
+  biddersLine              : Boolean;
+  supplementaryLine        : Boolean;
+  lotCostOne               : Boolean;
+  doNotPrint               : Boolean;
+  alternatives             : String;
+  totalHeader              : Decimal;
+  temporaryDeletion        : String(9);
+
+  serviceNumber     : Association to ServiceNumber;
+  executionOrderMain: Association to ExecutionOrderMain;
+}
+
+entity InvoiceMainItem : managed{
+  key invoiceMainItemCode : Integer;
+
+  uniqueId              : String;
+  referenceSDDocument   : String;
+  salesQuotationItem    : String;
+  salesOrderItem        : String;
+  salesQuotationItemText: String;
+  referenceId           : String;
+  serviceNumberCode     : Integer;
+  unitOfMeasurementCode : String;
+  currencyCode          : String;
+  formulaCode           : String;
+  description           : String;
+
+  quantity              : Decimal;
+  amountPerUnit         : Decimal;
+  total                 : Decimal;
+  totalHeader           : Decimal;
+  profitMargin          : Decimal;
+  totalWithProfit       : Decimal;
+  amountPerUnitWithProfit : Decimal;
+  doNotPrint            : Boolean;
+  lineNumber            : String(225) @unique;
+
+  subItemList  : Composition of many InvoiceSubItem on subItemList.mainItem = $self;
+  serviceNumber: Association to ServiceNumber;
+}
+
+entity InvoiceSubItem : managed{
+  key invoiceSubItemCode : Integer;
+
+  invoiceMainItemCode : Integer;
+  serviceNumberCode   : Integer;
+  unitOfMeasurementCode : String;
+  currencyCode        : String;
+  formulaCode         : String;
+  description         : String;
+  quantity            : Decimal;
+  amountPerUnit       : Decimal;
+  total               : Decimal;
+
+  mainItem     : Association to InvoiceMainItem;
+  serviceNumber: Association to ServiceNumber;
+}
+
+// ------------------- Model Specifications -------------------
+
+entity ModelSpecifications : managed{
+  key modelSpecCode        : Integer;
+  modelSpecDetailsCode     : array of Integer;
+  currencyCode             : String;
+  modelServSpec            : String(225) @unique;
+  blockingIndicator        : Boolean;
+  serviceSelection         : Boolean;
+  description              : String not null;
+  searchTerm               : String;
+  lastChangeDate           : Date;
+
+  modelSpecificationsDetails : Association to ModelSpecificationsDetails;
+}
+
+entity ModelSpecificationsDetails : managed{
+  key modelSpecDetailsCode : Integer;
+
+  serviceNumberCode        : Integer;
+  noServiceNumber          : Integer @unique;
+  serviceTypeCode          : String;
+  materialGroupCode        : String;
+  personnelNumberCode      : String;
+  unitOfMeasurementCode    : String;
+  currencyCode             : String;
+  formulaCode              : String;
+  lineTypeCode             : String;
+
+  selectionCheckBox        : Boolean;
+  lineIndex                : String(225) @unique;
+  shortText                : String;
+  quantity                 : Integer not null;
+  grossPrice               : Integer not null;
+  overFulfilmentPercentage : Integer;
+  priceChangedAllowed      : Boolean;
+  unlimitedOverFulfillment : Boolean;
+  pricePerUnitOfMeasurement: Integer;
+  externalServiceNumber    : String(225);
+  netValue                 : Integer;
+  serviceText              : String;
+  lineText                 : String;
+  lineNumber               : String(225);
+  alternatives             : String;
+  biddersLine              : Boolean;
+  supplementaryLine        : Boolean;
+  lotSizeForCostingIsOne   : Boolean;
+  lastChangeDate           : Date;
+
+  modelSpecifications : Composition of many ModelSpecifications on modelSpecifications.modelSpecificationsDetails = $self;
+  serviceNumber       : Association to ServiceNumber;
+}

@@ -101,7 +101,7 @@
         },
         {
           "name": "ExecutionOrderView",
-          "pattern": "ExecutionOrderView",
+          "pattern": "ExecutionOrderView/{documentID}/{ItemName}",
           "target": [
             "ExecutionOrderView"
           ]

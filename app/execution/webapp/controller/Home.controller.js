@@ -27,12 +27,24 @@ sap.ui.define([
         },
 
         onNext(){
+
             //Restrict Navigation in case Empty Item
-            var oItemValue = this.byId("_IDGenComboBox").getValue();
+            var oComboBox = this.byId("_IDGenComboBox");
+            var oItemValue = oComboBox.getValue();
+            var oDoumentValue = this.byId("_IDGenInput1").getValue();
+
             if(oItemValue){
-                 this.getOwnerComponent().getRouter().navTo("ExecutionOrderView");
+
+                //Handle Navigate With Parameters
+                //Encode Parameters URL
+                 this.getOwnerComponent().getRouter().navTo("ExecutionOrderView",{
+                    documentID : encodeURIComponent(oDoumentValue),
+                    ItemName: encodeURIComponent(oItemValue) 
+                 });
+                 oComboBox.setValueState("None");
             }
             else{
+                oComboBox.setValueState("Error");
                 sap.m.MessageToast.show("Please, Choose an Item");
                 return;
             }
