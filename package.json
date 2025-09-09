@@ -30,7 +30,8 @@
     "deploy": "cf deploy mta_archives/archive.mtar --retries 1",
     "watch-project1": "cds watch --open project1/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-tendering": "cds watch --open tendering/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-execution": "cds watch --open execution/index.html?sap-ui-xx-viewCache=false --livereload false"
+    "watch-execution": "cds watch --open execution/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-invoice": "cds watch --open invoice/index.html?sap-ui-xx-viewCache=false --livereload false"
   },
   "cds": {},
   "workspaces": [

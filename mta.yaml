@@ -50,6 +50,10 @@ modules:
       - execution.zip
       name: execution
       target-path: resources/
+    - artifacts:
+      - invoice.zip
+      name: invoice
+      target-path: resources/
 - name: mainapp
   type: html5
   path: main-app
@@ -83,6 +87,16 @@ modules:
 - name: execution
   type: html5
   path: app/execution
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: invoice
+  type: html5
+  path: app/invoice
   build-parameters:
     build-result: dist
     builder: custom

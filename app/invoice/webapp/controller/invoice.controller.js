@@ -1,20 +1,20 @@
 sap.ui.define([
-  "sap/ui/core/mvc/Controller",
-  "sap/m/Dialog",
+    "sap/ui/core/mvc/Controller",
+    "sap/m/Dialog",
   "sap/m/HBox",
   "sap/m/VBox",
   "sap/m/Text",
   "sap/m/Button",
   "sap/ui/export/Spreadsheet"
-], (Controller , Spreadsheet , Dialog , Button , HBox) => {
-  "use strict";
+], (Controller,MessageToast) => {
+    "use strict";
 
-  return Controller.extend("execution.controller.ExecutionOrder", {
-      onInit() {
+    return Controller.extend("invoice.controller.View1", {
+             onInit() {
 
-        //For Navigate with Parameter Purpose
-          var oRouter = sap.ui.core.UIComponent.getRouterFor(this);
-          oRouter.getRoute("ExecutionOrderView").attachPatternMatched(this._onObjectMatched, this);
+        // //For Navigate with Parameter Purpose
+        //   var oRouter = sap.ui.core.UIComponent.getRouterFor(this);
+        //   oRouter.getRoute("invoice").attachPatternMatched(this._onObjectMatched, this);
 
           //Set Dummy Data
           var ItemModel = new sap.ui.model.json.JSONModel({
@@ -74,7 +74,7 @@ sap.ui.define([
             var oSettings = {
                 workbook: { columns: aCols },
                 dataSource: oModel.getProperty("/Items"), // array of objects
-                fileName: "Execution Order Items.xlsx"
+                fileName: "Service Invoice Items.xlsx"
             };
 
             var oSpreadsheet = new sap.ui.export.Spreadsheet(oSettings);
@@ -107,12 +107,29 @@ sap.ui.define([
                 ]
               })
              ]
-          
+          //       buttons: [
+          //       new sap.m.Button({
+          //       text: "Option 1",
+          //       type: "Emphasized",
+          //       press: function () {
+          //           sap.m.MessageToast.show("Option 1 clicked");
+          //       }
+          //   }),
+          //   new sap.m.Button({
+          //       text: "Option 2",
+          //       type: "Default",
+          //       press: function () {
+          //           sap.m.MessageToast.show("Option 2 clicked");
+          //       }
+          //   }),
+          // ]
              
 
           });
         }
         this._oValueHelpDialog.open();
+
+
       },
       onAddIem: function(){
         //Calc total Amount  = QTY * Amount Per Unit 
@@ -138,14 +155,8 @@ sap.ui.define([
         }
       },
       onDeleteItem: function(oEvent){
-        //Get Selected Item  "Context"
-        var oItem = oEvent.ge
+        //Get Selected Item 
         
       }
-
-  });
+    });
 });
-
-// Attached to the controller instance (this refers to your controller).
-// Lives as long as the controller/view lives.
-// Can be accessed in other functions inside the same controller.
