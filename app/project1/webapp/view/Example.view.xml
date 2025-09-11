@@ -1,0 +1,40 @@
+<mvc:View
+  controllerName="project1.controller.Example"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m">
+
+  <Page title="Service Types">
+    <content>
+      <!-- Bind table to /ServiceTypes -->
+      <Table id="serviceTypesTable" inset="false" items="{/ServiceTypes}">
+        <headerToolbar>
+          <Toolbar>
+            <Title text="Service Types" level="H2" />
+          </Toolbar>
+        </headerToolbar>
+
+        <columns>
+          <Column>
+            <Text text="Code"/>
+          </Column>
+          <Column>
+            <Text text="Description"/>
+          </Column>
+          <Column>
+            <Text text="Created By"/>
+          </Column>
+        </columns>
+
+        <items>
+          <ColumnListItem>
+            <cells>
+              <Text text="{serviceTypeCode}" />
+              <Text text="{description}" />
+              <Text text="{createdBy}" />
+            </cells>
+          </ColumnListItem>
+        </items>
+      </Table>
+    </content>
+  </Page>
+</mvc:View>

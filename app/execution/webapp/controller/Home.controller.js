@@ -12,13 +12,13 @@ sap.ui.define([
             var documentID = oEvent.getParameter("value");
             if(documentID){
                 //Set Dummy Data
-                var Items =  new sap.ui.model.json.JSONModel({
-                      Items : [
+                var ServiceItems =  new sap.ui.model.json.JSONModel({
+                      ServiceItems : [
                         {ItemKey: "10", ItemName: "Project Service"},
                         {ItemKey: "20", ItemName: "Project Service 2"}
                       ]
                 });
-                this.getView().setModel(Items);
+                this.getView().setModel(ServiceItems);
             }
             else{
                 //Clear
@@ -56,7 +56,7 @@ sap.ui.define([
         //    //Instead Of CSS Style
         //     var oVBox = this.byId("_IDGenVBox1");
         //     if (oVBox && oVBox.getDomRef()) {
-        //         oVBox.getDomRef().style.backgroundColor = "#0070F2"; // Light gray background
+        //         oVBox.getDomRef().style.backgroundColor = "#ff0000ff"; // Light gray background
         //     } else {
         //         console.warn("VBox with ID 'myVBox' not found or not yet rendered.");
         //     }

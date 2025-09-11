@@ -17,7 +17,15 @@
     },
     "dataSources": {
       "mainService": {
-        "uri": "/odata/v4/simulation/",
+        "uri": "/odata/v4/sales-cloud/",
+        "type": "OData",
+        "settings": {
+          "annotations": [],
+          "odataVersion": "4.0"
+        }
+      },
+        "iconService": {
+        "uri": "/odata/v4/sales-cloud/",
         "type": "OData",
         "settings": {
           "annotations": [],
@@ -70,6 +78,15 @@
       },
       "": {
         "dataSource": "mainService",
+        "preload": true,
+        "settings": {
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        }
+      },
+      "icon": {
+        "dataSource": "iconService",
         "preload": true,
         "settings": {
           "operationMode": "Server",
@@ -138,7 +155,11 @@
           "pattern": "addServiceMaster",
           "target": "addServiceMaster"
         },
-        
+        {
+    "pattern": "example",
+    "name": "example",
+    "target": "example"
+  },
          {
           "name": "RoutemainPage",
           "pattern": ":?query:",
@@ -172,6 +193,9 @@
         "addServiceMaster":{
           "viewName": "AddServiceMaster"
         },
+         "example": {
+    "viewName": "Example"
+  },
         "TargetView1": {
           "id": "View1",
           "name": "View1"

@@ -18,10 +18,12 @@
             </HBox>-->
          <HBox id="_IDGenHBox"  class="sapUiSmallMargin" justifyContent="SpaceBetween" alignItems="Center">
             <Label id="_IDGenLabel1" class="myLabel sapUiSmallMargin" design="Bold" />
-            <Button id="_IDGenButton2" class="sapUiSmallMargin" type= "Emphasized" text="Save Document" icon="sap-icon://save" press="onSaveDocument"/>
-            <Button id="_IDGenButton3" class="sapUiSmallMargin" type= "Emphasized" text="Print"  icon="sap-icon://print" press="onPrint"/>
-            <Button id="_IDGenButton4" class="sapUiSmallMargin" type= "Emphasized" text="Export" icon="sap-icon://download" press="onExport"/>
-            <Button id="_IDGenButton5" class="sapUiSmallMargin" type= "Emphasized" text="Import" icon="sap-icon://upload" press="onImport"/>
+            <HBox id="_IDGenHBox1" >
+                <Button id="_IDGenButton2" class="sapUiSmallMargin" type= "Transparent" text="Save Document" icon="sap-icon://save" press="onSaveDocument"/>
+                <Button id="_IDGenButton3" class="sapUiSmallMargin" type= "Transparent" text="Print"  icon="sap-icon://print" press="onPrint"/>
+                <Button id="_IDGenButton4" class="sapUiSmallMargin" type= "Transparent" text="Export" icon="sap-icon://download" press="onExport"/>
+                <Button id="_IDGenButton5" class="sapUiSmallMargin" type= "Transparent" text="Import" icon="sap-icon://upload" press="onImport"/>
+            </HBox>
         </HBox> 
         <HBox id="_IDGenHBox2" class="sapUiSmallMargin" justifyContent="Center" alignItems="Center">
             <VBox id="_IDGenVBox4" class="myRectangle" alignItems="Center" justifyContent="Center">
@@ -38,10 +40,17 @@
     </Panel>
 
     <HBox id="_IDGenVBox7" justifyContent="SpaceBetween" class="sapUiSmallMargin">
-        <SearchField id="_IDGenSearchField" ></SearchField>
+        <SearchField id="_IDGenSearchField" liveChange ="onSearchItem"/>
         <Button id="_IDGenButton1" icon="sap-icon://delete" press="onDeleteItem"/>
     </HBox>
+    
+    <VBox id="_IDGenVBox8">
+         <Toolbar id="_IDGenToolbar2">
+        <Button id="_IDGenButton9" text="Add Main Item" press="onAddMianItem" type="Emphasized"/>
+        </Toolbar>
+    </VBox>
 
+    
     <table:Table id="_IDGenTable" selectionMode= "MultiToggle"   rows="{/Items}" enableColumnReordering="false">
         
         <table:rowMode>
@@ -144,14 +153,14 @@
             <table:Column id="_IDGenColumn14" width="120px">
             <table:label><Text id="_IDGenText41" text="Unlimited Over Fulfillment %"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText16" text="{UnlimitedOverFulfillment}"/>
+                    <CheckBox id="_IDGenText16" text="{UnlimitedOverFulfillment}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn15" width="120px">
                 <table:label><Text id="_IDGenText42" text="Manual Price Entery Allowd"/></table:label>    
                 <table:template>
-                    <Text id="_IDGenText17" text="{ManualPriceEnteryAllowd}"/>
+                    <CheckBox id="_IDGenText17" text="{ManualPriceEnteryAllowd}"/>
                 </table:template>
             </table:Column>
 
@@ -209,7 +218,7 @@
             <table:Column id="_IDGenColumn23" width="120px">
                 <table:label><Text id="_IDGenText51" text="Bidders'line"/></table:label> 
                 <table:template>
-                    <Text id="_IDGenText25" text="{Biddersline}"/>
+                    <CheckBox id="_IDGenText25" text="{Biddersline}"/>
                 </table:template>
                 
             </table:Column>
@@ -217,20 +226,21 @@
             <table:Column id="_IDGenColumn24" width="120px">
                 <table:label><Text id="_IDGenText52" text="Supplementary line"/></table:label> 
                 <table:template>
-                    <Text id="_IDGenText26" text="{Supplementaryline}"/>
+                    <CheckBox id="_IDGenText26" text="{Supplementaryline}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn25" width="120px">
                 <table:label><Text id="_IDGenText53" text="Lot Cost One"/></table:label> 
                 <table:template>
-                    <Text id="_IDGenText27" text="{LotCostOne}"/>
+                    <CheckBox id="_IDGenText27" text="{LotCostOne}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn26" width="120px">
                  <table:label><Text id="_IDGenText54" text="Actios"/></table:label> 
                 <table:template>
+                <Button id="_IDGenButton6" icon="sap-icon://edit" press="onEditItem"/>
                 </table:template>
             </table:Column>
         </table:columns>

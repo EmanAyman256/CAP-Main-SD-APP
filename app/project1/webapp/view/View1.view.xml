@@ -31,6 +31,8 @@
                     </layoutData>
                 </Button>
                 <Button id="_IDGenButton7" text="Formula" press="onNavigateToFormula" class="sapUiSmallMarginRight" />
+                           <Button id="_IDGenButton8" text="Example" press="onNavigateToExample" class="sapUiSmallMarginRight" />
+
             </HBox>
         </content>
   </Page>

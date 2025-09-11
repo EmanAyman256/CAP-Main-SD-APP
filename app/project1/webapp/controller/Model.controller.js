@@ -5,22 +5,36 @@ sap.ui.define([
     "sap/m/Input",
     "sap/m/Button",
     "sap/m/Label",
-    "sap/m/VBox"
-], function (Controller, MessageBox, Dialog, Input, Button, Label, VBox) {
+    "sap/m/VBox",
+     "sap/ui/model/json/JSONModel"
+], function (Controller, MessageBox, Dialog, Input, Button, Label, VBox,JSONModel) {
     "use strict";
 
     return Controller.extend("project1.controller.Model", {
         onInit: function () {
-            var oModel = new sap.ui.model.json.JSONModel({
-                Models: [
-                    { modelServSpec: "model1", blockingIndicator: true, serviceSelection: true, description: "model 1 desc", searchTerm: "term", currencyCode: 1 },
-                    { modelServSpec: "model2", blockingIndicator: true, serviceSelection: false, description: "model 2 desc", searchTerm: "term2", currencyCode: 2 },
+            // var oModel = new sap.ui.model.json.JSONModel({
+            //     Models: [
+            //         { modelServSpec: "model1", blockingIndicator: true, serviceSelection: true, description: "model 1 desc", searchTerm: "term", currencyCode: 1 },
+            //         { modelServSpec: "model2", blockingIndicator: true, serviceSelection: false, description: "model 2 desc", searchTerm: "term2", currencyCode: 2 },
 
-                ],
-                newCode: "",
-                newDescription: ""
-            });
-            this.getView().setModel(oModel);
+            //     ],
+            //     newCode: "",
+            //     newDescription: ""
+            // });
+            // this.getView().setModel(oModel);
+            // Fetch data from CAP OData service
+            var oModel = new JSONModel();
+            fetch("/odata/v4/sales-cloud/ModelSpecifications")
+                .then(response => response.json())
+                .then(data => {
+                 
+                    // Wrap array inside an object for binding
+                    oModel.setData({ Models: data.value });
+                    this.getView().byId("modelTable").setModel(oModel);
+                })
+                .catch(err => {
+                    console.error("Error fetching models", err);
+                });
         },
         onAdd: function () {
             var oModel = this.getView().getModel();

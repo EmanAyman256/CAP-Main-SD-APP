@@ -15,7 +15,7 @@
                     <Input id="_IDGenInput1" width="200px" liveChange="onDocumentChange" />
                     <Label id="_IDGenLabel3" text="Item Number" showColon="true" textAlign="Begin" required="true"/>
                     <!--Combobox Instead of Select For Filter Option-->
-                    <ComboBox id="_IDGenComboBox" items="{/Items}" selectedKey="{/ItemID}" required="true" width="200px" showSecondaryValues="true">
+                    <ComboBox id="_IDGenComboBox" items="{/ServiceItems}" selectedKey="{/ItemID}" required="true" width="200px" showSecondaryValues="true">
                         <core:Item id="_IDGenItem" key="{ItemID}" text="{ItemName}" />
                     </ComboBox>
                 </VBox>

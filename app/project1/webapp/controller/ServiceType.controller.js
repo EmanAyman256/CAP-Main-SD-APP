@@ -5,37 +5,97 @@ sap.ui.define([
     "sap/m/Input",
     "sap/m/Button",
     "sap/m/Label",
-    "sap/m/VBox"
+    "sap/m/VBox",
+    "sap/ui/model/odata/v4/ODataModel"
+
 ], function (Controller, MessageBox, Dialog, Input, Button, Label, VBox) {
     "use strict";
 
     return Controller.extend("project1.controller.ServiceType", {
         onInit: function () {
-            var oModel = new sap.ui.model.json.JSONModel({
-                ServiceTypes: [
-                    { Code: "test1", Description: "test", CreatedOn: "2025-08-18", editMode: false },
-                    { Code: "st2", Description: "desc", CreatedOn: "2025-08-18", editMode: false }
-                ],
-                newCode: "",
-                newDescription: ""
-            });
-            this.getView().setModel(oModel);
+            // var oModel = new sap.ui.model.json.JSONModel({
+            //     ServiceTypes: [
+            //         { Code: "test1", Description: "test", CreatedOn: "2025-08-18", editMode: false },
+            //         { Code: "st2", Description: "desc", CreatedOn: "2025-08-18", editMode: false }
+            //     ],
+            //     newCode: "",
+            //     newDescription: ""
+            // });
+
+            // this.getView().setModel(oModel);
+
+
+            // Fetch data from CAP OData service
+            fetch("/odata/v4/SalesCloudService/ServiceType")
+                .then(response => response.json())
+                .then(data => {
+
+                    // Wrap array inside an object for binding
+                    oModel.setData({ ServiceTypes: data.value });
+                    this.getView().byId("serviceTable").setModel(oModel);
+                })
+                .catch(err => {
+                    console.error("Error fetching ServiceTypes", err);
+                });
+
+
+            // var oModel = new sap.ui.model.odata.v4.ODataModel({
+            //     serviceUrl: "https://port4004-workspaces-ws-j72gp.us10.trial.applicationstudio.cloud.sap/odata/v4/sales-cloud/"
+            // });
+
+            // this.getView().setModel(oModel, "ServiceModel");
+            // var oBinding = oModel.bindList("/ServiceTypes");
+            // oBinding.requestContexts().then(function (aContexts) {
+            //     aContexts.forEach(function (oContext) {
+            //         console.log(oContext.getObject()); 
+            //     });
+            // });
+
         },
+       
         onAdd: function () {
             var oModel = this.getView().getModel();
             var newCode = oModel.getProperty("/newCode");
             var newDescription = oModel.getProperty("/newDescription");
-            if (newCode && newDescription) {
-                oModel.getProperty("/ServiceTypes").push({
-                    Code: newCode,
-                    Description: newDescription,
-                    CreatedOn: new Date().toISOString().split('T')[0]
-                });
-                oModel.setProperty("/newCode", "");
-                oModel.setProperty("/newDescription", "");
-            }
-        },
 
+            if (newCode && newDescription) {
+                // Prepare payload matching CAP entity
+                var newServiceType = {
+                    serviceTypeCode: parseInt(newCode, 10),
+                    description: newDescription,
+                    createdOn: new Date().toISOString().split("T")[0]
+                };
+
+                // Call CAP OData service
+                fetch("/odata/v4/SalesCloudService/ServiceType", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(newServiceType)
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error("Failed to save: " + response.statusText);
+                        }
+                        return response.json();
+                    })
+                    .then(savedItem => {
+                        // Update local model after DB save
+                        var aServiceTypes = oModel.getProperty("/ServiceType") || [];
+                        aServiceTypes.push(savedItem);
+                        oModel.setProperty("/ServiceType", aServiceTypes);
+
+                        // Clear form inputs
+                        oModel.setProperty("/newCode", "");
+                        oModel.setProperty("/newDescription", "");
+                    })
+                    .catch(err => {
+                        console.error("Error saving ServiceType:", err);
+                    });
+            }
+        }
+        ,
         onEdit: function (oEvent) {
             var oButton = oEvent.getSource();
             var oContext = oButton.getParent().getParent().getBindingContext(); // Navigate to ColumnListItem context
@@ -117,6 +177,8 @@ sap.ui.define([
         },
         onOpenAddServiceTypeDialog: function () {
             var oModel = this.getView().getModel();
+            console.log(oModel);
+
             var oDialog = new Dialog({
                 title: "Add New Service Type",
                 content: new sap.ui.layout.form.SimpleForm({
@@ -135,20 +197,42 @@ sap.ui.define([
                     press: function () {
                         var newCode = oModel.getProperty("/newCode");
                         var newDescription = oModel.getProperty("/newDescription");
-                        if (newCode && newDescription) {
-                            oModel.getProperty("/ServiceTypes").push({
-                                Code: newCode,
-                                Description: newDescription,
-                                CreatedOn: new Date().toISOString().split('T')[0],
-                                editMode: false
+                        // if (newCode && newDescription) {
+                        //     oModel.getProperty("/ServiceTypes").push({
+                        //         serviceId: newCode,
+                        //         description: newDescription,
+                        //         // CreatedOn: new Date().toISOString().split('T')[0],
+                        //         // editMode: false
+                        //     });
+                        //     oModel.setProperty("/newCode", "");
+                        //     oModel.setProperty("/newDescription", "");
+                        //     oDialog.close();
+                        // } else {
+                        //     MessageBox.error("Please fill in both Code and Description.");
+                        // }
+
+                        var newData = oTempModel.getData();
+                        if (newData.newCode && newData.newDescription) {
+                            // Now create in OData V4 model
+                            var oODataModel = this.getView().getModel("ServiceModel");
+                            oODataModel.create("/ServiceTypes", {
+                                serviceId: newData.newCode,
+                                description: newData.newDescription,
+                                createdAt: new Date().toISOString()
+                            }, {
+                                success: function () {
+                                    sap.m.MessageToast.show("Service Type created successfully!");
+                                    oDialog.close();
+                                },
+                                error: function (oError) {
+                                    sap.m.MessageBox.error("Error creating ServiceType: " + oError.message);
+                                }
                             });
-                            oModel.setProperty("/newCode", "");
-                            oModel.setProperty("/newDescription", "");
-                            oDialog.close();
                         } else {
-                            MessageBox.error("Please fill in both Code and Description.");
+                            sap.m.MessageBox.error("Please fill in both fields.");
                         }
-                    }
+
+                    }.bind(this)
                 }),
                 endButton: new Button({
                     text: "Cancel",

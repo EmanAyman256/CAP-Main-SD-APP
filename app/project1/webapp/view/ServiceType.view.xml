@@ -36,9 +36,9 @@
                 <ColumnListItem id="_IDGenColumnListItem">
                     <cells>
                     
-                        <Text id="_IDGenText4" text="{Code}" />
-                        <Text id="_IDGenText5" text="{Description}" />
-                        <Text id="_IDGenText6" text="{CreatedOn}" />
+                        <Text id="_IDGenText4" text="{serviceId}" />
+                        <Text id="_IDGenText5" text="{description}" />
+                        <Text id="_IDGenText6" text="{createdAt}" />
                         <HBox id="_IDGenHBox">
                             <Button id="_IDGenButton1" icon="sap-icon://edit" press="onEdit" />
                             <Button id="_IDGenButton2" icon="sap-icon://delete" press="onDelete" />

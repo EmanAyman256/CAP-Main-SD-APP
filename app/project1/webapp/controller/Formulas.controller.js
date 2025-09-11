@@ -5,21 +5,36 @@ sap.ui.define([
     "sap/m/Input",
     "sap/m/Button",
     "sap/m/Label",
-    "sap/m/VBox"
-], function (Controller, MessageBox, Dialog, Input, Button, Label, VBox) {
+    "sap/m/VBox",
+     "sap/ui/model/json/JSONModel"
+], function (Controller, MessageBox, Dialog, Input, Button, Label, VBox,JSONModel) {
     "use strict";
 
     return Controller.extend("project1.controller.Formulas", {
         onInit: function () {
-            var oModel = new sap.ui.model.json.JSONModel({
-                Formulas: [
-                    { Code: "test1", Description: "test" },
-                    { Code: "st2", Description: "desc" }
-                ],
-                newCode: "",
-                newDescription: ""
-            });
-            this.getView().setModel(oModel);
+
+            // Fetch data from CAP OData service
+           var oModel = new JSONModel();
+            fetch("/odata/v4/sales-cloud/Formulas")
+                .then(response => response.json())
+                .then(data => {
+                 
+                    // Wrap array inside an object for binding
+                    oModel.setData({ Formulas: data.value });
+                    this.getView().byId("formulasTable").setModel(oModel);
+                })
+                .catch(err => {
+                    console.error("Error fetching formulas", err);
+                });
+            // var oModel = new sap.ui.model.json.JSONModel({
+            //     Formulas: [
+            //         { Code: "test1", Description: "test" },
+            //         { Code: "st2", Description: "desc" }
+            //     ],
+            //     newCode: "",
+            //     newDescription: ""
+            // });
+            // this.getView().setModel(oModel);
         },
         onNavigateToAddFormula() {
             this.getOwnerComponent().getRouter().navTo("formula");
