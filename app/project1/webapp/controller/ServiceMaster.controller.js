@@ -11,25 +11,22 @@ sap.ui.define([
     "use strict";
     return Controller.extend("project1.controller.ServiceMaster", {
 onInit: function () {
-    var oModel = new JSONModel();
-    var sUrl = "/odata/v4/sales-cloud/ServiceNumbers"; // relative to approuter
+    var oModel = new sap.ui.model.json.JSONModel({
+                ServiceNumbers: [],
+               
+            });
+            this.getView().setModel(oModel, "view");
+            fetch("/odata/v4/sales-cloud/ServiceNumbers")
+                .then(response => response.json())
+                .then(data => {
+                    // Wrap array inside an object for binding
+                    oModel.setData({ ServiceNumbers: data.value });
+                    this.getView().byId("serviceMaster").setModel(oModel);
+                })
+                .catch(err => {
+                    console.error("Error fetching ServiceNumbers", err);
+                });
 
-    fetch(sUrl)
-        .then((response) => {
-            if (!response.ok) {
-                throw new Error("Network response was not ok " + response.statusText);
-            }
-            return response.json();
-        })
-        .then((data) => {
-            // CAP OData returns { value: [...] }
-            oModel.setData({ ServiceMaster: data.value });
-            this.getView().setModel(oModel);
-        })
-        .catch((err) => {
-            console.error("Error fetching ServiceNumbers", err);
-            sap.m.MessageBox.error("Failed to fetch data from backend.");
-        });
 },
         onNavigateToAddServiceMaster() {
             this.getOwnerComponent().getRouter().navTo("addServiceMaster");

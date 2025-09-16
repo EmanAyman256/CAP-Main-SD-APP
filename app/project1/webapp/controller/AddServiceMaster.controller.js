@@ -2,85 +2,176 @@ sap.ui.define([
     "sap/ui/core/mvc/Controller",
     "sap/ui/model/json/JSONModel",
     "sap/m/MessageToast"
-], function (Controller,JSONModel,MessageToast) {
+], function (Controller, JSONModel, MessageToast) {
     "use strict";
 
     return Controller.extend("project1.controller.AddServiceMaster", {
-  onInit: function () {
-            var oserviceModel = new JSONModel({
-                ServiceMaster: [
-                    { Code: "test1", SearchTerm: "Test", Description: "test", lastChangeDate: "19-8-2025", serviceType: "Test1", CreatedOn: "2025-08-18" },
-                    { Code: "st2", SearchTerm: "Test ST2", Description: "desc", lastChangeDate: "19-8-2025", serviceType: "Test2", CreatedOn: "2025-08-18" }
-                ],
-                newCode: "",
-                newDescription: ""
-            });
-            this.getView().setModel(oserviceModel);
+        onInit: function () {
+            var oView = this.getView();
+
+            // Service Types
+            fetch("/odata/v4/sales-cloud/ServiceTypes")
+                .then(res => res.json())
+                .then(data => {
+                    var oModel = new sap.ui.model.json.JSONModel(data.value);
+                    oView.setModel(oModel, "serviceTypes");
+                });
+
+            // Material Groups
+            fetch("/odata/v4/sales-cloud/MaterialGroups")
+                .then(res => res.json())
+                .then(data => {
+                    var oModel = new sap.ui.model.json.JSONModel(data.value);
+                    oView.setModel(oModel, "materialGroups");
+                });
+
+            // Units of Measurement
+            fetch("/odata/v4/sales-cloud/UnitOfMeasurements")
+                .then(res => res.json())
+                .then(data => {
+                    var oModel = new sap.ui.model.json.JSONModel(data.value);
+                    oView.setModel(oModel, "unitsOfMeasurement");
+                });
         },
-onAddPress: function () {
-    var oView = this.getView();
+        onAddPress: function () {
+            var oView = this.getView();
+            // Collect values from inputs
+            var serviceNumber = oView.byId("_IDGenInput1").getValue();
+            var searchTerm = oView.byId("_IDGenInput2").getValue();
+            var description = oView.byId("_IDGenInput3").getValue();
+            var serviceText = oView.byId("_IDGenInput4").getValue();
+            var shortTextAllowed = oView.byId("_IDGenCheckBox1").getSelected();
+            var deletionIndicator = oView.byId("_IDGenCheckBox3").getSelected();
 
-    // Collect values from inputs
-    var serviceNumber = oView.byId("_IDGenInput1").getValue();
-    var searchTerm = oView.byId("_IDGenInput2").getValue();
-    var description = oView.byId("_IDGenInput3").getValue();
-    var serviceText = oView.byId("_IDGenInput4").getValue();
-    var shortTextAllowed = oView.byId("_IDGenCheckBox1").getSelected();
-    var deletionIndicator = oView.byId("_IDGenCheckBox3").getSelected();
+            // Conversion values
+            var toBeConvertedNum = oView.byId("_IDGenInput5").getValue();
+            var convertedNum = oView.byId("_IDGenInput9").getValue();
 
-    // Example additional fields
-    var toBeConvertedNum = oView.byId("_IDGenInput5").getValue();
-    var convertedNum = oView.byId("_IDGenInput9").getValue();
+            // Dropdowns
+            var serviceTypeCode = oView.byId("_IDGenSelect").getSelectedKey();
+            var unitOfMeasurementCode = oView.byId("_IDGenSelect1").getSelectedKey();
+            var toBeConvertedUOM = oView.byId("_IDGenSelect2").getSelectedKey();
+            var convertedUOM = oView.byId("_IDGenSelect3").getSelectedKey();
+            var materialGroupCode = oView.byId("_IDGenSelect4").getSelectedKey();
 
-    // Build payload
-    var newServiceMaster = {
-        serviceNumber: serviceNumber,
-        searchTerm: searchTerm,
-        description: description,
-        serviceText: serviceText,
-        shortTextAllowed: shortTextAllowed,
-        deletionIndicator: deletionIndicator,
-        toBeConvertedNum: toBeConvertedNum,
-        convertedNum: convertedNum
-        // add other dropdown values if needed
-    };
+            // Main Item checkbox
+            var mainItem = oView.byId("_IDGenCheckBox4").getSelected();
 
-    console.log("Payload to be sent:", newServiceMaster);
+            // Build payload
+            var newServiceMaster = {
+                noServiceNumber: parseInt(serviceNumber, 10),
+                searchTerm: searchTerm,
+                description: description,
+                serviceText: serviceText,
+                shortTextChangeAllowed: shortTextAllowed,
+                deletionIndicator: deletionIndicator,
+                numberToBeConverted: parseInt(toBeConvertedNum, 10),
+                convertedNumber: parseInt(convertedNum, 10),
+                serviceTypeCode: serviceTypeCode,
+                unitOfMeasurementCode: unitOfMeasurementCode,
+                toBeConvertedUnitOfMeasurement: toBeConvertedUOM,
+                defaultUnitOfMeasurement: convertedUOM,
+                mainItem: mainItem,
+                materialGroupCode: materialGroupCode,
+                lastChangeDate: new Date().toISOString().split("T")[0] // auto-fill today's date
+            };
 
-    // POST to CAP service
-    fetch("/odata/v4/sales-cloud/ServiceNumbers", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
+
+            console.log("Payload to be sent:", newServiceMaster);
+
+            // POST to CAP service
+            fetch("/odata/v4/sales-cloud/ServiceNumbers", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(newServiceMaster)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to save: " + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(savedItem => {
+                    sap.m.MessageToast.show("Service Master created successfully!");
+                   this.onNavigateToServiceMaster()
+                    // Optionally refresh model/binding if you have a table/list
+                    // var oModel = this.getView().getModel();
+                    // if (oModel) {
+                    //     oModel.refresh(true);
+                    // }
+                })
+                .catch(err => {
+                    console.error("Error saving ServiceMaster:", err);
+                    sap.m.MessageBox.error("Error: " + err.message);
+                });
         },
-        body: JSON.stringify(newServiceMaster)
-    })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("Failed to save: " + response.statusText);
-            }
-            return response.json();
-        })
-        .then(savedItem => {
-            sap.m.MessageToast.show("Service Master created successfully!");
 
-            // Optionally refresh model/binding if you have a table/list
-            var oModel = this.getView().getModel();
-            if (oModel) {
-                oModel.refresh(true);
-            }
-        })
-        .catch(err => {
-            console.error("Error saving ServiceMaster:", err);
-            sap.m.MessageBox.error("Error: " + err.message);
-        });
-},
+        // onAddPress: function () {
+        //     var oView = this.getView();
+
+        //     // Collect values from inputs
+        //     var serviceNumber = oView.byId("_IDGenInput1").getValue();
+        //     var searchTerm = oView.byId("_IDGenInput2").getValue();
+        //     var description = oView.byId("_IDGenInput3").getValue();
+        //     var serviceText = oView.byId("_IDGenInput4").getValue();
+        //     var shortTextAllowed = oView.byId("_IDGenCheckBox1").getSelected();
+        //     var deletionIndicator = oView.byId("_IDGenCheckBox3").getSelected();
+
+        //     // Example additional fields
+        //     var toBeConvertedNum = oView.byId("_IDGenInput5").getValue();
+        //     var convertedNum = oView.byId("_IDGenInput9").getValue();
+
+        //     // Build payload
+        //     var newServiceMaster = {
+        //         serviceNumber: serviceNumber,
+        //         searchTerm: searchTerm,
+        //         description: description,
+        //         serviceText: serviceText,
+        //         shortTextAllowed: shortTextAllowed,
+        //         deletionIndicator: deletionIndicator,
+        //         toBeConvertedNum: toBeConvertedNum,
+        //         convertedNum: convertedNum
+        //         // add other dropdown values if needed
+        //     };
+
+        //     console.log("Payload to be sent:", newServiceMaster);
+
+        //     // POST to CAP service
+        //     fetch("/odata/v4/sales-cloud/ServiceNumbers", {
+        //         method: "POST",
+        //         headers: {
+        //             "Content-Type": "application/json"
+        //         },
+        //         body: JSON.stringify(newServiceMaster)
+        //     })
+        //         .then(response => {
+        //             if (!response.ok) {
+        //                 throw new Error("Failed to save: " + response.statusText);
+        //             }
+        //             return response.json();
+        //         })
+        //         .then(savedItem => {
+        //             sap.m.MessageToast.show("Service Master created successfully!");
+
+        //             // Optionally refresh model/binding if you have a table/list
+        //             var oModel = this.getView().getModel();
+        //             if (oModel) {
+        //                 oModel.refresh(true);
+        //             }
+        //         })
+        //         .catch(err => {
+        //             console.error("Error saving ServiceMaster:", err);
+        //             sap.m.MessageBox.error("Error: " + err.message);
+        //         });
+        // },
 
         // onAddPress: function () {
         //     // Get the model
         //     var oModel = this.getView().getModel();
         //     var oData = oModel.getData();
-            
+
         //     // Get values from input fields and controls
         //     var sServiceNumber = this.byId("_IDGenInput1").getValue(); // Service Number
         //     var sSearchTerm = this.byId("_IDGenInput2").getValue(); // Search Term
@@ -147,14 +238,14 @@ onAddPress: function () {
         //     // Show success message
         //     MessageToast.show("Service added successfully!");
         // },
-    onNavigateToAddServiceMaster() {
-            this.getOwnerComponent().getRouter().navTo("addServiceMaster");
+        onNavigateToServiceMaster() {
+            this.getOwnerComponent().getRouter().navTo("serviceMaster");
         },
-        onEdit: function (oEvent) {
-            // Logic to edit service type
-        },
-        onDelete: function (oEvent) {
-            // Logic to delete service type
-        }
+        // onEdit: function (oEvent) {
+        //     // Logic to edit service type
+        // },
+        // onDelete: function (oEvent) {
+        //     // Logic to delete service type
+        // }
     });
 });

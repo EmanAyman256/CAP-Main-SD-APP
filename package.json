@@ -20,6 +20,7 @@
     "@cap-js/sqlite": "^2",
     "@sap/cds-dk": ">=8",
     "cds-plugin-ui5": "^0.13.0",
+    "cds-swagger-ui-express": "^0.10.0",
     "mbt": "^1.2.29",
     "rimraf": "^5.0.5"
   },
@@ -33,17 +34,17 @@
     "watch-execution": "cds watch --open execution/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-invoice": "cds watch --open invoice/index.html?sap-ui-xx-viewCache=false --livereload false"
   },
- "cds": {
-  "requires": {
-    "db": {
-      "kind": "hana",
-      "vcap": {
-        "label": "hana",
-        "plan": "hdi-shared"
+  "cds": {
+    "requires": {
+      "db": {
+        "kind": "hana",
+        "vcap": {
+          "label": "hana",
+          "plan": "hdi-shared"
+        }
       }
     }
-  }
-},
+  },
   "workspaces": [
     "app/*"
   ]

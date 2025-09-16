@@ -1264,7 +1264,7 @@ module.exports = cds.service.impl(async function () {
 
   // POST /servicenumbers
   this.on('CREATE', ServiceNumbers, async (req) => {
-    return await INSERT.into(ServiceNumber).entries(req.data);
+    return await INSERT.into(ServiceNumbers).entries(req.data);
   });
 
   // PATCH /servicenumbers/{id}
