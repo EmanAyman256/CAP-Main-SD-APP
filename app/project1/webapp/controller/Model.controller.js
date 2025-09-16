@@ -22,6 +22,14 @@ sap.ui.define([
             //     newDescription: ""
             // });
             // this.getView().setModel(oModel);
+
+             var oModel = new sap.ui.model.json.JSONModel({
+                Models: [],
+                newCode: "",
+                newDescription: ""
+            });
+            this.getView().setModel(oModel, "view"); 
+
             // Fetch data from CAP OData service
             var oModel = new JSONModel();
             fetch("/odata/v4/sales-cloud/ModelSpecifications")

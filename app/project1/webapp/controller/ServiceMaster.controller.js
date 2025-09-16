@@ -13,55 +13,33 @@ sap.ui.define([
 
         onInit: function () {
 
-            // var oserviceModel = new sap.ui.model.json.JSONModel({
-            //     ServiceMaster: [
-            //         { Code: "test1", SearchTerm: "Test", Description: "test", lastChangeDate: "19-8-2025", serviceType: "Test1", CreatedOn: "2025-08-18" },
-            //         { Code: "st2", SearchTerm: "Test ST2", Description: "desc", lastChangeDate: "19-8-2025", serviceType: "Test2", CreatedOn: "2025-08-18" }
-            //     ],
-            //     newCode: "",
-            //     newDescription: ""
-            // });
-            // this.getView().setModel(oserviceModel);
+            var oserviceModel = new sap.ui.model.json.JSONModel({
+                ServiceMaster: [
+                    { Code: "test1", SearchTerm: "Test", Description: "test", lastChangeDate: "19-8-2025", serviceType: "Test1", CreatedOn: "2025-08-18" },
+                    { Code: "st2", SearchTerm: "Test ST2", Description: "desc", lastChangeDate: "19-8-2025", serviceType: "Test2", CreatedOn: "2025-08-18" }
+                ],
+                newCode: "",
+                newDescription: ""
+            });
+            this.getView().setModel(oserviceModel);
 
-            // var oModel = new sap.ui.model.odata.v4.ODataModel({
-            //     serviceUrl: "https://port4004-workspaces-ws-j72gp.us10.trial.applicationstudio.cloud.sap/odata/v4/sales-cloud/"
-            // });
 
-            // this.getView().setModel(oModel, "ServiceMasterModel");
-            // var oBinding = oModel.bindList("/ServiceMaster");
-            // oBinding.requestContexts().then(function (aContexts) {
-            //     aContexts.forEach(function (oContext) {
-            //         console.log(oContext.getObject()); 
-            //     });
-            // });
+         
+
 
             // Fetch data from CAP OData service
-            // fetch("/odata/v4/SalesCloudService/ServiceNumbers")
+            //       var oModel = new JSONModel();
+            // fetch("/odata/v4/sales-cloud/ServiceNumbers")
             //     .then(response => response.json())
             //     .then(data => {
-            //         debugger
+                 
             //         // Wrap array inside an object for binding
             //         oModel.setData({ ServiceMaster: data.value });
             //         this.getView().byId("serviceMaster").setModel(oModel);
             //     })
             //     .catch(err => {
-            //         console.error("Error fetching serviceMaster", err);
+            //         console.error("Error fetching ServiceNumbers", err);
             //     });
-
-
-            // Fetch data from CAP OData service
-                  var oModel = new JSONModel();
-            fetch("/odata/v4/sales-cloud/ServiceNumbers")
-                .then(response => response.json())
-                .then(data => {
-                 
-                    // Wrap array inside an object for binding
-                    oModel.setData({ ServiceMaster: data.value });
-                    this.getView().byId("serviceMaster").setModel(oModel);
-                })
-                .catch(err => {
-                    console.error("Error fetching ServiceNumbers", err);
-                });
 
 
         },

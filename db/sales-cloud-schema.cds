@@ -40,37 +40,37 @@ type IasUser {
 // ------------------- Master Data -------------------
 
 entity Currency : managed {
-  key currencyCode : Integer;
+  key currencyCode : UUID;
       code         : String(225) @unique;
       description  : String not null;
 }
 
 entity LineType : managed {
-  key lineTypeCode : Integer;
+  key lineTypeCode : UUID;
       code         : String(225) @unique;
       description  : String not null;
 }
 
 entity MaterialGroup : managed {
-  key materialGroupCode : Integer;
+  key materialGroupCode : UUID;
       code              : String(225) @unique;
       description       : String not null;
 }
 
 entity PersonnelNumber : managed {
-  key personnelNumberCode : Integer;
+  key personnelNumberCode : UUID;
       code                : String(225) @unique;
       description         : String not null;
 }
 
 entity UnitOfMeasurement : managed {
-  key unitOfMeasurementCode : Integer;
+  key unitOfMeasurementCode : UUID;
       code                  : String(8) @unique;
       description           : String;
 }
 
 entity ServiceType : managed {
-  key serviceTypeCode : Integer;
+  key serviceTypeCode : UUID;
       serviceId       : String(225) @unique;
       description     : String not null;
       lastChangeDate  : Date;
@@ -79,7 +79,7 @@ entity ServiceType : managed {
 // ------------------- Service Number -------------------
 
 entity ServiceNumber : managed {
-  key serviceNumberCode              : Integer;
+  key serviceNumberCode              : UUID;
       serviceNumberCodeString        : String @unique;
       noServiceNumber                : Integer;
       searchTerm                     : String;
@@ -113,7 +113,7 @@ entity ServiceNumber : managed {
 // ------------------- Formulas -------------------
 
 entity Formula : managed {
-  key formulaCode           : Integer;
+  key formulaCode           : UUID;
       formula               : String(4) @unique;
       description           : String not null;
       numberOfParameters    : Integer   @unique;
@@ -128,7 +128,7 @@ entity Formula : managed {
 // ------------------- Execution Orders & Invoices -------------------
 
 entity ExecutionOrderMain : managed {
-  key executionOrderMainCode   : Integer;
+  key executionOrderMainCode   : UUID;
 
       referenceSDDocument      : String;
       salesOrderItem           : String;
@@ -171,7 +171,7 @@ entity ExecutionOrderMain : managed {
 }
 
 entity ServiceInvoiceMain : managed {
-  key serviceInvoiceCode       : Integer;
+  key serviceInvoiceCode       : UUID;
 
       executionOrderMainCode   : Integer;
       referenceSDDocument      : String;
@@ -215,7 +215,7 @@ entity ServiceInvoiceMain : managed {
 }
 
 entity InvoiceMainItem : managed {
-  key invoiceMainItemCode     : Integer;
+  key invoiceMainItemCode     : UUID;
 
       uniqueId                : String;
       referenceSDDocument     : String;
@@ -245,7 +245,7 @@ entity InvoiceMainItem : managed {
 }
 
 entity InvoiceSubItem : managed {
-  key invoiceSubItemCode    : Integer;
+  key invoiceSubItemCode    : UUID;
 
       invoiceMainItemCode   : Integer;
       serviceNumberCode     : Integer;
@@ -264,7 +264,7 @@ entity InvoiceSubItem : managed {
 // ------------------- Model Specifications -------------------
 
 entity ModelSpecifications : managed {
-  key modelSpecCode              : Integer;
+  key modelSpecCode              : UUID;
       modelSpecDetailsCode       : array of Integer;
       currencyCode               : String;
       modelServSpec              : String(225) @unique;
@@ -278,7 +278,7 @@ entity ModelSpecifications : managed {
 }
 
 entity ModelSpecificationsDetails : managed {
-  key modelSpecDetailsCode      : Integer;
+  key modelSpecDetailsCode      : UUID;
 
       serviceNumberCode         : Integer;
       noServiceNumber           : Integer     @unique;

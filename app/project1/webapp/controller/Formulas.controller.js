@@ -14,27 +14,29 @@ sap.ui.define([
         onInit: function () {
 
             // Fetch data from CAP OData service
-           var oModel = new JSONModel();
-            fetch("/odata/v4/sales-cloud/Formulas")
-                .then(response => response.json())
-                .then(data => {
+        //    var oModel = new JSONModel();
+        //     fetch("/odata/v4/sales-cloud/Formulas")
+        //         .then(response => response.json())
+        //         .then(data => {
                  
-                    // Wrap array inside an object for binding
-                    oModel.setData({ Formulas: data.value });
-                    this.getView().byId("formulasTable").setModel(oModel);
-                })
-                .catch(err => {
-                    console.error("Error fetching formulas", err);
-                });
-            // var oModel = new sap.ui.model.json.JSONModel({
-            //     Formulas: [
-            //         { Code: "test1", Description: "test" },
-            //         { Code: "st2", Description: "desc" }
-            //     ],
-            //     newCode: "",
-            //     newDescription: ""
-            // });
-            // this.getView().setModel(oModel);
+        //             // Wrap array inside an object for binding
+        //             oModel.setData({ Formulas: data.value });
+        //             this.getView().byId("formulasTable").setModel(oModel);
+        //         })
+        //         .catch(err => {
+        //             console.error("Error fetching formulas", err);
+        //         });
+
+        
+            var oModel = new sap.ui.model.json.JSONModel({
+                Formulas: [
+                    { Code: "test1", Description: "test" },
+                    { Code: "st2", Description: "desc" }
+                ],
+                newCode: "",
+                newDescription: ""
+            });
+            this.getView().setModel(oModel);
         },
         onNavigateToAddFormula() {
             this.getOwnerComponent().getRouter().navTo("formula");

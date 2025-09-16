@@ -17,7 +17,7 @@
     	<headerContent>
 			<Button id="_IDGenButton3" icon="sap-icon://add" tooltip="Add" text="New Service Type" press="onOpenAddServiceTypeDialog" />
 		</headerContent>
-          <Table id="serviceTable" items="{/ServiceTypes}">
+        <Table id="serviceTable"   items="{path: '/ServiceTypes'}">
             <columns>
                 <Column id="_IDGenColumn1">
                     <Text id="_IDGenText" text="Code" />
