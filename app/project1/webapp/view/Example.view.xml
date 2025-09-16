@@ -1,40 +1,39 @@
 <mvc:View
   controllerName="project1.controller.Example"
   xmlns:mvc="sap.ui.core.mvc"
-  xmlns="sap.m">
+  xmlns:m="sap.m">
 
-  <Page title="Service Types">
-    <content>
-      <!-- Bind table to /ServiceTypes -->
-      <Table id="serviceTypesTable" inset="false" items="{/ServiceTypes}">
-        <headerToolbar>
-          <Toolbar>
-            <Title text="Service Types" level="H2" />
-          </Toolbar>
-        </headerToolbar>
+  <m:Page title="Service Numbers">
+    <m:content>
+      <m:VBox>
+        <m:Toolbar>
+          <m:Title text="Manage Service Numbers" level="H2" />
+          <m:ToolbarSpacer/>
+          <m:Button text="Add" press=".onAdd"/>
+          <m:Button text="Update" press=".onUpdate"/>
+          <m:Button text="Delete" press=".onDelete"/>
+        </m:Toolbar>
 
-        <columns>
-          <Column>
-            <Text text="Code"/>
-          </Column>
-          <Column>
-            <Text text="Description"/>
-          </Column>
-          <Column>
-            <Text text="Created By"/>
-          </Column>
-        </columns>
+        <m:Table id="serviceNumbersTable"
+                 mode="SingleSelectMaster"
+                 items="{/ServiceNumbers}">
+          <m:columns>
+            <m:Column><m:Text text="Code"/></m:Column>
+            <m:Column><m:Text text="Description"/></m:Column>
+            <m:Column><m:Text text="Created By"/></m:Column>
+          </m:columns>
 
-        <items>
-          <ColumnListItem>
-            <cells>
-              <Text text="{serviceTypeCode}" />
-              <Text text="{description}" />
-              <Text text="{createdBy}" />
-            </cells>
-          </ColumnListItem>
-        </items>
-      </Table>
-    </content>
-  </Page>
+          <m:items>
+            <m:ColumnListItem>
+              <m:cells>
+                <m:Text text="{serviceNumberCode}" />
+                <m:Text text="{description}" />
+                <m:Text text="{createdBy}" />
+              </m:cells>
+            </m:ColumnListItem>
+          </m:items>
+        </m:Table>
+      </m:VBox>
+    </m:content>
+  </m:Page>
 </mvc:View>
