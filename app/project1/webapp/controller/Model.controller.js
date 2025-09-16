@@ -6,57 +6,32 @@ sap.ui.define([
     "sap/m/Button",
     "sap/m/Label",
     "sap/m/VBox",
-     "sap/ui/model/json/JSONModel"
-], function (Controller, MessageBox, Dialog, Input, Button, Label, VBox,JSONModel) {
+    "sap/ui/model/json/JSONModel"
+], function (Controller, MessageBox, Dialog, Input, Button, Label, VBox, JSONModel) {
     "use strict";
 
     return Controller.extend("project1.controller.Model", {
         onInit: function () {
-            // var oModel = new sap.ui.model.json.JSONModel({
-            //     Models: [
-            //         { modelServSpec: "model1", blockingIndicator: true, serviceSelection: true, description: "model 1 desc", searchTerm: "term", currencyCode: 1 },
-            //         { modelServSpec: "model2", blockingIndicator: true, serviceSelection: false, description: "model 2 desc", searchTerm: "term2", currencyCode: 2 },
-
-            //     ],
-            //     newCode: "",
-            //     newDescription: ""
-            // });
-            // this.getView().setModel(oModel);
-
-             var oModel = new sap.ui.model.json.JSONModel({
+            var oModel = new sap.ui.model.json.JSONModel({
                 Models: [],
-                newCode: "",
-                newDescription: ""
             });
-            this.getView().setModel(oModel, "view"); 
+            this.getView().setModel(oModel, "view");
+            //  // optional: refresh table if you show models
+            //         let oTable = this.getView().byId("modelTable")
+            //         //this.byId("modelTable");
+            //         oTable.getBinding("items").refresh();
 
             // Fetch data from CAP OData service
-            var oModel = new JSONModel();
+           
             fetch("/odata/v4/sales-cloud/ModelSpecifications")
                 .then(response => response.json())
                 .then(data => {
-                 
-                    // Wrap array inside an object for binding
                     oModel.setData({ Models: data.value });
                     this.getView().byId("modelTable").setModel(oModel);
                 })
                 .catch(err => {
                     console.error("Error fetching models", err);
                 });
-        },
-        onAdd: function () {
-            var oModel = this.getView().getModel();
-            var newCode = oModel.getProperty("/newCode");
-            var newDescription = oModel.getProperty("/newDescription");
-            if (newCode && newDescription) {
-                oModel.getProperty("/ServiceTypes").push({
-                    Code: newCode,
-                    Description: newDescription,
-                    CreatedOn: new Date().toISOString().split('T')[0]
-                });
-                oModel.setProperty("/newCode", "");
-                oModel.setProperty("/newDescription", "");
-            }
         },
 
         onEdit: function (oEvent) {
@@ -69,7 +44,7 @@ sap.ui.define([
             }
 
             var oSelectedData = oContext.getObject();
-            var oModel = this.getView().getModel();
+            var oModel = this.getView().getModel("view");
 
             // Create Edit Dialog if not exists
             if (!this._oEditDialog) {
@@ -112,29 +87,67 @@ sap.ui.define([
                         text: "Save",
                         type: "Emphasized",
                         press: () => {
-                            // assign updated values back
-                            oSelectedData.modelServSpec = this._oModelServSpecInput.getValue();
-                            oSelectedData.blockingIndicator = this._oBlockingIndicatorInput.getValue();
-                            oSelectedData.serviceSelection = this._oServiceSelectionInput.getValue();
-                            oSelectedData.description = this._oDescriptionInput.getValue();
-                            oSelectedData.searchTerm = this._oSearchTermInput.getValue();
-                            oSelectedData.currencyCode = this._oCurrencyCodeInput.getValue();
+                            // Build updated payload
+                            const updatedData = {
+                                modelServSpec: this._oModelServSpecInput.getValue(),
+                                blockingIndicator: this._oBlockingIndicatorInput.getValue() === "true" || this._oBlockingIndicatorInput.getValue() === true,
+                                serviceSelection: this._oServiceSelectionInput.getValue() === "true" || this._oServiceSelectionInput.getValue() === true,
+                                description: this._oDescriptionInput.getValue(),
+                                searchTerm: this._oSearchTermInput.getValue(),
+                                currencyCode: this._oCurrencyCodeInput.getValue()
+                            };
 
-                            // Refresh model so table updates
-                            oModel.refresh(true);
+                            // Send PATCH request to CAP OData
+                            fetch(`/odata/v4/sales-cloud/ModelSpecifications('${(oSelectedData.modelSpecCode)}')`, {
+                                method: "PATCH",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify(updatedData)
+                            })
+                                .then(res => {
+                                    if (!res.ok) throw new Error("Update failed");
+                                    return res.json();
+                                })
+                                .then((updatedItem) => {
+                                    console.log(updatedItem);
+                                    /*
+                                    Update the table after changes with 2 ways
+                                    */
+                                    // Way 1: Update local model so table refreshes
+                                    var oModel1 = this.getView().byId("modelTable").getModel();
+                                    var aModels = oModel1.getProperty("/Models") || [];
+                                    var iIndex = aModels.findIndex(st => st.modelSpecCode === oSelectedData.modelSpecCode);
+                                    console.log(iIndex);
 
-                            this._oEditDialog.close();
+                                    if (iIndex > -1) {
+                                        aModels[iIndex] = updatedData;
+                                        oModel1.setProperty("/Models", aModels);
+                                    }
+                                    // Way 2 : re-fetch models from backend
+                                    // fetch("/odata/v4/sales-cloud/ModelSpecifications")
+                                    //     .then(res => res.json())
+                                    //     .then(data => {
+                                    //         var oNewModel = new sap.ui.model.json.JSONModel({ Models: data.value });
+                                    //         this.getView().byId("modelTable").setModel(oNewModel);
+                                    //     });
+
+                                    sap.m.MessageToast.show("Model updated successfully");
+                                    this._oEditDialog.close();
+                                })
+                                .catch(err => {
+                                    sap.m.MessageBox.error("Error updating model: " + err.message);
+                                });
                         }
                     }),
+
                     endButton: new Button({
                         text: "Cancel",
                         press: () => this._oEditDialog.close()
                     })
                 });
-
                 this.getView().addDependent(this._oEditDialog);
             }
-
             // Fill inputs with selected data
             this._oModelServSpecInput.setValue(oSelectedData.modelServSpec);
             this._oBlockingIndicatorInput.setValue(oSelectedData.blockingIndicator);
@@ -150,19 +163,41 @@ sap.ui.define([
             var oBindingContext = oEvent.getSource().getBindingContext();
             if (oBindingContext) {
                 var sPath = oBindingContext.getPath();
-                var oModel = this.getView().getModel();
+                // var oModel = this.getView().getModel("view");
+                var oModel = this.getView().byId("modelTable").getModel();
                 var oItem = oModel.getProperty(sPath);
+                if (!oItem) {
+                    sap.m.MessageBox.error("Could not find model data for deletion.");
+                    return;
+                }
 
                 MessageBox.confirm("Are you sure you want to delete " + oItem.modelServSpec + "?", {
                     title: "Confirm Deletion",
                     onClose: function (oAction) {
                         if (oAction === MessageBox.Action.OK) {
-                            var aModels = oModel.getProperty("/Models");
-                            var iIndex = aModels.indexOf(oItem);
-                            if (iIndex > -1) {
-                                aModels.splice(iIndex, 1);
-                                oModel.setProperty("/Models", aModels);
-                            }
+                            // 🔥 Call CAP backend DELETE
+                            fetch(`/odata/v4/sales-cloud/ModelSpecifications('${oItem.modelSpecCode}')`, {
+                                method: "DELETE"
+                            })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error("Failed to delete: " + response.statusText);
+                                    }
+
+                                    //  Update local JSONModel
+                                    var aRecords = oModel.getProperty("/Models");
+                                    var iIndex = aRecords.findIndex(st => st.modelSpecCode === oItem.modelSpecCode);
+                                    if (iIndex > -1) {
+                                        aRecords.splice(iIndex, 1);
+                                        oModel.setProperty("/Models", aRecords);
+                                    }
+
+                                    sap.m.MessageToast.show("Model deleted successfully!");
+                                })
+                                .catch(err => {
+                                    console.error("Error deleting Model:", err);
+                                    sap.m.MessageBox.error("Error: " + err.message);
+                                });
                         }
                     }
                 });

@@ -17,7 +17,7 @@
 			<Button id="_IDGenButton14" icon="sap-icon://add" tooltip="Add" text="New Model" press="onPress" />
 		</headerContent>
        
-       <Table id="modelTable" items="{/Models}" >
+       <Table id="modelTable" items="{path: '/Models'}" >
             <columns>
                 <Column id="_idGenColumn">
                     <Text id="_IDGenText7" text="modelServ.Spec" />

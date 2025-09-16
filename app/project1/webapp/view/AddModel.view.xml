@@ -1,58 +1,70 @@
-<mvc:View controllerName ="project1.controller.AddModel"
-xmlns:mvc="sap.ui.core.mvc"
-xmlns="sap.m"
-xmlns:form="sap.ui.layout.form"
->
-    <Page id="_IDGenPage6">
-    <content>
-        <Panel id="_IDGenPanel1"
-            
-            class="sapUiSmallMargin"
-            expandable="false">
+<mvc:View
+    controllerName="project1.controller.AddModel"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:form="sap.ui.layout.form">
 
-                <HBox id="_IDGenHBox4" class="sapUiSmallMargin" justifyContent="Start" alignItems="Start" fitContainer="true">
-                
+    <Page id="addModelPage" title="Add Model">
+        <content>
+            <Panel id="_IDGenPanel4" class="sapUiSmallMargin" expandable="false">
+
+                <!-- First row with HBox (okay to keep for checkboxes) -->
+                <HBox id="_IDGenHBox4" class="sapUiSmallMargin" justifyContent="Start" alignItems="Center">
                     <VBox id="_IDGenVBox2" class="sapUiSmallMarginEnd">
                         <Label id="_IDGenLabel" text="ModelServ.Spec:"/>
                         <Input id="_IDGenInput" width="200px"/>
                     </VBox>
 
                     <VBox id="_IDGenVBox3" class="sapUiSmallMarginEnd">
-                        <Label id="_IDGenLabel1" text="BlockingIndicator:"/>
-                        <CheckBox id="_IDGenCheckBox" />
+                        <Label id="_IDGenLabel1" text="Blocking Indicator:"/>
+                        <CheckBox id="_IDGenCheckBox"/>
                     </VBox>
+
                     <VBox id="_IDGenVBox4" class="sapUiSmallMarginEnd">
-                        <Label id="_IDGenLabel2" text="ServiceSelection:"/>
-                        <CheckBox id="_IDGenCheckBox2" />
+                        <Label id="_IDGenLabel2" text="Service Selection:"/>
+                        <CheckBox id="_IDGenCheckBox2"/>
                     </VBox>
                 </HBox>
 
+                <!-- General Data section -->
+                <Label id="_IDGenLabel3" text="General Data:" design="Bold" class="sapUiSmallMarginTop"/>
 
-                <Label id="_IDGenLabel6"  text="General Data:" design="Bold"/>
-                <VBox id="_IDGenVBox5" class="sapUiSmallMargin">
+                <form:SimpleForm id="_IDGenSimpleForm"
+                    editable="true"
+                    layout="ResponsiveGridLayout"
+                    class="sapUiSmallMargin">
+                 
+                    <form:content>
+                    <!-- <HBox id="_IDGenHBox7" justifyContent="Start" alignItems="Start" class="sapUiMediumMarginTop"> -->
+                        <Label id="_IDGenLabel4" text="Description" required="true"/>
+                        <Input id="_IDGenInput6" width="250px"/>
 
-                    <HBox id="_IDGenHBox7" class="">
-                        <Label id="_IDGenLabel3" text="Description: " required="true"/>
-                        <Input id="_IDGenInput6" />
-                    </HBox>
+                        <Label id="_IDGenLabel5" text="Search Term"/>
+                        <Input id="_IDGenInput7" width="250px"/>
 
-                    <HBox id="_IDGenHBox8" >
-                        <Label id="_IDGenLabel4" text="SearchTerm: "/>
-                        <Input id="_IDGenInput7" />
-                    </HBox>
-
-                    <HBox id="_IDGenHBox9" >
-                        <Label id="_IDGenLabel5" text="Currency: "/>
-                        <Input id="_IDGenInput8" />
-                    </HBox>
-
-                </VBox>
-
-                <VBox id="_IDGenVBox6" alignItems="Center" justifyContent="Center" height="200px">
-                        <Button id="_IDGenButton16" text="Add Model" icon="sap-icon://add" press="onAddModel"/>
-                </VBox>    
+                        <Label id="_IDGenLabel6" text=" Currency"/>
+				<!-- <Select id="_IDGenSelect6" 
+            class="sapUiSmallMarginStart"
+            width="200px" 
+						forceSelection="false"
+						items="{	path: '/Currency',
+							sorter: { path: 'Code' }
+              }">
+					<core:Item id="_IDGenItem5"  key="{code}" text="{description}" />
+				</Select> -->
+                        <Input id="_IDGenInput8" width="250px"/>
+                         <!-- </HBox> -->
+                    </form:content>
                 
-        </Panel>
-    </content>
- </Page>
+                </form:SimpleForm>
+
+               
+                <HBox id="_IDGenHBox5" justifyContent="Center" class="sapUiMediumMarginTop">
+                    <Button id="_IDGenButton16" text="Add Model" icon="sap-icon://add" press="onAddModel"/>
+                </HBox>
+
+            </Panel>
+        </content>
+    </Page>
 </mvc:View>

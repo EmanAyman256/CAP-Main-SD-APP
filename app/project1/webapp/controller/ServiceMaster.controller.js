@@ -10,39 +10,27 @@ sap.ui.define([
 ], function (Controller, Dialog, VBox, Text, Button, Spreadsheet, exportLibrary,JSONModel) {
     "use strict";
     return Controller.extend("project1.controller.ServiceMaster", {
+onInit: function () {
+    var oModel = new JSONModel();
+    var sUrl = "/odata/v4/sales-cloud/ServiceNumbers"; // relative to approuter
 
-        onInit: function () {
-
-            var oserviceModel = new sap.ui.model.json.JSONModel({
-                ServiceMaster: [
-                    { Code: "test1", SearchTerm: "Test", Description: "test", lastChangeDate: "19-8-2025", serviceType: "Test1", CreatedOn: "2025-08-18" },
-                    { Code: "st2", SearchTerm: "Test ST2", Description: "desc", lastChangeDate: "19-8-2025", serviceType: "Test2", CreatedOn: "2025-08-18" }
-                ],
-                newCode: "",
-                newDescription: ""
-            });
-            this.getView().setModel(oserviceModel);
-
-
-         
-
-
-            // Fetch data from CAP OData service
-            //       var oModel = new JSONModel();
-            // fetch("/odata/v4/sales-cloud/ServiceNumbers")
-            //     .then(response => response.json())
-            //     .then(data => {
-                 
-            //         // Wrap array inside an object for binding
-            //         oModel.setData({ ServiceMaster: data.value });
-            //         this.getView().byId("serviceMaster").setModel(oModel);
-            //     })
-            //     .catch(err => {
-            //         console.error("Error fetching ServiceNumbers", err);
-            //     });
-
-
-        },
+    fetch(sUrl)
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Network response was not ok " + response.statusText);
+            }
+            return response.json();
+        })
+        .then((data) => {
+            // CAP OData returns { value: [...] }
+            oModel.setData({ ServiceMaster: data.value });
+            this.getView().setModel(oModel);
+        })
+        .catch((err) => {
+            console.error("Error fetching ServiceNumbers", err);
+            sap.m.MessageBox.error("Failed to fetch data from backend.");
+        });
+},
         onNavigateToAddServiceMaster() {
             this.getOwnerComponent().getRouter().navTo("addServiceMaster");
         },

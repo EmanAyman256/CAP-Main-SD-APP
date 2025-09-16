@@ -33,29 +33,29 @@
           </HBox>
           <HBox id="_IDGenHBox11" class="sapUiSmallMargin" >
           <VBox id="_IDGenHBox13" class="sapUiSmallMargin">
-          <Label id="_IDGenLabel13" class="sapUiSmallMarginEnd" text="Select Service Type" required="true" ></Label>
+          <Label id="_IDGenLabel13" class="sapUiSmallMarginEnd" text="Select Service Type"  ></Label>
 				<Select id="_IDGenSelect"
             class="sapUiSmallMarginStart"
             width="200px"
             
 						forceSelection="false"
-						items="{	path: '/ServiceMaster',
-							sorter: { path: 'Code' }
+						items="{	path: '/ServiceTypes',
+							sorter: { path: 'serviceId' }
               }">
-					<core:Item id="_IDGenItem" key="{Code}" text="{Description}" />
+					<core:Item id="_IDGenItem" key="{serviceId}" text="{description}" />
           
 				</Select>
           </VBox>
           <VBox id="_IDGenVBox12"  class="sapUiSmallMargin">
-          <Label id="_IDGenLabel14" required="true" class="sapUiSmallMarginEnd" text="Select Base UnitOfMeasurment" ></Label>
+          <Label id="_IDGenLabel14" class="sapUiSmallMarginEnd" text="Select Base UnitOfMeasurment" ></Label>
 				<Select id="_IDGenSelect1" 
             class="sapUiSmallMarginStart"
             width="200px" 
 						forceSelection="false"
-						items="{	path: '/ServiceMaster',
-							sorter: { path: 'Code' }
+						items="{	path: '/UnitOfMeasurement',
+							sorter: { path: 'code' }
               }">
-					<core:Item id="_IDGenItem1"  key="{Code}" text="{Description}" />
+					<core:Item id="_IDGenItem1"  key="{code}" text="{description}" />
 				</Select>
           </VBox>
           </HBox>

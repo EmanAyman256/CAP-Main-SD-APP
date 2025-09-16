@@ -126,6 +126,8 @@ sap.ui.define([
                                     return response.json();
                                 })
                                 .then(updatedItem => {
+                                    console.log(updatedItem);
+                                    
                                     // Update local model so table refreshes
                                     var aServiceTypes = oModel.getProperty("/ServiceTypes") || [];
                                     //var aServiceTypes = oModel.getProperty("/ServiceTypes");
@@ -272,24 +274,6 @@ sap.ui.define([
                         } else {
                             sap.m.MessageBox.warning("Please fill in Code and Description.");
                         }
-
-                        // if (newCode && newDescription) {
-                        //     // use OData V4 binding to create
-                        //     var oTable = this.byId("serviceTable");
-                        //     var oListBinding = oTable.getBinding("items");
-
-                        //     oListBinding.create({
-                        //         serviceId: newCode,
-                        //         description: newDescription
-                        //     });
-
-                        //     // reset form
-                        //     oViewModel.setProperty("/newCode", "");
-                        //     oViewModel.setProperty("/newDescription", "");
-                        //     oDialog.close();
-                        // } else {
-                        //     MessageBox.error("Please fill in both Code and Description.");
-                        // }
                     }.bind(this)
                 }),
                 endButton: new Button({
