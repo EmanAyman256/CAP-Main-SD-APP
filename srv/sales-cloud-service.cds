@@ -1,5 +1,7 @@
 using {cuid} from '@sap/cds/common';
 using {salesdb} from '../db/sales-cloud-schema';
+@title: 'Sales Cloud Service'
+@Core.LongDescription: 'This service exposes APIs for managing Sales Cloud objects such as Line Types, Formulas, Materials, and Currencies.'
 
 service SalesCloudService {
   entity Currencies                 as projection on salesdb.Currency;

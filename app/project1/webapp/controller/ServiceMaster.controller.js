@@ -56,18 +56,52 @@ onInit: function () {
                         type: "Emphasized",
                         press: () => {
                             // Read values back from inputs
-                            var aContent = this._oEditDialog.getContent()[0].getItems();
-                            oSelectedData.Code = aContent[1].getValue();
-                            oSelectedData.SearchTerm = aContent[3].getValue();
-                            oSelectedData.Description = aContent[5].getValue();
-                            oSelectedData.lastChangeDate = aContent[7].getValue();
-                            oSelectedData.serviceType = aContent[9].getValue();
-                            oSelectedData.CreatedOn = aContent[11].getValue();
+                            // var aContent = this._oEditDialog.getContent()[0].getItems();
+                            // oSelectedData.Code = aContent[1].getValue();
+                            // oSelectedData.SearchTerm = aContent[3].getValue();
+                            // oSelectedData.Description = aContent[5].getValue();
+                            // oSelectedData.lastChangeDate = aContent[7].getValue();
+                            // oSelectedData.serviceType = aContent[9].getValue();
+                            // oSelectedData.CreatedOn = aContent[11].getValue();
 
                             // Refresh model so table updates
-                            oModel.refresh(true);
+                           var aContent = this._oEditDialog.getContent()[0].getItems();
 
-                            this._oEditDialog.close();
+                            fetch(`/odata/v4/sales-cloud/ServiceNumbers('${aContent.serviceTypeCode}')`, {
+                                method: "PATCH",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({
+                                    serviceId: sNewCode,       // optional if Code is key, only update if editable
+                                    description: sNewDescription
+                                })
+                            })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error("Failed to update: " + response.statusText);
+                                    }
+                                    return response.json();
+                                })
+                                .then(updatedItem => {
+                                    console.log(updatedItem);
+                                    
+                                    // Update local model so table refreshes
+                                    var aServiceTypes = oModel.getProperty("/ServiceTypes") || [];
+                                    //var aServiceTypes = oModel.getProperty("/ServiceTypes");
+                                    var iIndex = aServiceTypes.findIndex(st => st.serviceId === oSelectedData.serviceId);
+                                    if (iIndex > -1) {
+                                        aServiceTypes[iIndex] = updatedItem;
+                                        oModel.setProperty("/ServiceTypes", aServiceTypes);
+                                    }
+
+                                    sap.m.MessageToast.show("Service Type updated successfully!");
+                                    this._oEditDialog.close();
+                                })
+                                .catch(err => {
+                                    console.error("Error updating ServiceType:", err);
+                                    sap.m.MessageBox.error("Error: " + err.message);
+                                });
                         }
                     }),
                     endButton: new sap.m.Button({
