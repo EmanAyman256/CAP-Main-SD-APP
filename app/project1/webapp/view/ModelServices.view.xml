@@ -44,16 +44,16 @@
             </Panel>
 
           
-              <table:Table id="modelServicesTable" rows="{/Models}" visibleRowCount="10" minAutoRowCount="5" enableColumnReordering="true" columnHeaderHeight="40">
+              <table:Table id="modelServicesTable" rows="{/ModelSpecificationsDetails}" visibleRowCount="10" minAutoRowCount="5" enableColumnReordering="true" columnHeaderHeight="40">
                    
                 <table:columns>
                     <table:Column id="_IDGenColumn29" width="100px">
                         <table:label><Text id="_IDGenText54" text="Line" /></table:label>
-                        <table:template><Text id="_IDGenText28" text="{line}" /></table:template>
+                        <table:template><Text id="_IDGenText28" text="{lineIndex}" /></table:template>
                     </table:Column>
                     <table:Column id="_IDGenColumn30" width="100px">
                         <table:label><Text id="_IDGenText55" text="Service.No" /></table:label>
-                        <table:template><Text id="_IDGenText29" text="{serviceNo}" /></table:template>
+                        <table:template><Text id="_IDGenText29" text="{serviceNumberCode}" /></table:template>
                     </table:Column>
                     <table:Column id="_IDGenColumn31" width="100px">
                         <table:label><Text id="_IDGenText56" text="ShortText" /></table:label>
@@ -65,11 +65,11 @@
                     </table:Column>
                     <table:Column id="_IDGenColumn33" width="100px">
                         <table:label><Text id="_IDGenText58" text="Formula" /></table:label>
-                        <table:template><Text id="_IDGenText32" text="{formula}" /></table:template>
+                        <table:template><Text id="_IDGenText32" text="{formulaCode}" /></table:template>
                     </table:Column>
                     <table:Column id="_IDGenColumn34" width="120px">
                         <table:label><Text id="_IDGenText59" text="Formula Parameters" /></table:label>
-                        <table:template><Text id="_IDGenText33" text="{formulaParameters}" /></table:template>
+                        <table:template><Text id="_IDGenText33" text="{}" /></table:template>
                     </table:Column>
                     <table:Column id="_IDGenColumn35" width="100px">
                         <table:label><Text id="_IDGenText60" text="GrossPrice" /></table:label>
@@ -81,23 +81,23 @@
                     </table:Column>
                     <table:Column id="_IDGenColumn37" width="120px">
                         <table:label><Text id="_IDGenText63" text="UnitOfMeasure*" /></table:label>
-                        <table:template><Text id="_IDGenText64" text="{unitOfMeasure}" /></table:template>
+                        <table:template><Text id="_IDGenText64" text="{unitOfMeasurementCode}" /></table:template>
                     </table:Column>
                     <table:Column id="_IDGenColumn38" width="80px">
                         <table:label><Text id="_IDGenText65" text="Crcy" /></table:label>
-                        <table:template><Text id="_IDGenText66" text="{crcy}" /></table:template>
+                        <table:template><Text id="_IDGenText66" text="{currencyCode}" /></table:template>
                     </table:Column>
                     <table:Column id="_IDGenColumn11" width="120px">
                         <table:label><Text id="_IDGenText67" text="OverF.Percentage" /></table:label>
-                        <table:template><Text id="_IDGenText68" text="{overFPercentage}" /></table:template>
+                        <table:template><Text id="_IDGenText68" text="{overFulfilmentPercentage}" /></table:template>
                     </table:Column>
                     <table:Column id="_IDGenColumn12" width="120px">
                         <table:label><Text id="_IDGenText69" text="PriceChangeAllowed" /></table:label>
-                        <table:template><Text id="_IDGenText39" text="{priceChangeAllowed}" /></table:template>
+                        <table:template><Text id="_IDGenText39" text="{priceChangedAllowed}" /></table:template>
                     </table:Column>
                     <table:Column id="_IDGenColumn13" width="120px">
                         <table:label><Text id="_IDGenText70" text="UnlimitedOverF" /></table:label>
-                        <table:template><Text id="_IDGenText71" text="{unlimitedOverF}" /></table:template>
+                        <table:template><Text id="_IDGenText71" text="{unlimitedOverFulfillment}" /></table:template>
                     </table:Column>
                     <table:Column id="_IDGenColumn14" width="150px">
                         <table:label><Text id="_IDGenText72" text="PricePerUnitOfMeasurement" /></table:label>
@@ -105,15 +105,15 @@
                     </table:Column>
                     <table:Column id="_IDGenColumn15" width="100px">
                         <table:label><Text id="_IDGenText74" text="Mat Group" /></table:label>
-                        <table:template><Text id="_IDGenText75" text="{matGroup}" /></table:template>
+                        <table:template><Text id="_IDGenText75" text="{materialGroupCode}" /></table:template>
                     </table:Column>
                     <table:Column id="_IDGenColumn16" width="100px">
                         <table:label><Text id="_IDGenText76" text="Service Type" /></table:label>
-                        <table:template><Text id="_IDGenText43" text="{serviceType}" /></table:template>
+                        <table:template><Text id="_IDGenText43" text="{serviceTypeCode}" /></table:template>
                     </table:Column>
                     <table:Column id="_IDGenColumn17" width="120px">
                         <table:label><Text id="_IDGenText77" text="External.Service.No" /></table:label>
-                        <table:template><Text id="_IDGenText44" text="{externalServiceNo}" /></table:template>
+                        <table:template><Text id="_IDGenText44" text="{externalServiceNumber}" /></table:template>
                     </table:Column>
                     <table:Column id="_IDGenColumn18" width="100px">
                         <table:label><Text id="_IDGenText78" text="Service Text" /></table:label>
@@ -125,11 +125,11 @@
                     </table:Column>
                     <table:Column id="_IDGenColumn40" width="120px">
                         <table:label><Text id="_IDGenText80" text="PersonnelNumber" /></table:label>
-                        <table:template><Text id="_IDGenText47" text="{personnelNumber}" /></table:template>
+                        <table:template><Text id="_IDGenText47" text="{personnelNumberCode}" /></table:template>
                     </table:Column>
                     <table:Column id="_IDGenColumn21" width="100px">
                         <table:label><Text id="_IDGenText21" text="Line Type" /></table:label>
-                        <table:template><Text id="_IDGenText48" text="{lineType}" /></table:template>
+                        <table:template><Text id="_IDGenText48" text="{lineTypeCode}" /></table:template>
                     </table:Column>
                     <table:Column id="_IDGenColumn41" width="100px">
                         <table:label><Text id="_IDGenText22" text="Line Number" /></table:label>
@@ -137,7 +137,7 @@
                     </table:Column>
                     <table:Column id="_IDGenColumn23" width="80px">
                         <table:label><Text id="_IDGenText23" text="Alt" /></table:label>
-                        <table:template><Text id="_IDGenText50" text="{alt}" /></table:template>
+                        <table:template><Text id="_IDGenText50" text="{alternatives}" /></table:template>
                     </table:Column>
                     <table:Column id="_IDGenColumn24" width="100px">
                         <table:label><Text id="_IDGenText24" text="Bidder's Line" /></table:label>
@@ -145,11 +145,11 @@
                     </table:Column>
                     <table:Column id="_IDGenColumn25" width="100px">
                         <table:label><Text id="_IDGenText25" text="Supp.Line" /></table:label>
-                        <table:template><Text id="_IDGenText52" text="{suppLine}" /></table:template>
+                        <table:template><Text id="_IDGenText52" text="{supplementaryLine}" /></table:template>
                     </table:Column>
                     <table:Column id="_IDGenColumn26" width="100px">
                         <table:label><Text id="_IDGenText26" text="Cstg Ls" /></table:label>
-                        <table:template><Text id="_IDGenText53" text="{cstgLs}" /></table:template>
+                        <table:template><Text id="_IDGenText53" text="{lotSizeForCostingIsOne}" /></table:template>
                     </table:Column>
                     <table:Column id="_IDGenColumn27" width="150px">
                         <table:label><Text id="_IDGenText27" text="Actions" /></table:label>

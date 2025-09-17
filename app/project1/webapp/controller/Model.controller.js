@@ -12,6 +12,11 @@ sap.ui.define([
 
     return Controller.extend("project1.controller.Model", {
         onInit: function () {
+
+            this.getOwnerComponent().getRouter()
+                .getRoute("model")  
+                .attachPatternMatched(this._onRouteMatched, this);
+
             var oModel = new sap.ui.model.json.JSONModel({
                 Models: [],
             });
@@ -22,7 +27,7 @@ sap.ui.define([
             //         oTable.getBinding("items").refresh();
 
             // Fetch data from CAP OData service
-           
+
             fetch("/odata/v4/sales-cloud/ModelSpecifications")
                 .then(response => response.json())
                 .then(data => {
@@ -33,6 +38,23 @@ sap.ui.define([
                     console.error("Error fetching models", err);
                 });
         },
+
+        _onRouteMatched: function () {
+            this._loadModels();
+        },
+        _loadModels: function () {
+            var oModel = new sap.ui.model.json.JSONModel();
+            fetch("/odata/v4/sales-cloud/ModelSpecifications")
+                .then(response => response.json())
+                .then(data => {
+                    oModel.setData({ Models: data.value });
+                    this.getView().byId("modelTable").setModel(oModel);
+                })
+                .catch(err => {
+                    console.error("Error fetching models", err);
+                });
+        },
+
 
         onEdit: function (oEvent) {
             var oButton = oEvent.getSource();

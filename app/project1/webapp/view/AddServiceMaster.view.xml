@@ -97,6 +97,7 @@
                 >
                     <Label
                         id="_IDGenLabel13"
+                        required="true"
                         class="sapUiSmallMarginEnd"
                         text="Select Service Type"
                     />
@@ -119,6 +120,7 @@
                     class="sapUiSmallMargin"
                 >
                     <Label
+                    required="true"
                         id="_IDGenLabel14"
                         class="sapUiSmallMarginEnd"
                         text="Select Base UnitOfMeasurment"

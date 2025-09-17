@@ -6,103 +6,96 @@ sap.ui.define([
     "sap/m/Button",
     "sap/ui/export/Spreadsheet",
     "sap/ui/export/library",
-      "sap/ui/model/json/JSONModel"
-], function (Controller, Dialog, VBox, Text, Button, Spreadsheet, exportLibrary,JSONModel) {
+    "sap/ui/model/json/JSONModel"
+], function (Controller, Dialog, VBox, Text, Button, Spreadsheet, exportLibrary, JSONModel) {
     "use strict";
     return Controller.extend("project1.controller.ServiceMaster", {
-onInit: function () {
-    var oModel = new sap.ui.model.json.JSONModel({
-                ServiceNumbers: [],
-               
+        onInit: function () {
+            // Initialize the view model
+            var oModel = new sap.ui.model.json.JSONModel({
+                ServiceNumbers: []
             });
+
+            // Initialize the edit model
+            const oEditModel = new sap.ui.model.json.JSONModel({
+                editData: {
+                    searchTerm: ""
+                }
+            });
+
+            // Set models on the view
+            this.getView().setModel(oEditModel, "editModel");
             this.getView().setModel(oModel, "view");
+
+            // Set the model on the table explicitly with the "view" name
+            this.getView().byId("serviceMaster").setModel(oModel, "view");
+
+            // Fetch ServiceNumbers data
             fetch("/odata/v4/sales-cloud/ServiceNumbers")
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}, ${response.statusText}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
-                    // Wrap array inside an object for binding
-                    oModel.setData({ ServiceNumbers: data.value });
-                    this.getView().byId("serviceMaster").setModel(oModel);
+                    console.log("Fetched ServiceNumbers:", data); // Log the raw response
+                    // Ensure data.value is an array
+                    const serviceNumbers = Array.isArray(data.value) ? data.value : [];
+                    oModel.setData({ ServiceNumbers: serviceNumbers });
+                    console.log("ServiceNumbers set in model:", oModel.getProperty("/ServiceNumbers")); // Log the model data
+                    // Refresh the model to ensure the table updates
+                    oModel.refresh(true);
                 })
                 .catch(err => {
-                    console.error("Error fetching ServiceNumbers", err);
+                    console.error("Error fetching ServiceNumbers:", err);
+                    sap.m.MessageBox.error("Failed to load ServiceNumbers: " + err.message);
                 });
-
-},
-        onNavigateToAddServiceMaster() {
-            this.getOwnerComponent().getRouter().navTo("addServiceMaster");
         },
         onEdit: function () {
             var oTable = this.byId("serviceMaster");
             var oSelectedItem = oTable.getSelectedItem();
 
             if (!oSelectedItem) {
-                sap.m.MessageBox.warning("Please, select an item to edit");
+                sap.m.MessageBox.warning("Please select an item to edit");
                 return;
             }
 
-            var oContext = oSelectedItem.getBindingContext();
-            var oSelectedData = oContext.getObject();
-            var oModel = this.getView().getModel();
+            var oContext = oSelectedItem.getBindingContext("view"); // Specify the 'view' model explicitly
+            if (!oContext) {
+                sap.m.MessageBox.error("No binding context found for the selected item");
+                console.error("Binding context is undefined for selected item:", oSelectedItem);
+                return;
+            }
 
-            // Create Edit Dialog if not exists
+            var oSelectedData = oContext.getObject();
+            if (!oSelectedData) {
+                sap.m.MessageBox.error("No data found for the selected item");
+                console.error("Selected data is undefined:", oContext);
+                return;
+            }
+
             if (!this._oEditDialog) {
                 this._oEditDialog = new sap.m.Dialog({
                     title: "Edit Service Master",
                     titleAlignment: "Center",
                     contentWidth: "600px",
-                    content: new sap.m.VBox({}),
+                    content: new sap.m.VBox({
+                        items: [
+                            new sap.m.Label({ text: "Search Term" }),
+                            new sap.m.Input({ value: "{editModel>/editData/searchTerm}" }),
+                            new sap.m.Label({ text: "Description" }),
+                            new sap.m.Input({ value: "{editModel>/editData/description}" }),
+                            new sap.m.Label({ text: "Last Change Date" }),
+                            new sap.m.DatePicker({ value: "{editModel>/editData/lastChangeDate}" }),
+                            new sap.m.Label({ text: "Service Type" }),
+                            new sap.m.Input({ value: "{editModel>/editData/serviceText}" })
+                        ]
+                    }),
                     beginButton: new sap.m.Button({
                         text: "Save",
                         type: "Emphasized",
-                        press: () => {
-                            // Read values back from inputs
-                            // var aContent = this._oEditDialog.getContent()[0].getItems();
-                            // oSelectedData.Code = aContent[1].getValue();
-                            // oSelectedData.SearchTerm = aContent[3].getValue();
-                            // oSelectedData.Description = aContent[5].getValue();
-                            // oSelectedData.lastChangeDate = aContent[7].getValue();
-                            // oSelectedData.serviceType = aContent[9].getValue();
-                            // oSelectedData.CreatedOn = aContent[11].getValue();
-
-                            // Refresh model so table updates
-                           var aContent = this._oEditDialog.getContent()[0].getItems();
-
-                            fetch(`/odata/v4/sales-cloud/ServiceNumbers('${aContent.serviceTypeCode}')`, {
-                                method: "PATCH",
-                                headers: {
-                                    "Content-Type": "application/json"
-                                },
-                                body: JSON.stringify({
-                                    serviceId: sNewCode,       // optional if Code is key, only update if editable
-                                    description: sNewDescription
-                                })
-                            })
-                                .then(response => {
-                                    if (!response.ok) {
-                                        throw new Error("Failed to update: " + response.statusText);
-                                    }
-                                    return response.json();
-                                })
-                                .then(updatedItem => {
-                                    console.log(updatedItem);
-                                    
-                                    // Update local model so table refreshes
-                                    var aServiceTypes = oModel.getProperty("/ServiceTypes") || [];
-                                    //var aServiceTypes = oModel.getProperty("/ServiceTypes");
-                                    var iIndex = aServiceTypes.findIndex(st => st.serviceId === oSelectedData.serviceId);
-                                    if (iIndex > -1) {
-                                        aServiceTypes[iIndex] = updatedItem;
-                                        oModel.setProperty("/ServiceTypes", aServiceTypes);
-                                    }
-
-                                    sap.m.MessageToast.show("Service Type updated successfully!");
-                                    this._oEditDialog.close();
-                                })
-                                .catch(err => {
-                                    console.error("Error updating ServiceType:", err);
-                                    sap.m.MessageBox.error("Error: " + err.message);
-                                });
-                        }
+                        press: this.onSaveEdit.bind(this)
                     }),
                     endButton: new sap.m.Button({
                         text: "Cancel",
@@ -113,33 +106,79 @@ onInit: function () {
                 this.getView().addDependent(this._oEditDialog);
             }
 
-            // Fill dialog content with selected data
-            this._oEditDialog.removeAllContent();
-            this._oEditDialog.addContent(
-                new sap.m.VBox({
-                    items: [
-                        new sap.m.Label({ text: "Service Master Code", design: "Bold" }),
-                        new sap.m.Input({ value: oSelectedData.Code }),
-
-                        new sap.m.Label({ text: "Search Term", design: "Bold" }),
-                        new sap.m.Input({ value: oSelectedData.SearchTerm }),
-
-                        new sap.m.Label({ text: "Description", design: "Bold" }),
-                        new sap.m.Input({ value: oSelectedData.Description }),
-
-                        new sap.m.Label({ text: "Last Changed Date", design: "Bold" }),
-                        new sap.m.Input({ value: oSelectedData.lastChangeDate }),
-
-                        new sap.m.Label({ text: "Service Type", design: "Bold" }),
-                        new sap.m.Input({ value: oSelectedData.serviceType }),
-
-                        new sap.m.Label({ text: "Created On", design: "Bold" }),
-                        new sap.m.Input({ value: oSelectedData.CreatedOn })
-                    ]
-                })
-            );
+            // Clone selected data into dialog model
+            var oDialogModel = new sap.ui.model.json.JSONModel({
+                editData: Object.assign({}, oSelectedData)
+            });
+            this._oEditDialog.setModel(oDialogModel, "editModel");
 
             this._oEditDialog.open();
+        },
+        onSaveEdit: function () {
+            var oDialogModel = this._oEditDialog.getModel("editModel");
+            var oData = oDialogModel.getProperty("/editData");
+
+            // Format the date if necessary
+            if (oData.lastChangeDate instanceof Date) {
+                oData.lastChangeDate = oData.lastChangeDate.toISOString().split("T")[0];
+            } else if (typeof oData.lastChangeDate === "string" && oData.lastChangeDate.includes("/")) {
+                var parts = oData.lastChangeDate.split("/");
+                if (parts.length === 3) {
+                    let mm = parts[0].padStart(2, "0");
+                    let dd = parts[1].padStart(2, "0");
+                    let yy = parts[2].length === 2 ? "20" + parts[2] : parts[2];
+                    oData.lastChangeDate = `${yy}-${mm}-${dd}`;
+                }
+            }
+
+            // Create a clean object with only the properties expected by the OData service
+            var oCleanData = {
+                serviceNumberCode: oData.serviceNumberCode,
+                searchTerm: oData.searchTerm,
+                description: oData.description,
+                lastChangeDate: oData.lastChangeDate,
+                serviceText: oData.serviceText
+                // Add other fields expected by the OData service, if any
+            };
+
+            // Perform the PATCH request with clean data
+            fetch(`/odata/v4/sales-cloud/ServiceNumbers(${oData.serviceNumberCode})`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(oCleanData) // Use the clean data
+            })
+                .then(res => {
+                    if (!res.ok) throw new Error(res.statusText);
+                    return res.json(); // Assuming the server returns the updated object
+                })
+                .then(updated => {
+                    sap.m.MessageToast.show("Service updated successfully");
+
+                    // Get the table's model (using 'view' model)
+                    var oTableModel = this.getView().byId("serviceMaster").getModel("view");
+                    var aMasters = oTableModel.getProperty("/ServiceNumbers") || [];
+
+                    // Find the index of the updated item
+                    var iIndex = aMasters.findIndex(x => x.serviceNumberCode === oData.serviceNumberCode);
+                    if (iIndex > -1) {
+                        // Update the item in the array with the clean data
+                        aMasters[iIndex] = { ...aMasters[iIndex], ...oCleanData };
+                        oTableModel.setProperty("/ServiceNumbers", aMasters);
+                        oTableModel.refresh(true); // Explicitly refresh the model to update the table
+                    } else {
+                        console.error("Updated item not found in ServiceNumbers array");
+                    }
+
+                    // Close the dialog
+                    this._oEditDialog.close();
+                })
+                .catch(err => {
+                    console.error("Update failed", err);
+                    sap.m.MessageBox.error("Update failed: " + err.message);
+                });
+        },
+        onNavigateToAddServiceMaster() {
+            this.getOwnerComponent().getRouter().navTo("addServiceMaster");
         },
         onShowDetails: function () {
             var oTable = this.byId("serviceMaster");
@@ -150,7 +189,7 @@ onInit: function () {
                 return;
             }
 
-            var oContext = oSelectedItem.getBindingContext();
+            var oContext = oSelectedItem.getBindingContext("view");
             var oSelectedData = oContext.getObject();
 
             // Build dialog content dynamically
@@ -170,157 +209,198 @@ onInit: function () {
             }
 
             // Update dialog content each time
-            this._oValueHelpDialog.setTitle("Service Master: " + oSelectedData.Code);
+            this._oValueHelpDialog.setTitle("Service Master: " + oSelectedData.description);
 
             this._oValueHelpDialog.removeAllContent();
             this._oValueHelpDialog.addContent(
                 new sap.m.VBox({
                     items: [
                         new sap.m.Label({ text: "Service Master Code", design: "Bold" }),
-                        new sap.m.Input({ value: oSelectedData.Code, editable: false }),
+                        new sap.m.Input({ value: oSelectedData.serviceNumberCode, editable: false }),
 
                         new sap.m.Label({ text: "Search Term", design: "Bold" }),
-                        new sap.m.Input({ value: oSelectedData.SearchTerm, editable: false }),
+                        new sap.m.Input({ value: oSelectedData.searchTerm, editable: false }),
 
                         new sap.m.Label({ text: "Description", design: "Bold" }),
-                        new sap.m.Input({ value: oSelectedData.Description, editable: false }),
+                        new sap.m.Input({ value: oSelectedData.description, editable: false }),
 
                         new sap.m.Label({ text: "Last Changed Date", design: "Bold" }),
                         new sap.m.Input({ value: oSelectedData.lastChangeDate, editable: false }),
 
                         new sap.m.Label({ text: "Service Type", design: "Bold" }),
-                        new sap.m.Input({ value: oSelectedData.serviceType, editable: false }),
+                        new sap.m.Input({ value: oSelectedData.serviceText, editable: false }),
 
-                        new sap.m.Label({ text: "Created On", design: "Bold" }),
-                        new sap.m.Input({ value: oSelectedData.CreatedOn, editable: false })
+
                     ]
                 })
             );
 
             this._oValueHelpDialog.open();
         },
+        _generateUUID: function () {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        },
         onCopy: function () {
             var oTable = this.byId("serviceMaster");
             var oSelectedItem = oTable.getSelectedItem();
-
             if (!oSelectedItem) {
                 sap.m.MessageBox.warning("Please, select an item to copy");
                 return;
             }
 
-            var oContext = oSelectedItem.getBindingContext();
-            var oSelectedData = oContext.getObject();
-            var oModel = this.getView().getModel();
-            var aData = oModel.getProperty("/ServiceMaster");
+            var oContext = oSelectedItem.getBindingContext("view");
+            if (!oContext) {
+                sap.m.MessageBox.error("No binding context found for the selected item");
+                console.error("Binding context is undefined for selected item:", oSelectedItem);
+                return;
+            }
 
-            // Create a new object as a copy
-            var oNewData = Object.assign({}, oSelectedData);
-            oNewData.Code = oNewData.Code + "_Copy"; // give it a unique code
+            var oSelectedData = Object.assign({}, oContext.getObject());
+            console.log("Selected data for copy:", oSelectedData); // Debug: Log selected data
 
-            // Create Copy Dialog if not exists
+            this._createCopyDialog(oSelectedData);
+        },
+        _createCopyDialog: function (oData) {
             if (!this._oCopyDialog) {
                 this._oCopyDialog = new sap.m.Dialog({
                     title: "Copy Service Master",
-                    titleAlignment: "Center",
                     contentWidth: "600px",
-                    content: new sap.m.VBox({}),
+                    content: new sap.m.VBox(),
                     beginButton: new sap.m.Button({
                         text: "Save",
                         type: "Emphasized",
-                        press: () => {
-                            var aContent = this._oCopyDialog.getContent()[0].getItems();
-
-                            var oNewEntry = {
-                                Code: aContent[1].getValue(),
-                                SearchTerm: aContent[3].getValue(),
-                                Description: aContent[5].getValue(),
-                                lastChangeDate: aContent[7].getValue(),
-                                serviceType: aContent[9].getValue(),
-                                CreatedOn: aContent[11].getValue()
-                            };
-
-                            // Add new entry to the array
-                            aData.push(oNewEntry);
-                            oModel.setProperty("/ServiceMaster", aData);
-                            oModel.refresh(true);
-
-                            this._oCopyDialog.close();
-                            sap.m.MessageToast.show("Item copied successfully");
-                        }
+                        press: this._onCopySave.bind(this)
                     }),
                     endButton: new sap.m.Button({
                         text: "Cancel",
                         press: () => this._oCopyDialog.close()
                     })
                 });
-
                 this.getView().addDependent(this._oCopyDialog);
             }
 
-            // Fill dialog with copied data
+            console.log("Dialog data:", oData); // Debug: Log data passed to dialog
+
             this._oCopyDialog.removeAllContent();
             this._oCopyDialog.addContent(
                 new sap.m.VBox({
                     items: [
-                        new sap.m.Label({ text: "Service Master Code", design: "Bold" }),
-                        new sap.m.Input({ value: oNewData.Code }),
-
-                        new sap.m.Label({ text: "Search Term", design: "Bold" }),
-                        new sap.m.Input({ value: oNewData.SearchTerm }),
-
-                        new sap.m.Label({ text: "Description", design: "Bold" }),
-                        new sap.m.Input({ value: oNewData.Description }),
-
-                        new sap.m.Label({ text: "Last Changed Date", design: "Bold" }),
-                        new sap.m.Input({ value: oNewData.lastChangeDate }),
-
-                        new sap.m.Label({ text: "Service Type", design: "Bold" }),
-                        new sap.m.Input({ value: oNewData.serviceType }),
-
-                        new sap.m.Label({ text: "Created On", design: "Bold" }),
-                        new sap.m.Input({ value: oNewData.CreatedOn })
+                        new sap.m.Label({ text: "Service Number Code" }),
+                        new sap.m.Input({ value: oData.serviceNumberCode || "", editable: false, id: "ServiceNumberCodeID" }),
+                        new sap.m.Label({ text: "Search Term" }),
+                        new sap.m.Input({ value: oData.searchTerm || "", id: "copyInputSearch" }),
+                        new sap.m.Label({ text: "Description" }),
+                        new sap.m.Input({ value: oData.description || "", id: "copyInputDesc" }),
+                        new sap.m.Label({ text: "Last Changed Date" }),
+                        new sap.m.Input({ value: oData.lastChangeDate || "", id: "copyInputDate" }),
+                        new sap.m.Label({ text: "Service Type" }),
+                        new sap.m.Input({ value: oData.serviceText || "", id: "copyInputServiceText" })
                     ]
                 })
             );
 
             this._oCopyDialog.open();
         },
-        onExport: function () {
-            var oModel = this.getView().getModel();
-            var aData = oModel.getProperty("/ServiceMaster");
-
-            if (!aData || aData.length === 0) {
-                sap.m.MessageBox.warning("No data available to export");
-                return;
-            }
-
-            // Define the Excel columns
-            var aColumns = [
-                { label: "Service Master Code", property: "Code" },
-                { label: "Search Term", property: "SearchTerm" },
-                { label: "Description", property: "Description" },
-                { label: "Last Changed Date", property: "lastChangeDate" },
-                { label: "Service Type", property: "serviceType" },
-                { label: "Created On", property: "CreatedOn" }
-            ];
-
-            // Settings for Spreadsheet
-            var oSettings = {
-                workbook: { columns: aColumns },
-                dataSource: aData,
-                fileName: "ServiceMaster.xlsx",
-                worker: false // set to true for large datasets
+        _onCopySave: function () {
+            var sCode = sap.ui.getCore().byId("ServiceNumberCodeID").getValue();
+            var sSearch = sap.ui.getCore().byId("copyInputSearch").getValue();
+            var sDesc = sap.ui.getCore().byId("copyInputDesc").getValue();
+            var sDate = sap.ui.getCore().byId("copyInputDate").getValue();
+            var sServiceText = sap.ui.getCore().byId("copyInputServiceText").getValue();
+            var sNewCode = this._generateUUID();
+            var oPayload = {
+                serviceNumberCode: sNewCode, // Changed to match table binding and server expectation
+                searchTerm: sSearch,
+                description: sDesc,
+                lastChangeDate: sDate,
+                serviceText: sServiceText
             };
 
-            var oSheet = new Spreadsheet(oSettings);
-            oSheet.build()
-                .then(() => {
-                    sap.m.MessageToast.show("Export finished!");
+            console.log("Payload for POST:", oPayload); // Debug: Log payload
+
+            fetch("/odata/v4/sales-cloud/ServiceNumbers", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(oPayload)
+            })
+                .then(res => {
+                    if (!res.ok) return res.json().then(e => { throw new Error(e.error?.message || res.statusText); });
+                    return res.json().catch(() => oPayload); // Handle empty response (201 Created)
                 })
-                .finally(() => {
-                    oSheet.destroy();
+                .then(created => {
+                    sap.m.MessageToast.show("Item copied successfully");
+                    console.log("Server response:", created); // Debug: Log response
+
+                    var oViewModel = this.getView().getModel("view");
+                    var aData = oViewModel.getProperty("/ServiceNumbers") || [];
+                    console.log("Current ServiceNumbers array:", aData); // Debug: Log current array
+
+                    // Ensure the created item has the correct structure
+                    aData.push({
+                        serviceNumberCode: created.serviceNumberCode || sCode,
+                        searchTerm: created.searchTerm || sSearch,
+                        description: created.description || sDesc,
+                        lastChangeDate: created.lastChangeDate || sDate,
+                        serviceText: created.serviceText || sServiceText
+                    });
+
+                    oViewModel.setProperty("/ServiceNumbers", aData);
+                    console.log("Updated ServiceNumbers array:", oViewModel.getProperty("/ServiceNumbers")); // Debug: Log updated array
+
+                    // Refresh the JSON model to update the table
+                    oViewModel.refresh(true);
+
+                    // Verify table binding
+                    var oTable = this.byId("serviceMaster");
+                    console.log("Table items binding:", oTable.getBinding("items")); // Debug: Log binding
+
+                    this._oCopyDialog.close();
+                })
+                .catch(err => {
+                    console.error("Copy failed:", err);
+                    sap.m.MessageBox.error("Copy failed: " + err.message);
                 });
         },
+        
+      onExport: function () {
+    var oModel = this.getView().getModel("view"); // Use the 'view' model
+    var aData = oModel.getProperty("/ServiceNumbers"); // Correct path
+
+    if (!aData || aData.length === 0) {
+        sap.m.MessageBox.warning("No data available to export");
+        return;
+    }
+
+    // Define the Excel columns with correct property names
+    var aColumns = [
+        { label: "Service Master Code", property: "serviceNumberCode" },
+        { label: "Search Term", property: "searchTerm" },
+        { label: "Description", property: "description" },
+        { label: "Last Changed Date", property: "lastChangeDate" },
+        { label: "Service Type", property: "serviceText" }
+        // Remove 'CreatedOn' unless it exists in the data
+    ];
+
+    // Settings for Spreadsheet
+    var oSettings = {
+        workbook: { columns: aColumns },
+        dataSource: aData,
+        fileName: "ServiceMaster.xlsx",
+        worker: false // Set to true for large datasets
+    };
+
+    var oSheet = new sap.ui.export.Spreadsheet(oSettings);
+    oSheet.build()
+        .then(() => {
+            sap.m.MessageToast.show("Export finished!");
+        })
+        .finally(() => {
+            oSheet.destroy();
+        });
+},
         onSearch: function (oEvent) {
             var sQuery = oEvent.getParameter("newValue");
             var oTable = this.byId("serviceMaster");

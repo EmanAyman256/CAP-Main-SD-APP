@@ -17,7 +17,7 @@
     	<headerContent>
 			<Button id="_IDGenButton33" icon="sap-icon://add" tooltip="Add" text="New Formula" press="onNavigateToAddFormula" />
 		</headerContent>
-          <Table id="formulasTable" items="{/Formulas}">
+          <Table id="formulasTable" items="{path: '/Formulas'}">
             <columns>
                 <Column id="_IDGenColumn19">
                     <Text id="_IDGenText37" text="Code" />
@@ -32,24 +32,10 @@
             </columns>
             <items>
                 <ColumnListItem id="_IDGenColumnListItem3">
-                 <!-- <cells>
-                        <Input id="_IDGenInput4" value="{Code}" visible="{editMode}" editable="{editMode}" />
-                        <Text id="_IDGenText4" text="{Code}" visible="{= !${editMode} }" />
-                        <Input id="_IDGenInput5" value="{Description}" visible="{editMode}" editable="{editMode}" />
-                        <Text id="_IDGenText5" text="{Description}" visible="{= !${editMode} }" />
-                        <Text id="_IDGenText6" text="{CreatedOn}" />
-                        <HBox id="_IDGenHBox">
-                            <Button id="_IDGenButton1" icon="sap-icon://edit" press="onEdit" visible="{= !${editMode} }" />
-                            <Button id="_IDGenButton15" icon="sap-icon://save" press="onSave" visible="{editMode}" />
-                            <Button id="_IDGenButton2" icon="sap-icon://delete" press="onDelete" />
-                        </HBox>
-                    </cells> -->
                     <cells>
                     
-                        <!-- <Text id="_IDGenText41" text="{formula}" />
-                        <Text id="_IDGenText42" text="{description}" /> -->
-                         <Text id="_IDGenText41" text="{Code}" />
-                        <Text id="_IDGenText42" text="{Description}" />
+                        <Text id="_IDGenText41" text="{formula}" />
+                        <Text id="_IDGenText42" text="{description}" />
                         <HBox id="_IDGenHBox20">
                             <Button id="_IDGenButton34" icon="sap-icon://information" press="onDetails" />
                             <Button id="_IDGenButton35" icon="sap-icon://delete" press="onDelete" />
@@ -57,35 +43,9 @@
                     </cells>
                 </ColumnListItem>
             </items>
-            <!-- <footer>
-                <Toolbar id="_IDGenToolbar1">
-                    <content>
-                        <HBox id="_IDGenHBox1">
-                            <Input id="_IDGenInput1" placeholder="Code" value="{/newCode}" width="200px" />
-                            <Input id="_IDGenInput2" placeholder="Description" value="{/newDescription}" width="200px" />
-                            <Button id="_IDGenButton3" text="Add" press="onAdd" type="Emphasized" />
-                        </HBox>
-                    </content>
-                </Toolbar>
-            </footer> -->
-            <!-- <ColumnListItem id="_IDGenColumnListItem1">
-                <cells>
-                    <Input id="_IDGenInput1" placeholder="Code" value="{/newCode}" width="200px" />
-                    <Input id="_IDGenInput2" placeholder="Description" value="{/newDescription}" width="200px" />
-                    <Text id="_IDGenText7" text="" />
-                    <HBox id="_IDGenHBox1">
-                        <Button id="_IDGenButton3" text="Add" press="onAdd" type="Emphasized" />
-                    </HBox>
-                </cells>
-            </ColumnListItem> -->
+            
         </Table>
-         <!-- <VBox id="_IDGenVBox1" class="sapUiSmallMargin">
-            <HBox id="_IDGenHBox1">
-                <Input id="_IDGenInput1" placeholder="Code" value="{/newCode}" width="200px" />
-                <Input id="_IDGenInput2" placeholder="Description" value="{/newDescription}" width="200px" />
-                <Button id="_IDGenButton3" text="Add" press="onAdd" type="Emphasized" />
-            </HBox>
-        </VBox> -->
+      
       
     </Page>
 </mvc:View>

@@ -67,10 +67,9 @@
                 />
             </HBox>
         </Panel>
-        <Table
+       <Table
     id="serviceMaster"
-    items="{
-        path: '/ServiceNumbers'}"
+    items="{view>/ServiceNumbers}"
     mode="SingleSelectMaster">
     <columns>
         <Column id="_IDGenColumn69">
@@ -92,17 +91,14 @@
     <items>
         <ColumnListItem id="_IDGenColumnListItem2">
             <cells>
-                <!-- <Text id="_IDGenText86" text="{serviceNumberCodeString}"/> -->
-                 <Text id="_IDGenText86" text="Testing Code"/>
-
-                <Text id="_IDGenText87" text="{searchTerm}"/>
-                <Text id="_IDGenText88" text="{description}"/>
-                <Text id="_IDGenText89" text="{lastChangeDate}"/>
-                <Text id="_IDGenText90" text="{serviceTypeCode}"/>
+                <Text id="_IDGenText86" text="{view>serviceNumberCode}"/>
+                <Text id="_IDGenText87" text="{view>searchTerm}"/>
+                <Text id="_IDGenText88" text="{view>description}"/>
+                <Text id="_IDGenText89" text="{view>lastChangeDate}"/>
+                <Text id="_IDGenText90" text="{view>serviceText}"/>
             </cells>
         </ColumnListItem>
     </items>
 </Table>
-
     </Page>
 </mvc:View>

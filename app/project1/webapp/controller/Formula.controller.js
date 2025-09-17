@@ -29,7 +29,8 @@ sap.ui.define([
                 wizard: { currentStep: "step1" } // Explicitly track current step
             });
             this.getView().setModel(oModel);
-            this.getView().getModel().setProperty("/wizard/currentStep", "step1");
+            //this.getView().setModel(oModel, "view");
+            // this.getView().getModel().setProperty("/wizard/currentStep", "step1");
         },
         onAddOperation: function (oEvent) {
             var oTextArea = this.getView().byId("relationInput");
@@ -123,63 +124,128 @@ sap.ui.define([
                 MessageToast.show("Invalid expression: " + e.message);
             }
         },
-        onSaveFormula: function () {
-            var oView = this.getView();
+        // onSaveFormula: function () {
+        //     var oView = this.getView();
 
-            // Get user inputs
-            var sName = oView.byId("formulaNameInput").getValue();
-            var sDescription = oView.byId("formulaDescriptionInput").getValue();
-            var sRelation = oView.byId("relationInput").getValue();
-            console.log(sName);
-
-
-            // Basic validation
-            if (!sName || !sDescription) {
-                sap.m.MessageToast.show("Please fill in all required fields.");
-                return;
-            }
-
-            // Access global/shared model
-            // var oModel = this.getOwnerComponent().getModel(); // assuming you registered it in Component.js
-            // var aFormulas = oModel.getProperty("/Formulas") || [];
-
-            // // Create new formula object
-            // var oNewFormula = {
-            //     Code: sName,                // use Name as Code
-            //     Description: sDescription,  // formula description
-            //     Relation: sRelation         // optional, if you want to keep it
-            // };
-
-            // // Append to existing formulas
-            // aFormulas.push(oNewFormula);
-
-            // // Update the model
-            // oModel.setProperty("/Formulas", aFormulas);
+        //     // Get user inputs
+        //     var sName = oView.byId("formulaNameInput").getValue();
+        //     var sDescription = oView.byId("formulaDescriptionInput").getValue();
+        //     var sRelation = oView.byId("relationInput").getValue();
+        //     console.log(sName);
 
 
-            // sap.m.MessageToast.show("Formula saved successfully!");
-            sap.m.MessageBox.success("Formula saved successfully!,Press OK To return to the main page", {
-                title: "Success",
-                actions: [sap.m.MessageBox.Action.OK],
-                onClose: function (sAction) {
-                    if (sAction === sap.m.MessageBox.Action.OK) {
-                        // Navigate back to the main page (formulas list)
-                        var oRouter = sap.ui.core.UIComponent.getRouterFor(this);
-                        oRouter.navTo("formulas");
-                    }
-                }.bind(this) // important to keep controller context
-            });
+        //     // Basic validation
+        //     if (!sName || !sDescription) {
+        //         sap.m.MessageToast.show("Please fill in all required fields.");
+        //         return;
+        //     }
+
+        //     // Access global/shared model
+        //     // var oModel = this.getOwnerComponent().getModel(); // assuming you registered it in Component.js
+        //     // var aFormulas = oModel.getProperty("/Formulas") || [];
+
+        //     // // Create new formula object
+        //     // var oNewFormula = {
+        //     //     Code: sName,                // use Name as Code
+        //     //     Description: sDescription,  // formula description
+        //     //     Relation: sRelation         // optional, if you want to keep it
+        //     // };
+
+        //     // // Append to existing formulas
+        //     // aFormulas.push(oNewFormula);
+
+        //     // // Update the model
+        //     // oModel.setProperty("/Formulas", aFormulas);
 
 
-            // Optionally reset wizard inputs
-            oView.byId("formulaNameInput").setValue("");
-            oView.byId("formulaDescriptionInput").setValue("");
-            oView.byId("relationInput").setValue("");
-        },
+        //     // sap.m.MessageToast.show("Formula saved successfully!");
+        //     sap.m.MessageBox.success("Formula saved successfully!,Press OK To return to the main page", {
+        //         title: "Success",
+        //         actions: [sap.m.MessageBox.Action.OK],
+        //         onClose: function (sAction) {
+        //             if (sAction === sap.m.MessageBox.Action.OK) {
+        //                 // Navigate back to the main page (formulas list)
+        //                 var oRouter = sap.ui.core.UIComponent.getRouterFor(this);
+        //                 oRouter.navTo("formulas");
+        //             }
+        //         }.bind(this) // important to keep controller context
+        //     });
+
+
+        //     // Optionally reset wizard inputs
+        //     oView.byId("formulaNameInput").setValue("");
+        //     oView.byId("formulaDescriptionInput").setValue("");
+        //     oView.byId("relationInput").setValue("");
+        // },
 
 
 
         // not needed
+
+        onSaveFormula: function () {
+            var oView = this.getView();
+            var oModel = this.getOwnerComponent().getModel(); // OData V4 
+            var sName = oView.byId("formulaNameInput").getValue();
+            var sDescription = oView.byId("formulaDescriptionInput").getValue();
+            var sRelation = oView.byId("relationInput").getValue();
+            // var params = oModel.getProperty("/params");
+            var oLocalModel = this.getView().getModel(); // unnamed
+            var params = oLocalModel.getProperty("/params");
+            var paramIds = params.map(p => p.id);
+            var paramDescriptions = params.map(p => p.description);
+            var numberOfParams = paramIds.length;
+
+            if (!sName || !sDescription) {
+                sap.m.MessageToast.show("Please fill in all required fields.");
+                return;
+            }
+            var oPayload = {
+                formula: sName,
+                description: sDescription,
+                numberOfParameters: numberOfParams,
+                parameterIds: paramIds,
+                parameterDescriptions: paramDescriptions,
+                formulaLogic: sRelation,
+                expression: sRelation
+            };
+            fetch("/odata/v4/sales-cloud/Formulas", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(oPayload)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to create formula: " + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // sap.m.MessageToast.show("Formula created successfully!");
+                    sap.m.MessageBox.success("Formula saved successfully!,Press OK To return to the main page", {
+                        title: "Success",
+                        actions: [sap.m.MessageBox.Action.OK],
+                        onClose: function (sAction) {
+                            if (sAction === sap.m.MessageBox.Action.OK) {
+                                var oRouter = sap.ui.core.UIComponent.getRouterFor(this);
+                                oRouter.navTo("formulas");
+                            }
+                        }.bind(this) 
+                    });
+                    console.log("Created Formula:", data);
+                    var oModel = this.getView().getModel();
+                    var aRecords = oModel.getProperty("/Formulas") || [];
+                    aRecords.push(data);
+                    oModel.setProperty("/Formulas", aRecords);
+                })
+                .catch(err => {
+                    console.error("Error creating Formula:", err);
+                    sap.m.MessageBox.error("Error: " + err.message);
+                });
+        },
+
+
         onNext: function () {
             var oWizard = this.getView().byId("wizard");
             var currentStep = oWizard.getCurrentStep();

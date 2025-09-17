@@ -19,6 +19,13 @@ service SalesCloudService {
   entity ServiceInvoiceMains        as projection on salesdb.ServiceInvoiceMain;
   entity InvoiceSubItems            as projection on salesdb.InvoiceSubItem;
 
+  // Equivalent to /mainitems/{salesQuotation}/{salesQuotationItem}
+  function getSalesQuotationItemById(salesQuotation : String, salesQuotationItem : String) returns String;
+
+  // Equivalent to /mainitems/referenceid?referenceId=...
+  // function getInvoiceMainItemsByReferenceId(referenceId : String) returns many MainItems;
+
+
 
   // === Entities exposed via READ handlers ===
   entity SalesOrders @readonly @(path: '/salesordercloud') {
@@ -171,4 +178,8 @@ service SalesCloudService {
 
   action findBySubItemCode(subItemCode: Integer)                             returns InvoiceSubItems;
   action searchSubItem(keyword: String)                                      returns many InvoiceSubItems;
+
+
+
+ 
 }

@@ -22,8 +22,22 @@ sap.ui.define([
 
     return Controller.extend("project1.controller.ModelServices", {
         onInit: function () {
+            // var oModel = new sap.ui.model.json.JSONModel({
+            //     ModelServices: [],
+            // });
+            // this.getView().setModel(oModel, "view");
+            // fetch("/odata/v4/sales-cloud/ModelSpecificationsDetails")
+            //     .then(response => response.json())
+            //     .then(data => {
+            //         oModel.setData({ ModelServices: data.value });
+            //         this.getView().byId("modelServicesTable").setModel(oModel);
+            //     })
+            //     .catch(err => {
+            //         console.error("Error fetching model Services", err);
+            //     });
+
             var oOriginalData = {
-                Models: [
+                ModelSpecificationsDetails: [
                     {
                         line: "001",
                         serviceNo: "S001",
@@ -86,7 +100,7 @@ sap.ui.define([
                 originalModels: [] // Added to store the original dataset
             };
             // Initialize Models with original data and store originalModels
-            oOriginalData.originalModels = JSON.parse(JSON.stringify(oOriginalData.Models));
+            oOriginalData.originalModels = JSON.parse(JSON.stringify(oOriginalData.ModelSpecificationsDetails));
             var oModel = new sap.ui.model.json.JSONModel(oOriginalData);
             // var oModel = new sap.ui.model.json.JSONModel({
             //     // dialogVisible: false,
@@ -323,6 +337,8 @@ sap.ui.define([
                         aData.splice(iIndex, 1); // remove 1 element at index
                         oModel.setProperty("/Models", aData);
 
+                        //DB Deletion
+                        
                         sap.m.MessageToast.show("Record deleted successfully.");
                     }
                 }
