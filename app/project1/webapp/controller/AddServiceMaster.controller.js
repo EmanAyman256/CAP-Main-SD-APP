@@ -9,6 +9,31 @@ sap.ui.define([
         onInit: function () {
             var oView = this.getView();
 
+            // Initialize the view model
+            var oViewModel = new sap.ui.model.json.JSONModel({
+                ServiceNumbers: []
+            });
+            oView.setModel(oViewModel, "view");
+
+            // Fetch ServiceNumbers data
+            fetch("/odata/v4/sales-cloud/ServiceNumbers")
+                .then(response => {
+                    if (!response.ok) throw new Error(response.statusText);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Fetched ServiceNumbers:", data.value); // Debug: Log data
+                    oViewModel.setData({ ServiceNumbers: Array.isArray(data.value) ? data.value : [] });
+                    oViewModel.refresh(true);
+                })
+                .catch(err => {
+                    console.error("Error fetching ServiceNumbers:", err);
+                    sap.m.MessageBox.error("Failed to load ServiceNumbers: " + err.message);
+                });
+
+            // Bind to routeMatched event for navigation
+            this.getOwnerComponent().getRouter().getRoute("serviceMaster").attachMatched(this._onRouteMatched, this);
+
             // Service Types
             fetch("/odata/v4/sales-cloud/ServiceTypes")
                 .then(res => res.json())
@@ -33,8 +58,43 @@ sap.ui.define([
                     oView.setModel(oModel, "unitsOfMeasurement");
                 });
         },
+
+        _onRouteMatched: function (oEvent) {
+            var oArguments = oEvent.getParameter("arguments");
+            var oViewModel = this.getView().getModel("view");
+
+            // Refetch ServiceNumbers to ensure table updates after navigation
+            fetch("/odata/v4/sales-cloud/ServiceNumbers")
+                .then(response => {
+                    if (!response.ok) throw new Error(response.statusText);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Refetched ServiceNumbers on route matched:", data.value);
+                    oViewModel.setData({ ServiceNumbers: Array.isArray(data.value) ? data.value : [] });
+                    oViewModel.refresh(true);
+                    console.log("Updated ServiceNumbers array:", oViewModel.getProperty("/ServiceNumbers"));
+                })
+                .catch(err => {
+                    console.error("Error refetching ServiceNumbers:", err);
+                    sap.m.MessageBox.error("Failed to refresh table: " + err.message);
+                });
+        },
+
+        _generateUUID: function () {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        },
+
+        _isValidNumber: function (sValue) {
+            return !isNaN(parseInt(sValue, 10)) && sValue.trim() !== "";
+        },
+
         onAddPress: function () {
             var oView = this.getView();
+
             // Collect values from inputs
             var serviceNumber = oView.byId("_IDGenInput1").getValue();
             var searchTerm = oView.byId("_IDGenInput2").getValue();
@@ -42,71 +102,148 @@ sap.ui.define([
             var serviceText = oView.byId("_IDGenInput4").getValue();
             var shortTextAllowed = oView.byId("_IDGenCheckBox1").getSelected();
             var deletionIndicator = oView.byId("_IDGenCheckBox3").getSelected();
-
-            // Conversion values
             var toBeConvertedNum = oView.byId("_IDGenInput5").getValue();
             var convertedNum = oView.byId("_IDGenInput9").getValue();
-
-            // Dropdowns
             var serviceTypeCode = oView.byId("_IDGenSelect").getSelectedKey();
             var unitOfMeasurementCode = oView.byId("_IDGenSelect1").getSelectedKey();
             var toBeConvertedUOM = oView.byId("_IDGenSelect2").getSelectedKey();
             var convertedUOM = oView.byId("_IDGenSelect3").getSelectedKey();
             var materialGroupCode = oView.byId("_IDGenSelect4").getSelectedKey();
-
-            // Main Item checkbox
             var mainItem = oView.byId("_IDGenCheckBox4").getSelected();
+
+            // Validate inputs
+            if (!this._isValidNumber(serviceNumber)) {
+                sap.m.MessageBox.error("Please enter a valid Service Number (ID).");
+                return;
+            }
+            if (!searchTerm || !description) {
+                sap.m.MessageBox.error("Search Term and Description are required.");
+                return;
+            }
 
             // Build payload
             var newServiceMaster = {
+                serviceNumberCode: this._generateUUID(),
+                serviceNumberCodeString: `SN-${serviceNumber.padStart(3, "0")}`,
                 noServiceNumber: parseInt(serviceNumber, 10),
                 searchTerm: searchTerm,
                 description: description,
-                serviceText: serviceText,
+                serviceText: serviceText || null,
                 shortTextChangeAllowed: shortTextAllowed,
                 deletionIndicator: deletionIndicator,
-                numberToBeConverted: parseInt(toBeConvertedNum, 10),
-                convertedNumber: parseInt(convertedNum, 10),
-                serviceTypeCode: serviceTypeCode,
-                unitOfMeasurementCode: unitOfMeasurementCode,
-                toBeConvertedUnitOfMeasurement: toBeConvertedUOM,
-                defaultUnitOfMeasurement: convertedUOM,
+                numberToBeConverted: this._isValidNumber(toBeConvertedNum) ? parseInt(toBeConvertedNum, 10) : null,
+                convertedNumber: this._isValidNumber(convertedNum) ? parseInt(convertedNum, 10) : null,
+                serviceTypeCode: serviceTypeCode || null,
+                unitOfMeasurementCode: unitOfMeasurementCode || null,
+                toBeConvertedUnitOfMeasurement: toBeConvertedUOM || null,
+                defaultUnitOfMeasurement: convertedUOM || null,
                 mainItem: mainItem,
-                materialGroupCode: materialGroupCode,
-                lastChangeDate: new Date().toISOString().split("T")[0] // auto-fill today's date
+                materialGroupCode: materialGroupCode || null,
+                lastChangeDate: new Date().toISOString().split("T")[0]
             };
-
 
             console.log("Payload to be sent:", newServiceMaster);
 
             // POST to CAP service
             fetch("/odata/v4/sales-cloud/ServiceNumbers", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(newServiceMaster)
             })
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error("Failed to save: " + response.statusText);
+                        return response.json().then(e => { throw new Error(e.error?.message || response.statusText); });
                     }
-                    return response.json();
+                    return response.json().catch(() => newServiceMaster); // Handle empty response
                 })
                 .then(savedItem => {
                     sap.m.MessageToast.show("Service Master created successfully!");
-                   this.onNavigateToServiceMaster()
-                    // Optionally refresh model/binding if you have a table/list
-                    // var oModel = this.getView().getModel();
-                    // if (oModel) {
-                    //     oModel.refresh(true);
-                    // }
+                    console.log("Server response:", savedItem);
+
+                    // Navigate with the new item as a parameter
+                    this.getOwnerComponent().getRouter().navTo("serviceMaster", {
+                        newItem: encodeURIComponent(JSON.stringify(savedItem))
+                    });
                 })
                 .catch(err => {
                     console.error("Error saving ServiceMaster:", err);
                     sap.m.MessageBox.error("Error: " + err.message);
                 });
         },
+        // onAddPress: function () {
+        //     var oView = this.getView();
+        //     // Collect values from inputs
+        //     var serviceNumber = oView.byId("_IDGenInput1").getValue();
+        //     var searchTerm = oView.byId("_IDGenInput2").getValue();
+        //     var description = oView.byId("_IDGenInput3").getValue();
+        //     var serviceText = oView.byId("_IDGenInput4").getValue();
+        //     var shortTextAllowed = oView.byId("_IDGenCheckBox1").getSelected();
+        //     var deletionIndicator = oView.byId("_IDGenCheckBox3").getSelected();
+
+        //     // Conversion values
+        //     var toBeConvertedNum = oView.byId("_IDGenInput5").getValue();
+        //     var convertedNum = oView.byId("_IDGenInput9").getValue();
+
+        //     // Dropdowns
+        //     var serviceTypeCode = oView.byId("_IDGenSelect").getSelectedKey();
+        //     var unitOfMeasurementCode = oView.byId("_IDGenSelect1").getSelectedKey();
+        //     var toBeConvertedUOM = oView.byId("_IDGenSelect2").getSelectedKey();
+        //     var convertedUOM = oView.byId("_IDGenSelect3").getSelectedKey();
+        //     var materialGroupCode = oView.byId("_IDGenSelect4").getSelectedKey();
+
+        //     // Main Item checkbox
+        //     var mainItem = oView.byId("_IDGenCheckBox4").getSelected();
+
+        //     // Build payload
+        //     var newServiceMaster = {
+        //         noServiceNumber: parseInt(serviceNumber, 10),
+        //         searchTerm: searchTerm,
+        //         description: description,
+        //         serviceText: serviceText,
+        //         shortTextChangeAllowed: shortTextAllowed,
+        //         deletionIndicator: deletionIndicator,
+        //         numberToBeConverted: parseInt(toBeConvertedNum, 10),
+        //         convertedNumber: parseInt(convertedNum, 10),
+        //         serviceTypeCode: serviceTypeCode,
+        //         unitOfMeasurementCode: unitOfMeasurementCode,
+        //         toBeConvertedUnitOfMeasurement: toBeConvertedUOM,
+        //         defaultUnitOfMeasurement: convertedUOM,
+        //         mainItem: mainItem,
+        //         materialGroupCode: materialGroupCode,
+        //         lastChangeDate: new Date().toISOString().split("T")[0] // auto-fill today's date
+        //     };
+
+
+        //     console.log("Payload to be sent:", newServiceMaster);
+
+        //     // POST to CAP service
+        //     fetch("/odata/v4/sales-cloud/ServiceNumbers", {
+        //         method: "POST",
+        //         headers: {
+        //             "Content-Type": "application/json"
+        //         },
+        //         body: JSON.stringify(newServiceMaster)
+        //     })
+        //         .then(response => {
+        //             if (!response.ok) {
+        //                 throw new Error("Failed to save: " + response.statusText);
+        //             }
+        //             return response.json();
+        //         })
+        //         .then(savedItem => {
+        //             sap.m.MessageToast.show("Service Master created successfully!");
+        //            this.onNavigateToServiceMaster()
+        //             // Optionally refresh model/binding if you have a table/list
+        //             // var oModel = this.getView().getModel();
+        //             // if (oModel) {
+        //             //     oModel.refresh(true);
+        //             // }
+        //         })
+        //         .catch(err => {
+        //             console.error("Error saving ServiceMaster:", err);
+        //             sap.m.MessageBox.error("Error: " + err.message);
+        //         });
+        // },
 
         // onAddPress: function () {
         //     var oView = this.getView();

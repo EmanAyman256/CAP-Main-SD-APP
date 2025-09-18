@@ -12,8 +12,39 @@ module.exports = cds.service.impl(async function () {
     PersonnelNumber, UnitOfMeasurement,
     ServiceNumbers, ServiceType, InvoiceMainItem,
     ModelSpecifications, ModelSpecificationsDetails,
-    ExecutionOrderMains, ServiceInvoiceMains, InvoiceSubItems
+    ExecutionOrderMains, ServiceInvoiceMains, InvoiceSubItems,SalesQuotation,SalesQuotationItem
   } = this.entities;
+
+  this.on('getSalesQuotationItemById', async (req) => {
+    const { salesQuotation, salesQuotationItem } = req.data
+
+    // Build S/4 API URL
+    const url = `https://my405604-api.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItem(SalesQuotation='${salesQuotation}',SalesQuotationItem='${salesQuotationItem}')/to_SalesQuotation`
+
+    try {
+      // Basic Auth
+      const user = process.env.S4_USER || "BTP_USER1"
+      const password = process.env.S4_PASS || "Gw}tDHMrhuAWnzRWkwEbpcguYKsxugDuoKMeJ8Lt"
+
+      const response = await axios.get(url, {
+        auth: { username: user, password: password },
+        headers: { "Accept": "application/json" }
+      })
+
+      return {
+        salesQuotation,
+        salesQuotationItem,
+        response: JSON.stringify(response.data) // returning raw JSON payload
+      }
+
+    } catch (error) {
+      console.error("Error calling S/4 API:", error.message)
+      req.error(500, `Failed to fetch SalesQuotationItem: ${error.message}`)
+    }
+  })
+
+
+  
   /**
    * GET /mainitems/{salesQuotation}/{salesQuotationItem}
    * Calls S/4HANA OData API

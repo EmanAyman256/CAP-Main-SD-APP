@@ -6,8 +6,10 @@ sap.ui.define([
     "sap/m/Button",
     "sap/ui/export/Spreadsheet",
     "sap/ui/export/library",
-    "sap/ui/model/json/JSONModel"
-], function (Controller, Dialog, VBox, Text, Button, Spreadsheet, exportLibrary, JSONModel) {
+    "sap/ui/model/json/JSONModel",
+    "sap/m/MessageBox",
+
+], function (Controller, Dialog, VBox, Text, Button, Spreadsheet, exportLibrary, JSONModel, MessageBox) {
     "use strict";
     return Controller.extend("project1.controller.ServiceMaster", {
         onInit: function () {
@@ -364,53 +366,161 @@ sap.ui.define([
                     sap.m.MessageBox.error("Copy failed: " + err.message);
                 });
         },
-        
-      onExport: function () {
-    var oModel = this.getView().getModel("view"); // Use the 'view' model
-    var aData = oModel.getProperty("/ServiceNumbers"); // Correct path
 
-    if (!aData || aData.length === 0) {
-        sap.m.MessageBox.warning("No data available to export");
-        return;
-    }
+        onExport: function () {
+            var oModel = this.getView().getModel("view"); // Use the 'view' model
+            var aData = oModel.getProperty("/ServiceNumbers"); // Correct path
 
-    // Define the Excel columns with correct property names
-    var aColumns = [
-        { label: "Service Master Code", property: "serviceNumberCode" },
-        { label: "Search Term", property: "searchTerm" },
-        { label: "Description", property: "description" },
-        { label: "Last Changed Date", property: "lastChangeDate" },
-        { label: "Service Type", property: "serviceText" }
-        // Remove 'CreatedOn' unless it exists in the data
-    ];
+            if (!aData || aData.length === 0) {
+                sap.m.MessageBox.warning("No data available to export");
+                return;
+            }
 
-    // Settings for Spreadsheet
-    var oSettings = {
-        workbook: { columns: aColumns },
-        dataSource: aData,
-        fileName: "ServiceMaster.xlsx",
-        worker: false // Set to true for large datasets
-    };
+            // Define the Excel columns with correct property names
+            var aColumns = [
+                { label: "Service Master Code", property: "serviceNumberCode" },
+                { label: "Search Term", property: "searchTerm" },
+                { label: "Description", property: "description" },
+                { label: "Last Changed Date", property: "lastChangeDate" },
+                { label: "Service Type", property: "serviceText" }
+                // Remove 'CreatedOn' unless it exists in the data
+            ];
 
-    var oSheet = new sap.ui.export.Spreadsheet(oSettings);
-    oSheet.build()
-        .then(() => {
-            sap.m.MessageToast.show("Export finished!");
-        })
-        .finally(() => {
-            oSheet.destroy();
-        });
-},
+            // Settings for Spreadsheet
+            var oSettings = {
+                workbook: { columns: aColumns },
+                dataSource: aData,
+                fileName: "ServiceMaster.xlsx",
+                worker: false // Set to true for large datasets
+            };
+
+            var oSheet = new sap.ui.export.Spreadsheet(oSettings);
+            oSheet.build()
+                .then(() => {
+                    sap.m.MessageToast.show("Export finished!");
+                })
+                .finally(() => {
+                    oSheet.destroy();
+                });
+        },
+        // onDeletePress: function () {
+        //     var oTable = this.byId("serviceMaster");
+        //     var oSelectedItem = oTable.getSelectedItem();
+
+        //     if (!oSelectedItem) {
+        //         MessageBox.warning("Please select a row to delete");
+        //         return;
+        //     }
+
+        //     var oContext = oSelectedItem.getBindingContext("view");
+        //     if (!oContext) {
+        //         MessageBox.error("No binding context found for the selected item");
+        //         console.error("Binding context is undefined for selected item:", oSelectedItem);
+        //         return;
+        //     }
+
+        //     var oSelectedData = oContext.getObject();
+        //     if (!oSelectedData || !oSelectedData.serviceNumberCode) {
+        //         MessageBox.error("Invalid data selected for deletion");
+        //         console.error("Selected data is invalid:", oSelectedData);
+        //         return;
+        //     }
+
+        //     var sServiceNumberCode = oSelectedData.serviceNumberCode;
+        //     console.log("Deleting ServiceNumber with code:", sServiceNumberCode); // Debug: Log serviceNumberCode
+
+        //     // Confirm deletion
+        //     MessageBox.confirm("Are you sure you want to delete this service master?", {
+        //         title: "Confirm Deletion",
+        //         onClose: function (sAction) {
+        //             if (sAction === MessageBox.Action.OK) {
+        //                 // Send DELETE request
+        //                 fetch(`/odata/v4/sales-cloud/ServiceNumbers(${sServiceNumberCode})`, {
+        //                     method: "DELETE",
+        //                     headers: { "Content-Type": "application/json" }
+        //                 })
+        //                     .then(response => {
+        //                         if (!response.ok) {
+        //                             return response.json().then(e => { throw new Error(e.error?.message || response.statusText); });
+        //                         }
+        //                         MessageToast.show("Service Master deleted successfully!");
+
+        //                         // Update the view model
+        //                         var oViewModel = this.getView().getModel("view");
+        //                         var aData = oViewModel.getProperty("/ServiceNumbers") || [];
+        //                         console.log("Current ServiceNumbers array:", aData); // Debug: Log current array
+
+        //                         var iIndex = aData.findIndex(x => x.serviceNumberCode === sServiceNumberCode);
+        //                         if (iIndex > -1) {
+        //                             aData.splice(iIndex, 1); // Remove the deleted item
+        //                             oViewModel.setProperty("/ServiceNumbers", aData);
+        //                             oViewModel.refresh(true);
+        //                             console.log("Updated ServiceNumbers array:", oViewModel.getProperty("/ServiceNumbers")); // Debug: Log updated array
+        //                         } else {
+        //                             console.warn("Deleted item not found in ServiceNumbers array");
+        //                         }
+
+        //                         // Clear selection
+        //                         oTable.removeSelections(true);
+        //                     })
+        //                     .catch(err => {
+        //                         console.error("Error deleting Service Master:", err);
+        //                         MessageBox.error("Failed to delete Service Master: " + err.message);
+        //                     });
+        //             }
+        //         }.bind(this)
+        //     });
+        // },
+
+        // onTestRefresh: function () {
+        //     var oViewModel = this.getView().getModel("view");
+        //     fetch("/odata/v4/sales-cloud/ServiceNumbers")
+        //         .then(response => {
+        //             if (!response.ok) throw new Error(response.statusText);
+        //             return response.json();
+        //         })
+        //         .then(data => {
+        //             console.log("Refetched ServiceNumbers:", data.value);
+        //             oViewModel.setData({ ServiceNumbers: Array.isArray(data.value) ? data.value : [] });
+        //             oViewModel.refresh(true);
+        //             console.log("Table refreshed. Current ServiceNumbers:", oViewModel.getProperty("/ServiceNumbers"));
+        //         })
+        //         .catch(err => {
+        //             console.error("Error refetching ServiceNumbers:", err);
+        //             MessageBox.error("Failed to refresh table: " + err.message);
+        //         });
+        // },
+        // onSearch: function (oEvent) {
+        //     var sQuery = oEvent.getParameter("newValue");
+        //     var oTable = this.byId("serviceMaster");
+        //     var oBinding = oTable.getBinding("items");
+
+        //     if (sQuery && sQuery.length > 0) {
+        //         // فلترة على أكتر من عمود
+        //         var oFilter1 = new sap.ui.model.Filter("Code", sap.ui.model.FilterOperator.Contains, sQuery);
+        //         var oFilter2 = new sap.ui.model.Filter("SearchTerm", sap.ui.model.FilterOperator.Contains, sQuery);
+        //         var oFilter3 = new sap.ui.model.Filter("Description", sap.ui.model.FilterOperator.Contains, sQuery);
+
+        //         var oCombinedFilter = new sap.ui.model.Filter({
+        //             filters: [oFilter1, oFilter2, oFilter3],
+        //             and: false // OR logic
+        //         });
+
+        //         oBinding.filter([oCombinedFilter]);
+        //     } else {
+        //         oBinding.filter([]);
+        //     }
+        // },
         onSearch: function (oEvent) {
             var sQuery = oEvent.getParameter("newValue");
             var oTable = this.byId("serviceMaster");
             var oBinding = oTable.getBinding("items");
 
             if (sQuery && sQuery.length > 0) {
-                // فلترة على أكتر من عمود
-                var oFilter1 = new sap.ui.model.Filter("Code", sap.ui.model.FilterOperator.Contains, sQuery);
-                var oFilter2 = new sap.ui.model.Filter("SearchTerm", sap.ui.model.FilterOperator.Contains, sQuery);
-                var oFilter3 = new sap.ui.model.Filter("Description", sap.ui.model.FilterOperator.Contains, sQuery);
+                // Filter on multiple columns with correct property names
+                var oFilter1 = new sap.ui.model.Filter("serviceNumberCode", sap.ui.model.FilterOperator.Contains, sQuery);
+                var oFilter2 = new sap.ui.model.Filter("searchTerm", sap.ui.model.FilterOperator.Contains, sQuery);
+                var oFilter3 = new sap.ui.model.Filter("description", sap.ui.model.FilterOperator.Contains, sQuery);
 
                 var oCombinedFilter = new sap.ui.model.Filter({
                     filters: [oFilter1, oFilter2, oFilter3],
@@ -421,8 +531,7 @@ sap.ui.define([
             } else {
                 oBinding.filter([]);
             }
-        }
-
+        },
     });
 });
 

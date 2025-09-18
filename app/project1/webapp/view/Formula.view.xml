@@ -18,33 +18,36 @@
             <steps>
                 <!-- Step 1: Formula Details -->
                 <WizardStep id="step1" title="Create" validated="true">
-                    <VBox id="_IDGenVBox1">
+                    <VBox id="_IDGenVBox5">
                         <Label id="_IDGenLabel8" text="Formula Name *" />
                         <Input id="formulaNameInput" placeholder="Enter Formula Name" required="true" />
                         <Label id="_IDGenLabel10" text="Description *" />
                         <TextArea id="formulaDescriptionInput" placeholder="Enter Description" required="true" />
                         <Label id="_IDGenLabel17" text="NumberOfParams *" />
                       
-                        <Input id="NumberOfParamsInput" placeholder="Enter Number of Parameters" required="true" type="Number" value="{/paramCount}" liveChange="onParamCountChange" />
+                        <Input id="NumberOfParamsInput" placeholder="Enter Number of Parameters" required="true" type="Number" value="{/paramCount}" liveChange="onParamCountChange" submit="updateParamIdsText" />
                     </VBox>
                 </WizardStep>
                 <!-- Step 2: Set Parameters -->
                  <WizardStep id="step2" title="Set Parameters" validated="true">
                 <VBox id="_IDGenVBox8" />
-                    <HBox id="_IDGenHBox18" justifyContent="SpaceBetween">
+                    <!-- <HBox id="_IDGenHBox18" justifyContent="SpaceBetween">
                         
                         <Button id="_IDGenButton32" text="Add Parameters" press="updateParamIdsText" type="Emphasized" />
-                    </HBox>
+                    </HBox> -->
                 </WizardStep>
                
                 <!-- Step 3: Relation -->
                    <WizardStep id="step3" title="Relation" validated="true">
                     <VBox id="_IDGenVBox11">
+                        <!-- <Label id="_IDGenLabel11" text="Parameters You Entered:" />
+                        <Text id="paramIdsText" text="{/paramIdsText}" /> -->
                         <Label id="_IDGenLabel11" text="Parameters You Entered:" />
-                        <Text id="paramIdsText" text="{/paramIdsText}" />
+                        <HBox id="paramIdsContainer" class="sapUiSmallTopMargin" />
+
                         <Label id="_IDGenLabel12" text="Relation Details" class="sapUiSmallTopMargin" />
                         <HBox id="_IDGenHBox1">
-                            <TextArea id="relationInput" placeholder="Enter Relation (e.g., P1 + P2)" value="{/relationText}" width="300px" />
+                            <TextArea id="relationInput" placeholder="Enter Relation (e.g., P1 + P2)" value="{/relationText}" width="300px" editable="true" />
                            <HBox id="_IDGenHBox12" class="sapUiSmallMargin">
                                 <Button id="_IDGenButton20" text="+" press="onAddOperation" />
                                 <Button id="_IDGenButton22" text="-" press="onAddOperation" />
@@ -54,9 +57,7 @@
                                 <Button id="_IDGenButton29" text="π" press="onAddOperation" />
                                 <Button id="_IDGenButton30" text="%" press="onAddOperation" />
                             </HBox>
-                            <!-- <ComboBox id="operationCombo" items="{/operations}" selectionChange="onOperationSelect">
-                                <core:Item id="_IDGenItem" key="{key}" text="{text}" />
-                            </ComboBox> -->
+                           
                         </HBox>
                     </VBox>
                 </WizardStep>
@@ -77,14 +78,6 @@
              
             </steps>
         </Wizard>
-<!-- 
-         <Bar id="_IDGenBar1">
-            <contentLeft>
-            </contentLeft>
-            <contentRight>
-                <Button id="_IDGenButton23" text="Next Step >" press="onNext" visible="{= ${wizard>/currentStep} !== 'step4' }" />
-                <Button id="_IDGenButton24" text="Finish" press="onFinishWizard" visible="{= ${wizard>/currentStep} === 'step4' }" type="Emphasized" />
-            </contentRight>
-        </Bar> -->
+
     </Page>
 </mvc:View>
