@@ -484,91 +484,91 @@ module.exports = cds.service.impl(async function () {
   }
 
   // --- UnitOfMeasurement Handlers ---
-  if (UnitOfMeasurement) {
-    this.on('READ', UnitOfMeasurement, async (req) => {
-      console.log('Executing READ for all UnitOfMeasurements');
-      try {
-        const tx = cds.tx(req);
-        const units = await tx.run(SELECT.from(UnitOfMeasurement));
-        console.log('UnitOfMeasurement response:', JSON.stringify(units));
-        return units;
-      } catch (error) {
-        console.error('Error in READ UnitOfMeasurement:', error.message);
-        throw new Error(`Database query failed: ${error.message}`);
-      }
-    });
+  // if (UnitOfMeasurement) {
+  //   this.on('READ', UnitOfMeasurement, async (req) => {
+  //     console.log('Executing READ for all UnitOfMeasurements');
+  //     try {
+  //       const tx = cds.tx(req);
+  //       const units = await tx.run(SELECT.from(UnitOfMeasurement));
+  //       console.log('UnitOfMeasurement response:', JSON.stringify(units));
+  //       return units;
+  //     } catch (error) {
+  //       console.error('Error in READ UnitOfMeasurement:', error.message);
+  //       throw new Error(`Database query failed: ${error.message}`);
+  //     }
+  //   });
 
-    this.on('READ', UnitOfMeasurement, async (req) => {
-      console.log('Executing READ for UnitOfMeasurement by ID');
-      const unitOfMeasurementCode = req.params[0]?.unitOfMeasurementCode || req.query.SELECT.where?.find(w => w.ref?.[0] === 'unitOfMeasurementCode')?.val;
-      if (!unitOfMeasurementCode) {
-        throw new Error('UnitOfMeasurement code is required');
-      }
-      try {
-        const tx = cds.tx(req);
-        const unit = await tx.run(SELECT.one.from(UnitOfMeasurement).where({ unitOfMeasurementCode: unitOfMeasurementCode }));
-        console.log('UnitOfMeasurement response by ID:', JSON.stringify(unit));
-        return unit;
-      } catch (error) {
-        console.error('Error in READ UnitOfMeasurement by ID:', error.message);
-        throw new Error(`Database query failed: ${error.message}`);
-      }
-    });
+  //   this.on('READ', UnitOfMeasurement, async (req) => {
+  //     console.log('Executing READ for UnitOfMeasurement by ID');
+  //     const unitOfMeasurementCode = req.params[0]?.unitOfMeasurementCode || req.query.SELECT.where?.find(w => w.ref?.[0] === 'unitOfMeasurementCode')?.val;
+  //     if (!unitOfMeasurementCode) {
+  //       throw new Error('UnitOfMeasurement code is required');
+  //     }
+  //     try {
+  //       const tx = cds.tx(req);
+  //       const unit = await tx.run(SELECT.one.from(UnitOfMeasurement).where({ unitOfMeasurementCode: unitOfMeasurementCode }));
+  //       console.log('UnitOfMeasurement response by ID:', JSON.stringify(unit));
+  //       return unit;
+  //     } catch (error) {
+  //       console.error('Error in READ UnitOfMeasurement by ID:', error.message);
+  //       throw new Error(`Database query failed: ${error.message}`);
+  //     }
+  //   });
 
-    this.on('CREATE', UnitOfMeasurement, async (req) => {
-      console.log('Executing CREATE for new UnitOfMeasurement');
-      const newUnit = req.data;
-      try {
-        const tx = cds.tx(req);
-        const created = await tx.run(INSERT.into(UnitOfMeasurement).entries(newUnit));
-        console.log('Created UnitOfMeasurement:', JSON.stringify(created));
-        await tx.commit();
-        return created;
-      } catch (error) {
-        console.error('Error in CREATE UnitOfMeasurement:', error.message);
-        await tx.rollback();
-        throw new Error(`Database insert failed: ${error.message}`);
-      }
-    });
+  //   this.on('CREATE', UnitOfMeasurement, async (req) => {
+  //     console.log('Executing CREATE for new UnitOfMeasurement');
+  //     const newUnit = req.data;
+  //     try {
+  //       const tx = cds.tx(req);
+  //       const created = await tx.run(INSERT.into(UnitOfMeasurement).entries(newUnit));
+  //       console.log('Created UnitOfMeasurement:', JSON.stringify(created));
+  //       await tx.commit();
+  //       return created;
+  //     } catch (error) {
+  //       console.error('Error in CREATE UnitOfMeasurement:', error.message);
+  //       await tx.rollback();
+  //       throw new Error(`Database insert failed: ${error.message}`);
+  //     }
+  //   });
 
-    this.on('DELETE', UnitOfMeasurement, async (req) => {
-      console.log('Executing DELETE for UnitOfMeasurement');
-      const unitOfMeasurementCode = req.params[0]?.unitOfMeasurementCode || req.query.SELECT.where?.find(w => w.ref?.[0] === 'unitOfMeasurementCode')?.val;
-      if (!unitOfMeasurementCode) {
-        throw new Error('UnitOfMeasurement code is required');
-      }
-      try {
-        const tx = cds.tx(req);
-        const deleted = await tx.run(DELETE.from(UnitOfMeasurement).where({ unitOfMeasurementCode: unitOfMeasurementCode }));
-        console.log('Deleted UnitOfMeasurement:', JSON.stringify(deleted));
-        await tx.commit();
-        return { success: true };
-      } catch (error) {
-        console.error('Error in DELETE UnitOfMeasurement:', error.message);
-        await tx.rollback();
-        throw new Error(`Database delete failed: ${error.message}`);
-      }
-    });
+  //   this.on('DELETE', UnitOfMeasurement, async (req) => {
+  //     console.log('Executing DELETE for UnitOfMeasurement');
+  //     const unitOfMeasurementCode = req.params[0]?.unitOfMeasurementCode || req.query.SELECT.where?.find(w => w.ref?.[0] === 'unitOfMeasurementCode')?.val;
+  //     if (!unitOfMeasurementCode) {
+  //       throw new Error('UnitOfMeasurement code is required');
+  //     }
+  //     try {
+  //       const tx = cds.tx(req);
+  //       const deleted = await tx.run(DELETE.from(UnitOfMeasurement).where({ unitOfMeasurementCode: unitOfMeasurementCode }));
+  //       console.log('Deleted UnitOfMeasurement:', JSON.stringify(deleted));
+  //       await tx.commit();
+  //       return { success: true };
+  //     } catch (error) {
+  //       console.error('Error in DELETE UnitOfMeasurement:', error.message);
+  //       await tx.rollback();
+  //       throw new Error(`Database delete failed: ${error.message}`);
+  //     }
+  //   });
 
-    this.on('UPDATE', UnitOfMeasurement, async (req) => {
-      console.log('Executing UPDATE for UnitOfMeasurement');
-      const unitOfMeasurementCode = req.params[0]?.unitOfMeasurementCode || req.query.SELECT.where?.find(w => w.ref?.[0] === 'unitOfMeasurementCode')?.val;
-      if (!unitOfMeasurementCode) {
-        throw new Error('UnitOfMeasurement code is required');
-      }
-      try {
-        const tx = cds.tx(req);
-        const updated = await tx.run(UPDATE(UnitOfMeasurement).with(req.data).where({ unitOfMeasurementCode: unitOfMeasurementCode }));
-        console.log('Updated UnitOfMeasurement:', JSON.stringify(updated));
-        await tx.commit();
-        return updated;
-      } catch (error) {
-        console.error('Error in UPDATE UnitOfMeasurement:', error.message);
-        await tx.rollback();
-        throw new Error(`Database update failed: ${error.message}`);
-      }
-    });
-  }
+  //   this.on('UPDATE', UnitOfMeasurement, async (req) => {
+  //     console.log('Executing UPDATE for UnitOfMeasurement');
+  //     const unitOfMeasurementCode = req.params[0]?.unitOfMeasurementCode || req.query.SELECT.where?.find(w => w.ref?.[0] === 'unitOfMeasurementCode')?.val;
+  //     if (!unitOfMeasurementCode) {
+  //       throw new Error('UnitOfMeasurement code is required');
+  //     }
+  //     try {
+  //       const tx = cds.tx(req);
+  //       const updated = await tx.run(UPDATE(UnitOfMeasurement).with(req.data).where({ unitOfMeasurementCode: unitOfMeasurementCode }));
+  //       console.log('Updated UnitOfMeasurement:', JSON.stringify(updated));
+  //       await tx.commit();
+  //       return updated;
+  //     } catch (error) {
+  //       console.error('Error in UPDATE UnitOfMeasurement:', error.message);
+  //       await tx.rollback();
+  //       throw new Error(`Database update failed: ${error.message}`);
+  //     }
+  //   });
+  // }
 
   // --- ServiceType Handlers ---
   if (ServiceType) {
@@ -1523,5 +1523,46 @@ module.exports = cds.service.impl(async function () {
     const res = await client.get(`/A_SalesOrderItemPrElement?$inlinecount=allpages&$top=50`);
     return JSON.stringify(res.data);
   });
+
+
+  // Unit Of Measurement Cloud
+  this.on('READ', 'UnitOfMeasurements', async (req) => {
+    console.log("Fetching UnitOfMeasurements from S/4...")
+
+    const url = "https://my405604-api.s4hana.cloud.sap/sap/opu/odata/sap/YY1_UOM4_CDS/YY1_UOM4?$format=json"
+
+    try {
+      const user = process.env.UOM_USER || "UOM_USER4"
+      const password = process.env.UOM_PASS || "s3ZhGnQXEymrUcgCPXR\\ZBPgDAeKYbxLEaozZQPv"
+
+      const response = await axios.get(url, {
+        auth: { username: user, password: password },
+        headers: { Accept: "application/json" }
+      })
+
+      const results = response.data.d?.results || []
+
+      // filter to English
+      const filtered = results.filter(r => r.LanguageISOCode === 'EN')
+
+      // make unique by UnitOfMeasure
+      const uniqueMap = new Map()
+      filtered.forEach(r => {
+        if (!uniqueMap.has(r.UnitOfMeasure)) {
+          uniqueMap.set(r.UnitOfMeasure, {
+            code: r.UnitOfMeasure,
+            description: r.UnitOfMeasureLongName || r.UnitOfMeasureName
+          })
+        }
+      })
+
+      // return as array
+      return Array.from(uniqueMap.values())
+
+    } catch (e) {
+      console.error("Failed to fetch UOM data:", e)
+      req.error(500, `Failed to fetch UOM data: ${e.message}`)
+    }
+  })
 
 });
