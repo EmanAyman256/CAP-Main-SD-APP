@@ -1,4 +1,3 @@
-using {cuid} from '@sap/cds/common';
 using {salesdb} from '../db/sales-cloud-schema';
 @title: 'Sales Cloud Service'
 @Core.LongDescription: 'This service exposes APIs for managing Sales Cloud objects such as Line Types, Formulas, Materials, and Currencies.'
@@ -8,10 +7,6 @@ service SalesCloudService {
   entity LineTypes                  as projection on salesdb.LineType;
   entity MaterialGroups             as projection on salesdb.MaterialGroup;
   entity PersonnelNumbers           as projection on salesdb.PersonnelNumber;
-entity UnitOfMeasurements @readonly @(path: '/UnitOfMeasurements') {
-  key code        : String(8);
-      description : String;
-}
   entity ServiceTypes               as projection on salesdb.ServiceType;
   entity Formulas                   as projection on salesdb.Formula;
   entity ModelSpecifications        as projection on salesdb.ModelSpecifications;
@@ -21,7 +16,10 @@ entity UnitOfMeasurements @readonly @(path: '/UnitOfMeasurements') {
   entity ServiceNumbers             as projection on salesdb.ServiceNumber;
   entity ServiceInvoiceMains        as projection on salesdb.ServiceInvoiceMain;
   entity InvoiceSubItems            as projection on salesdb.InvoiceSubItem;
-
+entity UnitOfMeasurements @readonly @(path: '/UnitOfMeasurements') {
+  key code        : String(8);
+      description : String;
+}
  
 
 

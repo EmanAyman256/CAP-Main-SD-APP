@@ -8,105 +8,19 @@ module.exports = cds.service.impl(async function () {
   const password = '#yiVfheJbFolFxgkEwCBFcWvYkPzrQDENEArAXn5';
   const auth = Buffer.from(`${user}:${password}`).toString('base64');
   const authHeader = `Basic ${auth}`;
-  const { Currency, LineType, MaterialGroup, Formulas,
-    PersonnelNumber, UnitOfMeasurement,
+  const 
+  {
+    Currency, LineType, MaterialGroup, Formulas,
+    PersonnelNumber, 
     ServiceNumbers, ServiceType, InvoiceMainItem,
     ModelSpecifications, ModelSpecificationsDetails,
-    ExecutionOrderMains, ServiceInvoiceMains, InvoiceSubItems,SalesQuotation,SalesQuotationItem
+    ExecutionOrderMains, ServiceInvoiceMains, InvoiceSubItems
   } = this.entities;
 
-  this.on('getSalesQuotationItemById', async (req) => {
-    const { salesQuotation, salesQuotationItem } = req.data
-
-    // Build S/4 API URL
-    const url = `https://my405604-api.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItem(SalesQuotation='${salesQuotation}',SalesQuotationItem='${salesQuotationItem}')/to_SalesQuotation`
-
-    try {
-      // Basic Auth
-      const user = process.env.S4_USER || "BTP_USER1"
-      const password = process.env.S4_PASS || "Gw}tDHMrhuAWnzRWkwEbpcguYKsxugDuoKMeJ8Lt"
-
-      const response = await axios.get(url, {
-        auth: { username: user, password: password },
-        headers: { "Accept": "application/json" }
-      })
-
-      return {
-        salesQuotation,
-        salesQuotationItem,
-        response: JSON.stringify(response.data) // returning raw JSON payload
-      }
-
-    } catch (error) {
-      console.error("Error calling S/4 API:", error.message)
-      req.error(500, `Failed to fetch SalesQuotationItem: ${error.message}`)
-    }
-  })
+/*-------------------------- First App -------------------------------------*/ 
 
 
-  
-  /**
-   * GET /mainitems/{salesQuotation}/{salesQuotationItem}
-   * Calls S/4HANA OData API
-   */
-  this.on('getSalesQuotationItemById', async (req) => {
-    const { salesQuotation, salesQuotationItem } = req.data;
-
-    const url =
-      `https://my405604-api.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV` +
-      `/A_SalesQuotationItem(SalesQuotation='${salesQuotation}',SalesQuotationItem='${salesQuotationItem}')/to_SalesQuotation`;
-
-    try {
-      const response = await axios.get(url, {
-        headers: {
-          Authorization:
-            'Basic ' +
-            Buffer.from('BTP_USER1:Gw}tDHMrhuAWnzRWkwEbpcguYKsxugDuoKMeJ8Lt').toString('base64'),
-          Accept: 'application/json',
-        },
-      });
-
-      return JSON.stringify(response.data); // matches Java's StringBuilder
-    } catch (e) {
-      req.error(500, `Failed to fetch from S/4HANA: ${e.message}`);
-    }
-  });
-
-  /**
-   * GET /mainitems/referenceid?referenceId=...
-   * Looks up invoice items locally
-   */
-  this.on('getInvoiceMainItemsByReferenceId', async (req) => {
-    const { referenceId } = req.data;
-
-    // Query local db table
-    const items = await SELECT.from(InvoiceMainItem).where({ referenceId });
-
-    if (!items.length) {
-      req.error(404, `No items found for referenceId=${referenceId}`);
-    }
-
-    return items;
-  });
-  console.log('Handler initialized for SalesOrderCloudService');
-
-  async function fetchCsrfToken(tokenUrl, cookies = '') {
-    console.log(`Fetching CSRF token from ${tokenUrl}`);
-    try {
-      const res = await axios.get(tokenUrl, {
-        headers: { 'Authorization': authHeader, 'x-csrf-token': 'Fetch', 'Accept': 'application/json', 'Cookie': cookies },
-        timeout: 10000
-      });
-      return { token: res.headers['x-csrf-token'], cookies: res.headers['set-cookie']?.join('; ') || cookies };
-    } catch (error) {
-      console.error(`CSRF fetch error: ${error.message}, Status: ${error.response?.status}, Data: ${JSON.stringify(error.response?.data)}`);
-      throw new Error(`Failed to fetch CSRF token: ${error.message}`);
-    }
-  }
-
-  
-
-  //#region SD App 1 APIs
+//#region SD App 1 APIs
 
 
   // --- Currency Handlers ---
@@ -920,6 +834,103 @@ module.exports = cds.service.impl(async function () {
   //#endregion 
 
 
+/*-------------------------------------------------------------------------*/
+
+
+
+
+
+
+
+  this.on('getSalesQuotationItemById', async (req) => {
+    const { salesQuotation, salesQuotationItem } = req.data
+
+    // Build S/4 API URL
+    const url = `https://my405604-api.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItem(SalesQuotation='${salesQuotation}',SalesQuotationItem='${salesQuotationItem}')/to_SalesQuotation`
+
+    try {
+      // Basic Auth
+      const user = process.env.S4_USER || "BTP_USER1"
+      const password = process.env.S4_PASS || "Gw}tDHMrhuAWnzRWkwEbpcguYKsxugDuoKMeJ8Lt"
+
+      const response = await axios.get(url, {
+        auth: { username: user, password: password },
+        headers: { "Accept": "application/json" }
+      })
+
+      return {
+        salesQuotation,
+        salesQuotationItem,
+        response: JSON.stringify(response.data) // returning raw JSON payload
+      }
+
+    } catch (error) {
+      console.error("Error calling S/4 API:", error.message)
+      req.error(500, `Failed to fetch SalesQuotationItem: ${error.message}`)
+    }
+  })
+
+
+  /**
+   * GET /mainitems/{salesQuotation}/{salesQuotationItem}
+   * Calls S/4HANA OData API
+   */
+  this.on('getSalesQuotationItemById', async (req) => {
+    const { salesQuotation, salesQuotationItem } = req.data;
+
+    const url =
+      `https://my405604-api.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV` +
+      `/A_SalesQuotationItem(SalesQuotation='${salesQuotation}',SalesQuotationItem='${salesQuotationItem}')/to_SalesQuotation`;
+
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          Authorization:
+            'Basic ' +
+            Buffer.from('BTP_USER1:Gw}tDHMrhuAWnzRWkwEbpcguYKsxugDuoKMeJ8Lt').toString('base64'),
+          Accept: 'application/json',
+        },
+      });
+
+      return JSON.stringify(response.data); // matches Java's StringBuilder
+    } catch (e) {
+      req.error(500, `Failed to fetch from S/4HANA: ${e.message}`);
+    }
+  });
+
+  /**
+   * GET /mainitems/referenceid?referenceId=...
+   * Looks up invoice items locally
+   */
+  this.on('getInvoiceMainItemsByReferenceId', async (req) => {
+    const { referenceId } = req.data;
+
+    // Query local db table
+    const items = await SELECT.from(InvoiceMainItem).where({ referenceId });
+
+    if (!items.length) {
+      req.error(404, `No items found for referenceId=${referenceId}`);
+    }
+
+    return items;
+  });
+  console.log('Handler initialized for SalesOrderCloudService');
+
+  async function fetchCsrfToken(tokenUrl, cookies = '') {
+    console.log(`Fetching CSRF token from ${tokenUrl}`);
+    try {
+      const res = await axios.get(tokenUrl, {
+        headers: { 'Authorization': authHeader, 'x-csrf-token': 'Fetch', 'Accept': 'application/json', 'Cookie': cookies },
+        timeout: 10000
+      });
+      return { token: res.headers['x-csrf-token'], cookies: res.headers['set-cookie']?.join('; ') || cookies };
+    } catch (error) {
+      console.error(`CSRF fetch error: ${error.message}, Status: ${error.response?.status}, Data: ${JSON.stringify(error.response?.data)}`);
+      throw new Error(`Failed to fetch CSRF token: ${error.message}`);
+    }
+  }
+
+  
   this.on('READ', 'SalesOrders', async (req) => {
     console.log('Executing READ for SalesOrders');
     const url = 'https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder?$inlinecount=allpages';
