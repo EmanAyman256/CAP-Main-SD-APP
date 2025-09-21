@@ -1130,44 +1130,102 @@ module.exports = cds.service.impl(async function () {
     }
   });
 
+// this.on('READ', 'SalesQuotation', async (req) => {
+//   const { SalesQuotation } = req.data;  // key passed when selecting one entity
+  
+//   let url;
+// // var SalesQuotation = '20000001';
+//   if (SalesQuotation) {
+//     // Fetch single quotation WITH items
+//     url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation('${SalesQuotation}')?$expand=to_Item`;
+//   console.log(url);
+  
+//   } else {
+//     // Fetch all quotations (headers only)
+//     url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$format=json`;
+//   }
+// console.log(url);
 
-  this.on('READ',SalesQuotationItem, async (req) => {
-    console.log('Executing READ for SalesQuotationItem');
-    var salesQuotationID = req.query.SELECT.where?.find(w => w.ref?.[0] === 'SalesQuotationID')?.val || 'defaultID';
-    console.log(salesQuotationID);
-    salesQuotationID = 20000000;
-    const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation('${salesQuotationID}')/to_Item?$inlinecount=allpages&$`;
-    try {
-      console.log(`Calling S/4HANA: ${url}`);
-      const res = await axios.get(url, {
-        headers: { 'Authorization': authHeader, 'Accept': 'application/json' },
-        timeout: 10000
-      });
-      console.log('S/4HANA response:', JSON.stringify(res.data));
-      return res.data.d?.results || [];
-    } catch (error) {
-      console.error('Error in READ SalesQuotationItem:', error.message, 'Status:', error.response?.status, 'Data:', JSON.stringify(error.response?.data));
-      throw new Error(`S/4HANA call failed: ${error.message} (Status: ${error.response?.status || 500})`);
-    }
-  });
+//   try {
+//     const res = await axios.get(url, {
+//       headers: { 'Authorization': authHeader, 'Accept': 'application/json' },
+//       timeout: 10000
+//     });
 
+//     if (SalesQuotation) {
+//       const header = res.data.d; // single record
+//       // Map items inline
+//       header.items = header.to_Item?.results || [];
+//       delete header.to_Item;
+//       return header;
+//     } else {
+//       return res.data.d?.results || [];
+//     }
 
-  this.on('READ', 'SalesQuotationItem', async (req) => {
-    console.log('Executing READ for SalesQuotationItems');
-    const url = 'https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItem?$inlinecount=allpages&$';
-    try {
-      console.log(`Calling S/4HANA: ${url}`);
-      const res = await axios.get(url, {
-        headers: { 'Authorization': authHeader, 'Accept': 'application/json' },
-        timeout: 10000
-      });
-      console.log('S/4HANA response:', JSON.stringify(res.data));
-      return res.data.d?.results || [];
-    } catch (error) {
-      console.error('Error in READ SalesQuotationItems:', error.message, 'Status:', error.response?.status, 'Data:', JSON.stringify(error.response?.data));
-      throw new Error(`S/4HANA call failed: ${error.message} (Status: ${error.response?.status || 500})`);
-    }
-  });
+//   } catch (error) {
+//     console.error('Error in READ SalesQuotation:', error.message, 'Status:', error.response?.status);
+//     req.error(500, `S/4HANA call failed: ${error.message}`);
+//   }
+// });
+
+  // this.on('READ',SalesQuotationItem, async (req) => {
+  //   console.log('Executing READ for SalesQuotationItem');
+  //   var salesQuotationID = req.query.SELECT.where?.find(w => w.ref?.[0] === 'SalesQuotationID')?.val || 'defaultID';
+  //   console.log(salesQuotationID);
+  //   salesQuotationID = 20000000;
+  //   const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation('${salesQuotationID}')/to_Item?$inlinecount=allpages&$`;
+  //   try {
+  //     console.log(`Calling S/4HANA: ${url}`);
+  //     const res = await axios.get(url, {
+  //       headers: { 'Authorization': authHeader, 'Accept': 'application/json' },
+  //       timeout: 10000
+  //     });
+  //     console.log('S/4HANA response:', JSON.stringify(res.data));
+  //     return res.data.d?.results || [];
+  //   } catch (error) {
+  //     console.error('Error in READ SalesQuotationItem:', error.message, 'Status:', error.response?.status, 'Data:', JSON.stringify(error.response?.data));
+  //     throw new Error(`S/4HANA call failed: ${error.message} (Status: ${error.response?.status || 500})`);
+  //   }
+  // });
+
+  
+this.on('READ', 'SalesQuotationItem', async (req) => {
+  const { SalesQuotation } = req.data;
+  // var SalesQuotation = 20000001;
+  if (!SalesQuotation) return [];
+
+  const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation('${SalesQuotation}')/to_Item`;
+
+  try {
+    const res = await axios.get(url, {
+      headers: { 'Authorization': authHeader, 'Accept': 'application/json' },
+      timeout: 10000
+    });
+
+    return res.data.d?.results || [];
+
+  } catch (error) {
+    console.error('Error in READ SalesQuotationItem:', error.message, 'Status:', error.response?.status);
+    req.error(500, `S/4HANA call failed: ${error.message}`);
+  }
+});
+
+  // this.on('READ', 'SalesQuotationItem', async (req) => {
+  //   console.log('Executing READ for SalesQuotationItems');
+  //   const url = 'https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItem?$inlinecount=allpages&$';
+  //   try {
+  //     console.log(`Calling S/4HANA: ${url}`);
+  //     const res = await axios.get(url, {
+  //       headers: { 'Authorization': authHeader, 'Accept': 'application/json' },
+  //       timeout: 10000
+  //     });
+  //     console.log('S/4HANA response:', JSON.stringify(res.data));
+  //     return res.data.d?.results || [];
+  //   } catch (error) {
+  //     console.error('Error in READ SalesQuotationItems:', error.message, 'Status:', error.response?.status, 'Data:', JSON.stringify(error.response?.data));
+  //     throw new Error(`S/4HANA call failed: ${error.message} (Status: ${error.response?.status || 500})`);
+  //   }
+  // });
 
 
   this.on('READ', 'SalesQuotationPricing', async (req) => {
