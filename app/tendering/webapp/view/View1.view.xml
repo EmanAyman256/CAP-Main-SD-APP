@@ -14,21 +14,34 @@
             
             <content>
                 <VBox id="_IDGenVBox2" class="sapUiSmallMargin">
+
+                <Label id="_IDGenLabel2" text="Quotation Number" required="true" design="Bold"/>
+                    <Input id="quotationInput" showValueHelp="true" valueHelpRequest=".onValueHelpRequest"
+                           placeholder="Enter or select quotation number"
+                           valueState="None" class="sapUiSmallMarginBottom" submit="onQuotationSubmit"/>
+
                     
-                    <Label id="_IDGenLabel" text="Document Number:" />
+                    <!-- <Label id="_IDGenLabel" text="Document Number:" />
                     <Input id="_IDGenInput"
                         value="{/DocumentNumber}"
-                        width="100%"/>
+                        width="100%"/> -->
                     
                     <Label id="_IDGenLabel1" text="Select Item Number" required="true"/>
                     <Select id="_IDGenSelect"
                         width="100%"
-                        selectedKey="{/SelectedItemNumber}">
-                        <items>
+                        selectedKey="{/SelectedItemNumber}"
+                           items="{	path: 'documentItems>/'}">
+
+                            <core:Item
+                            id="_IDGenItem"
+                            key="{documentItems>serviceTypeCode}"
+                            text="{documentItems>description}"
+                        />
+                        <!-- <items >
                             <core:Item id="_IDGenItem" key="1" text="Item 1"/>
                             <core:Item id="_IDGenItem1" key="2" text="Item 2"/>
                             <core:Item id="_IDGenItem2" key="3" text="Item 3"/>
-                        </items>
+                        </items> -->
                     </Select>
                     
                     <Text id="_IDGenText" text="{/ErrorMessage}" visible="{= !!${/ErrorMessage} }" />

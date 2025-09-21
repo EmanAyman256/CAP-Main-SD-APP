@@ -104,25 +104,7 @@ entity UnitOfMeasurements @readonly @(path: '/UnitOfMeasurements') {
     key ConditionType  : String;
   }
 
-  entity SalesQuotations @readonly {
-    key SalesQuotation     : String;
-        SalesQuotationType : String;
-        SalesOrganization  : String;
-        CreatedByUser      : String;
-  }
-
-  // entity SalesQuotationItem @readonly {
-  //   key SalesQuotation     : String;
-  //   key SalesQuotationItem : String;
-  //       Material           : String;
-  //       RequestedQuantity  : Decimal(13, 3);
-  // }
-
-  entity SalesQuotationItems @readonly {
-    key SalesQuotation     : String;
-    key SalesQuotationItem : String;
-  }
-
+  
   entity SalesQuotationPricing @readonly {
     key SalesQuotation     : String;
     key SalesQuotationItem : String;
@@ -215,8 +197,6 @@ entity UnitOfMeasurements @readonly @(path: '/UnitOfMeasurements') {
   action findBySubItemCode(subItemCode: Integer)                             returns InvoiceSubItems;
   action searchSubItem(keyword: String)                                      returns many InvoiceSubItems;
 
-
-    // action getUnitsOfMeasurement() returns LargeString;
 
  
 }

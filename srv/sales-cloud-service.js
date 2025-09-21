@@ -840,104 +840,104 @@ module.exports = cds.service.impl(async function () {
 /**
    * Read SalesQuotation (header)
    */
-  this.on('READ', SalesQuotations, async (req) => {
-    try {
-      const url = `https://my405604-api.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$top=20&$format=json`;
+  // this.on('READ', SalesQuotations, async (req) => {
+  //   try {
+  //     const url = `https://my405604-api.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$top=20&$format=json`;
 
-      const response = await axios.get(url, {
-        headers: {
-          'Authorization': authHeader,
-          'Accept': 'application/json'
-        }
-      });
+  //     const response = await axios.get(url, {
+  //       headers: {
+  //         'Authorization': authHeader,
+  //         'Accept': 'application/json'
+  //       }
+  //     });
 
-      return response.data.d.results.map(h => ({
-        SalesQuotation: h.SalesQuotation,
-        SalesOrganization: h.SalesOrganization,
-        DistributionChannel: h.DistributionChannel,
-        Division: h.Division,
-        SalesQuotationType: h.SalesQuotationType,
-        SalesQuotationDate: h.SalesQuotationDate,
-        SoldToParty: h.SoldToParty,
-        TransactionCurrency: h.TransactionCurrency,
-        TotalNetAmount: h.TotalNetAmount
-      }));
+  //     return response.data.d.results.map(h => ({
+  //       SalesQuotation: h.SalesQuotation,
+  //       SalesOrganization: h.SalesOrganization,
+  //       DistributionChannel: h.DistributionChannel,
+  //       Division: h.Division,
+  //       SalesQuotationType: h.SalesQuotationType,
+  //       SalesQuotationDate: h.SalesQuotationDate,
+  //       SoldToParty: h.SoldToParty,
+  //       TransactionCurrency: h.TransactionCurrency,
+  //       TotalNetAmount: h.TotalNetAmount
+  //     }));
 
-    } catch (err) {
-      console.error('Error fetching Sales Quotation:', err.message);
-      req.error(500, `Failed to fetch Sales Quotation: ${err.message}`);
-    }
-  });
+  //   } catch (err) {
+  //     console.error('Error fetching Sales Quotation:', err.message);
+  //     req.error(500, `Failed to fetch Sales Quotation: ${err.message}`);
+  //   }
+  // });
 
   /**
    * Read SalesQuotationItem (items for a given quotation)
    */
-  this.on('READ', SalesQuotationItem, async (req) => {
-    try {
-      const { SalesQuotation } = req.query.SELECT.where?.reduce((acc, cur, i, arr) => {
-        if (cur.ref?.[0] === 'SalesQuotation') acc.SalesQuotation = arr[i + 2].val;
-        return acc;
-      }, {}) || {};
+  // this.on('READ', SalesQuotationItem, async (req) => {
+  //   try {
+  //     const { SalesQuotation } = req.query.SELECT.where?.reduce((acc, cur, i, arr) => {
+  //       if (cur.ref?.[0] === 'SalesQuotation') acc.SalesQuotation = arr[i + 2].val;
+  //       return acc;
+  //     }, {}) || {};
 
-      if (!SalesQuotation) {
-        return []; // no filter → skip
-      }
+  //     if (!SalesQuotation) {
+  //       return []; // no filter → skip
+  //     }
 
-      const url = `https://my405604-api.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItem?$filter=SalesQuotation eq '${SalesQuotation}'&$format=json`;
+  //     const url = `https://my405604-api.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItem?$filter=SalesQuotation eq '${SalesQuotation}'&$format=json`;
 
-      const response = await axios.get(url, {
-        headers: {
-          'Authorization': authHeader,
-          'Accept': 'application/json'
-        }
-      });
+  //     const response = await axios.get(url, {
+  //       headers: {
+  //         'Authorization': authHeader,
+  //         'Accept': 'application/json'
+  //       }
+  //     });
 
-      return response.data.d.results.map(i => ({
-        SalesQuotation: i.SalesQuotation,
-        SalesQuotationItem: i.SalesQuotationItem,
-        Material: i.Material,
-        RequestedQuantity: i.RequestedQuantity,
-        RequestedQuantityUnit: i.RequestedQuantityUnit,
-        NetAmount: i.NetAmount
-      }));
+  //     return response.data.d.results.map(i => ({
+  //       SalesQuotation: i.SalesQuotation,
+  //       SalesQuotationItem: i.SalesQuotationItem,
+  //       Material: i.Material,
+  //       RequestedQuantity: i.RequestedQuantity,
+  //       RequestedQuantityUnit: i.RequestedQuantityUnit,
+  //       NetAmount: i.NetAmount
+  //     }));
 
-    } catch (err) {
-      console.error('Error fetching Sales Quotation Item:', err.message);
-      req.error(500, `Failed to fetch Sales Quotation Item: ${err.message}`);
-    }
-  });
-
-
+  //   } catch (err) {
+  //     console.error('Error fetching Sales Quotation Item:', err.message);
+  //     req.error(500, `Failed to fetch Sales Quotation Item: ${err.message}`);
+  //   }
+  // });
 
 
 
-  this.on('getSalesQuotationItemById', async (req) => {
-    const { salesQuotation, salesQuotationItem } = req.data
 
-    // Build S/4 API URL
-    const url = `https://my405604-api.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItem(SalesQuotation='${salesQuotation}',SalesQuotationItem='${salesQuotationItem}')/to_SalesQuotation`
 
-    try {
-      // Basic Auth
-      const user = process.env.S4_USER || "BTP_USER1"
-      const password = process.env.S4_PASS || "Gw}tDHMrhuAWnzRWkwEbpcguYKsxugDuoKMeJ8Lt"
+  // this.on('getSalesQuotationItemById', async (req) => {
+  //   const { salesQuotation, salesQuotationItem } = req.data
 
-      const response = await axios.get(url, {
-        auth: { username: user, password: password },
-        headers: { "Accept": "application/json" }
-      })
+  //   // Build S/4 API URL
+  //   const url = `https://my405604-api.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItem(SalesQuotation='${salesQuotation}',SalesQuotationItem='${salesQuotationItem}')/to_SalesQuotation`
 
-      return {
-        salesQuotation,
-        salesQuotationItem,
-        response: JSON.stringify(response.data) // returning raw JSON payload
-      }
+  //   try {
+  //     // Basic Auth
+  //     const user = process.env.S4_USER || "BTP_USER1"
+  //     const password = process.env.S4_PASS || "Gw}tDHMrhuAWnzRWkwEbpcguYKsxugDuoKMeJ8Lt"
 
-    } catch (error) {
-      console.error("Error calling S/4 API:", error.message)
-      req.error(500, `Failed to fetch SalesQuotationItem: ${error.message}`)
-    }
-  })
+  //     const response = await axios.get(url, {
+  //       auth: { username: user, password: password },
+  //       headers: { "Accept": "application/json" }
+  //     })
+
+  //     return {
+  //       salesQuotation,
+  //       salesQuotationItem,
+  //       response: JSON.stringify(response.data) // returning raw JSON payload
+  //     }
+
+  //   } catch (error) {
+  //     console.error("Error calling S/4 API:", error.message)
+  //     req.error(500, `Failed to fetch SalesQuotationItem: ${error.message}`)
+  //   }
+  // })
 
 
   /**
@@ -1131,9 +1131,11 @@ module.exports = cds.service.impl(async function () {
   });
 
 
-  this.on('READ', 'SalesQuotationItem', async (req) => {
+  this.on('READ',SalesQuotationItem, async (req) => {
     console.log('Executing READ for SalesQuotationItem');
-    const salesQuotationID = req.query.SELECT.where?.find(w => w.ref?.[0] === 'SalesQuotationID')?.val || 'defaultID';
+    var salesQuotationID = req.query.SELECT.where?.find(w => w.ref?.[0] === 'SalesQuotationID')?.val || 'defaultID';
+    console.log(salesQuotationID);
+    salesQuotationID = 20000000;
     const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation('${salesQuotationID}')/to_Item?$inlinecount=allpages&$`;
     try {
       console.log(`Calling S/4HANA: ${url}`);
@@ -1150,7 +1152,7 @@ module.exports = cds.service.impl(async function () {
   });
 
 
-  this.on('READ', 'SalesQuotationItems', async (req) => {
+  this.on('READ', 'SalesQuotationItem', async (req) => {
     console.log('Executing READ for SalesQuotationItems');
     const url = 'https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItem?$inlinecount=allpages&$';
     try {
