@@ -1187,7 +1187,29 @@ module.exports = cds.service.impl(async function () {
   //     throw new Error(`S/4HANA call failed: ${error.message} (Status: ${error.response?.status || 500})`);
   //   }
   // });
+// --- new API for SalesQuotationItem -> to_SalesQuotation ---
+  // this.on('getRelatedSalesQuotation', async (req) => {
+  //   console.log('ssssssssssssssssss');
+    
+  //   const { SalesQuotation, SalesQuotationItem } = req.data;
+  //   console.log(`Fetching SalesQuotation for Item: ${SalesQuotation}/${SalesQuotationItem}`);
 
+  //   const url = `https://sandbox.api.sap.com/s4hanacloud/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItem(SalesQuotation='${SalesQuotation}',SalesQuotationItem='${SalesQuotationItem}')/to_SalesQuotation`;
+
+  //   try {
+  //     console.log(`Calling S/4HANA: ${url}`);
+  //     const res = await axios.get(url, {
+  //       headers: { 'Authorization': authHeader, 'Accept': 'application/json' },
+  //       timeout: 10000
+  //     });
+
+  //     console.log('S/4HANA response:', JSON.stringify(res.data));
+  //     return res.data.d || {};
+  //   } catch (error) {
+  //     console.error('Error in getRelatedSalesQuotation:', error.message, 'Status:', error.response?.status, 'Data:', JSON.stringify(error.response?.data));
+  //     throw new Error(`S/4HANA call failed: ${error.message} (Status: ${error.response?.status || 500})`);
+  //   }
+  // });
   
 this.on('READ', 'SalesQuotationItem', async (req) => {
   const { SalesQuotation } = req.data;

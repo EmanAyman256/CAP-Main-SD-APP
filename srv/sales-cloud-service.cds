@@ -57,7 +57,11 @@ entity UnitOfMeasurements @readonly @(path: '/UnitOfMeasurements') {
                    on header.SalesQuotation = $self.SalesQuotation;
   }
 
-
+ // New action to fetch SalesQuotation by Quotation + Item
+  // action getRelatedSalesQuotation(
+  //   SalesQuotation    : String(20),
+  //   SalesQuotationItem: String(10)
+  // ) returns SalesQuotation;
 
 
 
