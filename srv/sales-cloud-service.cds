@@ -23,6 +23,46 @@ entity UnitOfMeasurements @readonly @(path: '/UnitOfMeasurements') {
  
 
 
+/**
+   * External projection of Sales Quotation Header
+   */
+  entity SalesQuotation {
+    key SalesQuotation        : String(20);
+        SalesOrganization     : String(10);
+        DistributionChannel   : String(10);
+        Division              : String(10);
+        SalesQuotationType    : String(4);
+        SalesQuotationDate    : Date;
+        SoldToParty           : String(20);
+        TransactionCurrency   : String(5);
+        TotalNetAmount        : Decimal(15,2);
+
+        items : Association to many SalesQuotationItem
+                  on items.SalesQuotation = $self.SalesQuotation;
+  }
+
+  /**
+   * External projection of Sales Quotation Item
+   */
+  entity SalesQuotationItem {
+    key SalesQuotation        : String(20);
+    key SalesQuotationItem    : String(6);
+
+        Material              : String(40);
+        RequestedQuantity     : Decimal(15,3);
+        RequestedQuantityUnit : String(3);
+        NetAmount             : Decimal(15,2);
+
+        header : Association to SalesQuotation
+                   on header.SalesQuotation = $self.SalesQuotation;
+  }
+
+
+
+
+
+
+
   // === Entities exposed via READ handlers ===
   entity SalesOrders @readonly @(path: '/salesordercloud') {
     key SalesOrder       : String;
@@ -71,12 +111,12 @@ entity UnitOfMeasurements @readonly @(path: '/UnitOfMeasurements') {
         CreatedByUser      : String;
   }
 
-  entity SalesQuotationItem @readonly {
-    key SalesQuotation     : String;
-    key SalesQuotationItem : String;
-        Material           : String;
-        RequestedQuantity  : Decimal(13, 3);
-  }
+  // entity SalesQuotationItem @readonly {
+  //   key SalesQuotation     : String;
+  //   key SalesQuotationItem : String;
+  //       Material           : String;
+  //       RequestedQuantity  : Decimal(13, 3);
+  // }
 
   entity SalesQuotationItems @readonly {
     key SalesQuotation     : String;

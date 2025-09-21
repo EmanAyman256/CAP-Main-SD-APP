@@ -14,7 +14,8 @@ module.exports = cds.service.impl(async function () {
     PersonnelNumber, 
     ServiceNumbers, ServiceType, InvoiceMainItem,
     ModelSpecifications, ModelSpecificationsDetails,
-    ExecutionOrderMains, ServiceInvoiceMains, InvoiceSubItems
+    ExecutionOrderMains, ServiceInvoiceMains, InvoiceSubItems,
+    SalesQuotations, SalesQuotationItem
   } = this.entities;
 
 /*-------------------------- First App -------------------------------------*/ 
@@ -836,7 +837,75 @@ module.exports = cds.service.impl(async function () {
 
 /*-------------------------------------------------------------------------*/
 
+/**
+   * Read SalesQuotation (header)
+   */
+  this.on('READ', SalesQuotations, async (req) => {
+    try {
+      const url = `https://my405604-api.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$top=20&$format=json`;
 
+      const response = await axios.get(url, {
+        headers: {
+          'Authorization': authHeader,
+          'Accept': 'application/json'
+        }
+      });
+
+      return response.data.d.results.map(h => ({
+        SalesQuotation: h.SalesQuotation,
+        SalesOrganization: h.SalesOrganization,
+        DistributionChannel: h.DistributionChannel,
+        Division: h.Division,
+        SalesQuotationType: h.SalesQuotationType,
+        SalesQuotationDate: h.SalesQuotationDate,
+        SoldToParty: h.SoldToParty,
+        TransactionCurrency: h.TransactionCurrency,
+        TotalNetAmount: h.TotalNetAmount
+      }));
+
+    } catch (err) {
+      console.error('Error fetching Sales Quotation:', err.message);
+      req.error(500, `Failed to fetch Sales Quotation: ${err.message}`);
+    }
+  });
+
+  /**
+   * Read SalesQuotationItem (items for a given quotation)
+   */
+  this.on('READ', SalesQuotationItem, async (req) => {
+    try {
+      const { SalesQuotation } = req.query.SELECT.where?.reduce((acc, cur, i, arr) => {
+        if (cur.ref?.[0] === 'SalesQuotation') acc.SalesQuotation = arr[i + 2].val;
+        return acc;
+      }, {}) || {};
+
+      if (!SalesQuotation) {
+        return []; // no filter → skip
+      }
+
+      const url = `https://my405604-api.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItem?$filter=SalesQuotation eq '${SalesQuotation}'&$format=json`;
+
+      const response = await axios.get(url, {
+        headers: {
+          'Authorization': authHeader,
+          'Accept': 'application/json'
+        }
+      });
+
+      return response.data.d.results.map(i => ({
+        SalesQuotation: i.SalesQuotation,
+        SalesQuotationItem: i.SalesQuotationItem,
+        Material: i.Material,
+        RequestedQuantity: i.RequestedQuantity,
+        RequestedQuantityUnit: i.RequestedQuantityUnit,
+        NetAmount: i.NetAmount
+      }));
+
+    } catch (err) {
+      console.error('Error fetching Sales Quotation Item:', err.message);
+      req.error(500, `Failed to fetch Sales Quotation Item: ${err.message}`);
+    }
+  });
 
 
 
