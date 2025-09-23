@@ -10,7 +10,7 @@ sap.ui.define([
                 DocumentNumber: "",
                 SelectedItemNumber: "",
                 ErrorMessage: "",
-                documentItems:[]
+                documentItems: []
             });
             this.getView().setModel(oModel);
         },
@@ -71,40 +71,38 @@ sap.ui.define([
                                 const sQuotation = oSelectedItem.getCells()[0].getText();
                                 this.byId("quotationInput").setValue(sQuotation);
                                 this.getView().getModel().setProperty("/DocumentNumber", sQuotation);
-                                //this.updateSimulateButtonState();
-                                /*  
-                                  fetch("/odata/v4/sales-cloud/ServiceTypes")
-                .then(response => response.json())
-                .then(data => {
-                    // Wrap array inside an object for binding
-                    oModel.setData({ ServiceTypes: data.value });
-                    this.getView().byId("serviceTable").setModel(oModel);
-                })
-                .catch(err => {
-                    console.error("Error fetching ServiceTypes", err);
-                });
 
-                                */
+
                                 const docNumber = this.getView().getModel().getProperty("/DocumentNumber");
-                                fetch(`/odata/v4/sales-cloud/ServiceTypes('${docNumber}')`, {
+                                console.log(docNumber);
+
+                                fetch(`/odata/v4/sales-cloud/SalesQuotation('${docNumber}')/items`, {
                                     method: "GET",
                                     headers: {
                                         "Content-Type": "application/json"
-                                    },
-                                    // body: JSON.stringify({
-                                    //     serviceId: sNewCode,       // optional if Code is key, only update if editable
-                                    //     description: sNewDescription
-                                    // })
+                                    }
                                 })
-                                    .then(response => {
-                                        console.log(response);
-                                         this.getView().getModel().setProperty("/documentItems", response.value);
-                                        return response.json();
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        console.log("Full Items Response:", data);
+
+                                        if (data && data.value) {
+                                            const documentItems = data.value.map(item => ({
+                                                SalesQuotationItem: item.SalesQuotationItem,
+                                                SalesQuotationItemText: item.SalesQuotationItemText
+                                            }));
+                                            this.getView().getModel().setProperty("/documentItems", documentItems);
+
+                                            console.log("Stored documentItems:", documentItems);
+                                        } else {
+                                            sap.m.MessageBox.warning("No items found in SalesQuotation.");
+                                        }
                                     })
                                     .catch(err => {
                                         console.error("Error fetching items:", err);
                                         sap.m.MessageBox.error("Error: " + err.message);
                                     });
+
                                 this._oValueHelpDialog.close();
                             }
                         }
@@ -125,21 +123,34 @@ sap.ui.define([
         },
 
         onNextPress: function () {
+            const oView = this.getView();
+            const oModel = oView.getModel();
 
-           // var itemNumber = oView.byId("_IDGenSelect").getSelectedKey();
-            // fetch services by item number
-            var oModel = this.getView().getModel();
-            var sItem = oModel.getProperty("/SelectedItemNumber");
+            const itemNumber = oView.byId("_IDGenSelect").getSelectedKey();
+            const docNumber = oModel.getProperty("/DocumentNumber");
 
-            if (!sItem) {
-                oModel.setProperty("/ErrorMessage", "Item Number is required");
+            if (!docNumber) {
+                MessageBox.warning("Document Number is required.");
                 return;
             }
+
+            if (!itemNumber) {
+                MessageBox.warning("Item Number is required.");
+                return;
+            }
+
             oModel.setProperty("/ErrorMessage", "");
-            MessageToast.show("Navigating to next step with item: " + sItem);
+
+            MessageToast.show("Navigating to next step with Doc: " + docNumber + ", Item: " + itemNumber);
+
+            // Navigate
             var oRouter = sap.ui.core.UIComponent.getRouterFor(this);
-            oRouter.navTo("tendering");
+            oRouter.navTo("tendering", {
+                docNumber: docNumber,
+                itemNumber: itemNumber
+            });
         }
+
 
     });
 });

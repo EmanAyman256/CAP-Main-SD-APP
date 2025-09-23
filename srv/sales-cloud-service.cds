@@ -1,5 +1,6 @@
 using {salesdb} from '../db/sales-cloud-schema';
-@title: 'Sales Cloud Service'
+
+@title               : 'Sales Cloud Service'
 @Core.LongDescription: 'This service exposes APIs for managing Sales Cloud objects such as Line Types, Formulas, Materials, and Currencies.'
 
 service SalesCloudService {
@@ -16,29 +17,29 @@ service SalesCloudService {
   entity ServiceNumbers             as projection on salesdb.ServiceNumber;
   entity ServiceInvoiceMains        as projection on salesdb.ServiceInvoiceMain;
   entity InvoiceSubItems            as projection on salesdb.InvoiceSubItem;
-entity UnitOfMeasurements @readonly @(path: '/UnitOfMeasurements') {
-  key code        : String(8);
-      description : String;
-}
- 
+
+  entity UnitOfMeasurements @readonly @(path: '/UnitOfMeasurements') {
+    key code        : String(8);
+        description : String;
+  }
 
 
-/**
-   * External projection of Sales Quotation Header
-   */
+  /**
+     * External projection of Sales Quotation Header
+     */
   entity SalesQuotation {
-    key SalesQuotation        : String(20);
-        SalesOrganization     : String(10);
-        DistributionChannel   : String(10);
-        Division              : String(10);
-        SalesQuotationType    : String(4);
-        SalesQuotationDate    : Date;
-        SoldToParty           : String(20);
-        TransactionCurrency   : String(5);
-        TotalNetAmount        : Decimal(15,2);
+    key SalesQuotation      : String(20);
+        SalesOrganization   : String(10);
+        DistributionChannel : String(10);
+        Division            : String(10);
+        SalesQuotationType  : String(4);
+        SalesQuotationDate  : Date;
+        SoldToParty         : String(20);
+        TransactionCurrency : String(5);
+        TotalNetAmount      : Decimal(15, 2);
 
-        items : Association to many SalesQuotationItem
-                  on items.SalesQuotation = $self.SalesQuotation;
+        items               : Association to many SalesQuotationItem
+                                on items.SalesQuotation = $self.SalesQuotation;
   }
 
   /**
@@ -49,22 +50,19 @@ entity UnitOfMeasurements @readonly @(path: '/UnitOfMeasurements') {
     key SalesQuotationItem    : String(6);
 
         Material              : String(40);
-        RequestedQuantity     : Decimal(15,3);
+        RequestedQuantity     : Decimal(15, 3);
         RequestedQuantityUnit : String(3);
-        NetAmount             : Decimal(15,2);
+        NetAmount             : Decimal(15, 2);
 
-        header : Association to SalesQuotation
-                   on header.SalesQuotation = $self.SalesQuotation;
+        header                : Association to SalesQuotation
+                                  on header.SalesQuotation = $self.SalesQuotation;
   }
 
- // New action to fetch SalesQuotation by Quotation + Item
+  // New action to fetch SalesQuotation by Quotation + Item
   // action getRelatedSalesQuotation(
   //   SalesQuotation    : String(20),
   //   SalesQuotationItem: String(10)
   // ) returns SalesQuotation;
-
-
-
 
 
   // === Entities exposed via READ handlers ===
@@ -108,7 +106,7 @@ entity UnitOfMeasurements @readonly @(path: '/UnitOfMeasurements') {
     key ConditionType  : String;
   }
 
-  
+
   entity SalesQuotationPricing @readonly {
     key SalesQuotation     : String;
     key SalesQuotationItem : String;
@@ -138,69 +136,113 @@ entity UnitOfMeasurements @readonly @(path: '/UnitOfMeasurements') {
   }
 
   // === Actions (POST operations) ===
-  action postSalesOrder(body: LargeString)                                   returns String;
-  action postSalesQuotation(body: LargeString)                               returns String;
+  action postSalesOrder(body: LargeString)                                      returns String;
+  action postSalesQuotation(body: LargeString)                                  returns String;
 
   action postSalesOrderItemPricing(SalesOrder: String,
                                    SalesOrderItem: String,
-                                   body: LargeString)                        returns String;
+                                   body: LargeString)                           returns String;
 
   action patchSalesQuotationItemPricing(SalesQuotation: String,
                                         SalesQuotationItem: String,
                                         PricingProcedureStep: String,
                                         PricingProcedureCounter: String,
-                                        body: LargeString)                   returns String;
+                                        body: LargeString)                      returns String;
 
   action patchSalesOrderItemPricing(SalesOrder: String,
                                     SalesOrderItem: String,
                                     PricingProcedureStep: String,
                                     PricingProcedureCounter: String,
-                                    body: LargeString)                       returns String;
+                                    body: LargeString)                          returns String;
 
   action patchDebitMemoItemPricing(DebitMemoRequest: String,
                                    DebitMemoRequestItem: String,
                                    PricingProcedureStep: String,
                                    PricingProcedureCounter: String,
-                                   body: LargeString)                        returns String;
+                                   body: LargeString)                           returns String;
 
-  action searchFormulas(keyword: String)                                     returns many Formulas;
-  action searchModelSpecifications(keyword: String)                          returns many ModelSpecifications;
-  action getExecutionOrderMainById(executionOrderMainCode: Integer)          returns ExecutionOrderMains;
+  action searchFormulas(keyword: String)                                        returns many Formulas;
+  action searchModelSpecifications(keyword: String)                             returns many ModelSpecifications;
+  action getExecutionOrderMainById(executionOrderMainCode: Integer)             returns ExecutionOrderMains;
 
   action saveOrUpdateExecutionOrders(executionOrders: array of ExecutionOrderMains,
                                      salesOrder: String,
                                      salesOrderItem: String,
-                                     customerNumber: String)                 returns array of ExecutionOrderMains;
+                                     customerNumber: String)                    returns array of ExecutionOrderMains;
 
-  action findBySalesOrderAndItem(salesOrder: String, salesOrderItem: String) returns String;
-  action getInvoiceMainItemsByReferenceId(referenceId: String)               returns array of ExecutionOrderMains;
-  action findByLineNumber(lineNumber: String)                                returns array of ExecutionOrderMains;
-
-  @readonly
-  action calculateTotal(invoiceMainItemCode: Integer)                        returns Decimal(15, 2);
+  action findBySalesOrderAndItem(salesOrder: String, salesOrderItem: String)    returns String;
+  action getInvoiceMainItemsByReferenceId(referenceId: String)                  returns array of ExecutionOrderMains;
+  action findByLineNumber(lineNumber: String)                                   returns array of ExecutionOrderMains;
 
   @readonly
-  action calculateTotalHeader()                                              returns Decimal(15, 2);
+  action calculateTotal(invoiceMainItemCode: Integer)                           returns Decimal(15, 2);
 
   @readonly
-  action fetchByReferenceId(referenceId: String)                             returns many InvoiceMainItems;
+  action calculateTotalHeader()                                                 returns Decimal(15, 2);
 
   @readonly
-  action search(keyword: String)                                             returns many InvoiceMainItems;
+  action fetchByReferenceId(referenceId: String)                                returns many InvoiceMainItems;
 
-  action searchServiceNumber(keyword: String)                                returns many ServiceNumbers;
+  @readonly
+  action search(keyword: String)                                                returns many InvoiceMainItems;
 
-  action calculateTotalHeaderServiceInvoice()                                returns Decimal(15, 2);
-  action calculateTotalServiceInvoice(serviceInvoiceCode: Integer)           returns Decimal(15, 2);
-  action calculateQuantities(data: ServiceInvoiceMains)                      returns ServiceInvoiceMains;
+  action searchServiceNumber(keyword: String)                                   returns many ServiceNumbers;
 
-  action findByReferenceIdServiceInvoice(referenceId: String)                returns many ServiceInvoiceMains;
-  action findByLineNumberServiceInvoice(lineNumber: String)                  returns many ServiceInvoiceMains;
+  action calculateTotalHeaderServiceInvoice()                                   returns Decimal(15, 2);
+  action calculateTotalServiceInvoice(serviceInvoiceCode: Integer)              returns Decimal(15, 2);
+  action calculateQuantities(data: ServiceInvoiceMains)                         returns ServiceInvoiceMains;
 
-
-  action findBySubItemCode(subItemCode: Integer)                             returns InvoiceSubItems;
-  action searchSubItem(keyword: String)                                      returns many InvoiceSubItems;
+  action findByReferenceIdServiceInvoice(referenceId: String)                   returns many ServiceInvoiceMains;
+  action findByLineNumberServiceInvoice(lineNumber: String)                     returns many ServiceInvoiceMains;
 
 
- 
+  action findBySubItemCode(subItemCode: Integer)                                returns InvoiceSubItems;
+  action searchSubItem(keyword: String)                                         returns many InvoiceSubItems;
+
+  action saveOrUpdateMainItems(salesQuotation: String,
+                               salesQuotationItem: String,
+                               pricingProcedureStep: String,
+                               pricingProcedureCounter: String,
+                               customerNumber: String,
+                               invoiceMainItemCommands: InvoiceMainItemCommand) returns array of InvoiceMainItemCommand;
+
+
+  type InvoiceSubItemCommand {
+    // invoiceSubItemCode    : UUID;
+    invoiceMainItemCode   : UUID;
+    serviceNumberCode     : UUID;
+    unitOfMeasurementCode : String;
+    currencyCode          : String;
+    formulaCode           : String;
+    description           : String;
+    quantity              : Decimal(15, 3);
+    amountPerUnit         : Decimal(15, 3);
+    total                 : Decimal(15, 3);
+  }
+
+  type InvoiceMainItemCommand {
+    // invoiceMainItemCode     : UUID;
+    uniqueId                : String;
+    salesQuotationItem      : String;
+    salesOrderItem          : String;
+    salesQuotationItemText  : String;
+    referenceSDDocument     : String;
+    referenceId             : String;
+    serviceNumberCode       : UUID;
+    unitOfMeasurementCode   : String;
+    currencyCode            : String;
+    formulaCode             : String;
+    description             : String;
+    quantity                : Decimal(15, 3);
+    amountPerUnit           : Decimal(15, 3);
+    total                   : Decimal(15, 3);
+    totalHeader             : Decimal(15, 3);
+    profitMargin            : Decimal(15, 3);
+    totalWithProfit         : Decimal(15, 3);
+    doNotPrint              : Boolean;
+    amountPerUnitWithProfit : Decimal(15, 3);
+    lineNumber              : String;
+    subItemList                : array of InvoiceSubItemCommand;
+  }
+
 }

@@ -13,77 +13,212 @@ sap.ui.define([
     "use strict";
 
     return Controller.extend("tendering.controller.View1", {
-        // onInit: function () {
 
-        //     var oData = {
-        //         MainItems: [
-        //             {
-        //                 MainItemNo: "1000",
-        //                 Description: "Main Item 1",
-        //                 children: [   // <--- TreeTable needs children
-        //                     { SubItemNo: "1000-1", ServiceNo: "S001", Description: "SubItem 1", Quantity: 5, UOM: "EA" },
-        //                     { SubItemNo: "1000-2", ServiceNo: "S002", Description: "SubItem 2", Quantity: 10, UOM: "EA" },
-
-        //                 ]
-        //             },
-        //             {
-        //                 MainItemNo: "2000",
-        //                 Description: "Main Item 2",
-        //                 children: []
-        //             },
-
-        //         ]
-        //     };
-
-        //     var oModel = new sap.ui.model.json.JSONModel(oData);
-        //     this.getView().setModel(oModel);
-
-        // },
         onInit: function () {
-            var oData = {
-                MainItems: [
-                    {
-                        MainItemNo: "1000",
-                        ServiceNo: "S000",
-                        Description: "Main Item 1",
-                        Quantity: 1,
-                        UOM: "EA",
-                        formula: "",
-                        parameters: "",
-                        AmountPerUnit: 0,
-                        currency: "SAR",
-                        total: 0,
-                        profitMargin: 0,
-                        amountPerUnitWithProfit: 0,
-                        totalWithProfit: 0,
-                        children: [
-                            { SubItemNo: "1000-1", ServiceNo: "S001", Description: "SubItem 1", Quantity: 5, UOM: "EA" },
-                            { SubItemNo: "1000-2", ServiceNo: "S002", Description: "SubItem 2", Quantity: 10, UOM: "EA" }
-                        ]
-                    },
-                    {
-                        MainItemNo: "2000",
-                        ServiceNo: "S000",
-                        Description: "Main Item 2",
-                        Quantity: 1,
-                        UOM: "EA",
-                        formula: "",
-                        parameters: "",
-                        AmountPerUnit: 0,
-                        currency: "SAR",
-                        total: 0,
-                        profitMargin: 0,
-                        amountPerUnitWithProfit: 0,
-                        totalWithProfit: 0,
-                        children: []
-                    }
-                ]
-            };
+            var oRouter = sap.ui.core.UIComponent.getRouterFor(this);
+            oRouter.getRoute("tendering").attachPatternMatched(this._onRouteMatched, this);
 
-            var oModel = new JSONModel(oData);
+            // Define entity structures (reference to CAP entities)
+            // this.InvoiceMainItemTemplate = {
+            //     invoiceMainItemCode: "",
+            //     // uniqueId: "",
+            //     // referenceSDDocument: "",
+            //     // salesQuotationItem: "",
+            //     // salesOrderItem: "",
+            //     // salesQuotationItemText: "",
+            //     // referenceId: "",
+            //     serviceNumberCode: 0,
+            //     unitOfMeasurementCode: "",
+            //     currencyCode: "",
+            //     formulaCode: "",
+            //     description: "",
+            //     quantity: 0,
+            //     amountPerUnit: 0,
+            //     total: 0,
+            //     totalHeader: 0,
+            //     profitMargin: 0,
+            //     totalWithProfit: 0,
+            //     amountPerUnitWithProfit: 0,
+            //     doNotPrint: false,
+            //     lineNumber: "",
+            //     subItemList: []
+            // };
+
+            // this.InvoiceSubItemTemplate = {
+            //     invoiceSubItemCode: "",
+            //     invoiceMainItemCode: "",
+            //     serviceNumberCode: null,
+            //     unitOfMeasurementCode: "",
+            //     currencyCode: "",
+            //     formulaCode: "",
+            //     description: "",
+            //     quantity: 0,
+            //     amountPerUnit: 0,
+            //     total: 0
+            // };
+
+            // // Example: set JSON model with empty array of MainItems
+            // var oModel = new JSONModel({
+            //     MainItems: []
+            // });
+            // this.getView().setModel(oModel, "tendering");
+
+            var oModel = new sap.ui.model.json.JSONModel({
+                docNumber: "",
+                itemNumber: "",
+                MainItems: [],
+                Formulas: [],
+                Currency: [],
+                UOM: [],
+                ServiceNumbers: [],
+                SelectedServiceNumber: "",
+                SelectedServiceNumberDescription: ""
+
+            });
             this.getView().setModel(oModel);
 
+
+
             this._createSubItemDialog();
+
+            // Service Numbers
+            fetch("/odata/v4/sales-cloud/ServiceNumbers")
+                .then(response => {
+                    if (!response.ok) throw new Error(response.statusText);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Fetched ServiceNumbers:", data.value);
+
+                    if (data && data.value) {
+                        const ServiceNumbers = data.value.map(item => ({
+                            serviceNumberCode: item.serviceNumberCode,
+                            description: item.description
+                        }));
+                        this.getView().getModel().setProperty("/ServiceNumbers", ServiceNumbers);
+
+                        console.log("ServiceNumbers:", ServiceNumbers);
+                    }
+                })
+                .catch(err => {
+                    console.error("Error fetching ServiceNumbers:", err);
+                });
+            fetch("/odata/v4/sales-cloud/Formulas")
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}, ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Fetched Formulas:", data); // Log the raw response
+                    // Ensure data.value is an array
+                    const formulas = Array.isArray(data.value) ? data.value : [];
+                    oModel.setData({ Formulas: formulas });
+                    console.log("ServiceNumbers set in model:", oModel.getProperty("/Formulas")); // Log the model data
+                    // Refresh the model to ensure the table updates
+                    oModel.refresh(true);
+                })
+                .catch(err => {
+                    console.error("Error fetching Formulas:", err);
+                    sap.m.MessageBox.error("Failed to load Formulas: " + err.message);
+                });
+            fetch("/odata/v4/sales-cloud/UnitOfMeasurements")
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}, ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Fetched UOM:", data); // Log the raw response
+                    // Ensure data.value is an array
+                    const uom = Array.isArray(data.value) ? data.value : [];
+                    oModel.setData({ UOM: uom });
+                    console.log("Uom set in model:", oModel.getProperty("/UOM")); // Log the model data
+                    // Refresh the model to ensure the table updates
+                    oModel.refresh(true);
+                })
+                .catch(err => {
+                    console.error("Error fetching Unit of Measurements:", err);
+                    sap.m.MessageBox.error("Failed to load  Unit of Measurements: " + err.message);
+                });
+            fetch("/odata/v4/sales-cloud/Currencies")
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}, ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Fetched Currency:", data); // Log the raw response
+                    // Ensure data.value is an array
+                    const Currency = Array.isArray(data.value) ? data.value : [];
+                    oModel.setData({ Currency: Currency });
+                    console.log("Currency set in model:", oModel.getProperty("/Currency")); // Log the model data
+                    // Refresh the model to ensure the table updates
+                    oModel.refresh(true);
+                })
+                .catch(err => {
+                    console.error("Error fetching Currency:", err);
+                    sap.m.MessageBox.error("Failed to load  Currency: " + err.message);
+                });
+
+
+        },
+
+        // _createMainItem: function () {
+        //     return JSON.parse(JSON.stringify(this.InvoiceMainItemTemplate));
+        // },
+
+        // _createSubItem: function () {
+        //     return JSON.parse(JSON.stringify(this.InvoiceSubItemTemplate));
+        // },
+
+        _onRouteMatched: function (oEvent) {
+            var oView = this.getView();
+            var oModel = oView.getModel();
+
+            var args = oEvent.getParameter("arguments");
+            var docNumber = args.docNumber;
+            var itemNumber = args.itemNumber;
+
+            console.log("Params:", docNumber, itemNumber);
+            oModel.setProperty("/docNumber", docNumber);
+            oModel.setProperty("/itemNumber", itemNumber);
+
+            // OData request URL
+            var sUrl = `/odata/v4/sales-cloud/SalesQuotationItem(SalesQuotation='${docNumber}',SalesQuotationItem='${itemNumber}')`;
+
+            // Fetch the data
+            fetch(sUrl)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    oModel.setProperty("/MainItems", [data]);
+
+                    // if it's an array, do:
+                    // oModel.setProperty("/MainItems", data.value);
+                    oView.byId("treeTable").setModel(oModel);
+                })
+                .catch(err => {
+                    console.error("Error fetching MainItems", err);
+                });
+        },
+
+        onServiceNumberChange: function (oEvent) {
+            var oSelect = oEvent.getSource();
+            var oSelectedItem = oSelect.getSelectedItem();
+
+            var sKey = oSelectedItem.getKey();   // serviceNumberCode
+            var sText = oSelectedItem.getText(); // description
+
+            console.log("Selected Key:", sKey, " | Text:", sText);
+
+            // Example: store both in model
+            var oModel = this.getView().getModel();
+            oModel.setProperty("/SelectedServiceNumber", sKey);
+            oModel.setProperty("/SelectedServiceNumberDescription", sText);
         },
 
         _createSubItemDialog: function () {
@@ -443,36 +578,80 @@ sap.ui.define([
         },
 
         onAddMainItem: function () {
+            // const oView = this.getView();
+            // var oModel = this.getView().getModel("tendering");
+            // var aMainItems = oModel.getProperty("/MainItems");
+
+            // var oNewMainItem = this._createMainItem();
+            // oNewMainItem.invoiceMainItemCode = crypto.randomUUID(); // or Date.now()
+            // oNewMainItem.description = "New Main Item";
+
+            // // push to array
+            // aMainItems.push(oNewMainItem);
+            // oModel.setProperty("/MainItems", aMainItems);
+
             const oView = this.getView();
             const oModel = oView.getModel();
             const aMainItems = oModel.getProperty("/MainItems");
-
-            const oNewMain = {
-                MainItemNo: oView.byId("mainItemNoInput").getValue(),
-                ServiceNo: oView.byId("mainServiceNoInput").getValue(),
-                Description: oView.byId("mainDescriptionInput").getValue(),
-                Quantity: oView.byId("mainQuantityInput").getValue(),
-                UOM: oView.byId("mainUOMInput").getValue(),
-
-                formula: oView.byId("mainFormulaInput").getValue(),
-                parameters: oView.byId("mainParametersInput").getValue(),
-                AmountPerUnit: oView.byId("mainAmountPerUnitInput").getValue(),
-                currency: oView.byId("mainCurrencyInput").getValue(),
+            const invoiceMainItemCommands = {
+                serviceNumberCode: oModel.getProperty("SelectedServiceNumber"),
+                description: oView.byId("mainDescriptionInput").getValue(),
+                quantity: oView.byId("mainQuantityInput").getValue(),
+                unitOfMeasurementCode:oView.byId("_IDGenSelect4").getSelectedKey(),
+                //oView.byId("_IDGenSelect").getSelectedKey()
+                formulaCode: oView.byId("_IDGenSelect2").getSelectedKey(),
+                amountPerUnit: oView.byId("mainAmountPerUnitInput").getValue(),
+                currencyCode: oView.byId("_IDGenSelect5").getSelectedKey(),
                 total: oView.byId("mainTotalInput").getValue(),
                 profitMargin: oView.byId("mainProfitMarginInput").getValue(),
                 amountPerUnitWithProfit: oView.byId("mainAmountPerUnitWithProfitInput").getValue(),
                 totalWithProfit: oView.byId("mainTotalWithProfitInput").getValue(),
 
-                children: []
-            };
+                subItemList: []
 
-            aMainItems.push(oNewMain);
+            }
+            const oNewMain = {
+
+                salesQuotation: oModel.getProperty("/docNumber"),
+                salesQuotationItem: oModel.getProperty("/itemNumber"),
+                pricingProcedureStep: "1",
+                pricingProcedureCounter: "10",
+                customerNumber: "120000",
+                invoiceMainItemCommands: invoiceMainItemCommands
+
+            };
+            fetch("/odata/v4/sales-cloud/saveOrUpdateMainItems", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(oNewMain)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to save: " + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(savedItem => {
+                    var aServiceTypes = oModel.getProperty("/MainItems") || [];
+                    aServiceTypes.push(savedItem);
+                    oModel.setProperty("/MainItems", aServiceTypes);
+
+                    // Reset form
+                    oModel.setProperty("/newCode", "");
+                    oModel.setProperty("/newDescription", "");
+                })
+                .catch(err => {
+                    console.error("Error saving MainItem:", err);
+                    sap.m.MessageBox.error("Error: " + err.message);
+                });
+
+            // aMainItems.push(oNewMain);
             oModel.refresh();
 
             this.byId("addMainDialog").close();
         },
-
-
 
         onSearch: function (oEvent) {
             var sQuery = oEvent.getParameter("query");

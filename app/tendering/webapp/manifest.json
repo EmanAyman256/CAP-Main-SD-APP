@@ -101,7 +101,7 @@
         },
         {
           "name": "tendering",
-          "pattern": "tendering",
+          "pattern": "tendering/{docNumber}/{itemNumber}",
           "target": "tendering"
         }
       ],

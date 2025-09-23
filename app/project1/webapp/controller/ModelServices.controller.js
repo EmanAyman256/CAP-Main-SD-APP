@@ -102,88 +102,7 @@ sap.ui.define([
             // Initialize Models with original data and store originalModels
             oOriginalData.originalModels = JSON.parse(JSON.stringify(oOriginalData.ModelSpecificationsDetails));
             var oModel = new sap.ui.model.json.JSONModel(oOriginalData);
-            // var oModel = new sap.ui.model.json.JSONModel({
-            //     // dialogVisible: false,
-            //     dummy: [{}],
-            //     selectedLine: {}, // holds the selected line data for the details dialog,
-
-            //     Models: [
-            //         {
-            //             line: "001",
-            //             serviceNo: "S001",
-            //             shortText: "Service 1",
-            //             quantity: "10",
-            //             formula: "F1",
-            //             formulaParameters: "P1,P2",
-            //             grossPrice: "100.00",
-            //             netValue: "90.00",
-            //             unitOfMeasure: "EA",
-            //             crcy: "USD",
-            //             overFPercentage: "5%",
-            //             priceChangeAllowed: "Yes",
-            //             unlimitedOverF: "No",
-            //             pricePerUnitOfMeasurement: "10.00",
-            //             matGroup: "MG1",
-            //             serviceType: "ST1",
-            //             externalServiceNo: "ES001",
-            //             serviceText: "Service Text 1",
-            //             lineText: "Line Text 1",
-            //             personnelNumber: "P001",
-            //             lineType: "LT1",
-            //             lineNumber: "1",
-            //             alt: "A1",
-            //             biddersLine: "B001",
-            //             suppLine: "S001",
-            //             cstgLs: "CL1"
-            //         },
-            //         {
-            //             line: "002",
-            //             serviceNo: "S002",
-            //             shortText: "Service 2",
-            //             quantity: "20",
-            //             formula: "F2",
-            //             formulaParameters: "P3,P4",
-            //             grossPrice: "200.00",
-            //             netValue: "180.00",
-            //             unitOfMeasure: "EA",
-            //             crcy: "EUR",
-            //             overFPercentage: "10%",
-            //             priceChangeAllowed: "No",
-            //             unlimitedOverF: "Yes",
-            //             pricePerUnitOfMeasurement: "20.00",
-            //             matGroup: "MG2",
-            //             serviceType: "ST2",
-            //             externalServiceNo: "ES002",
-            //             serviceText: "Service Text 2",
-            //             lineText: "Line Text 2",
-            //             personnelNumber: "P002",
-            //             lineType: "LT2",
-            //             lineNumber: "2",
-            //             alt: "A2",
-            //             biddersLine: "B002",
-            //             suppLine: "S002",
-            //             cstgLs: "CL2"
-            //         }
-            //     ],
-
-            // });
-            // for edit 
-            // this.oEditableTemplate = new ColumnListItem({
-            //     cells: [
-            //         new Input({
-            //             value: "{Name}"
-            //         }), new Input({
-            //             value: "{Quantity}",
-            //             description: "{UoM}"
-            //         }), new Input({
-            //             value: "{WeightMeasure}",
-            //             description: "{WeightUnit}"
-            //         }), new Input({
-            //             value: "{Price}",
-            //             description: "{CurrencyCode}"
-            //         })
-            //     ]
-            // });
+            
             this.getView().setModel(oModel);
 
             var style = document.createElement('style');
@@ -196,18 +115,7 @@ sap.ui.define([
             document.getElementsByTagName('head')[0].appendChild(style);
         },
         onAdd: function () {
-            var oModel = this.getView().getModel();
-            var newCode = oModel.getProperty("/newCode");
-            var newDescription = oModel.getProperty("/newDescription");
-            if (newCode && newDescription) {
-                oModel.getProperty("/ServiceTypes").push({
-                    Code: newCode,
-                    Description: newDescription,
-                    CreatedOn: new Date().toISOString().split('T')[0]
-                });
-                oModel.setProperty("/newCode", "");
-                oModel.setProperty("/newDescription", "");
-            }
+
         },
 
         onDetails: function (oEvent) {
@@ -313,36 +221,47 @@ sap.ui.define([
         },
 
         onDelete: function (oEvent) {
-            var oButton = oEvent.getSource();
-            var oContext = oButton.getParent().getParent().getBindingContext();
 
-            if (!oContext) {
-                sap.m.MessageToast.show("Error: Could not determine the row to delete!");
-                return;
-            }
-
-            var sPath = oContext.getPath(); // e.g. "/Models/0"
-            var oModel = this.getView().getModel();
-
-            sap.m.MessageBox.confirm("Are you sure you want to delete this record?", {
-                title: "Confirm Deletion",
-                icon: sap.m.MessageBox.Icon.WARNING,
-                actions: [sap.m.MessageBox.Action.YES, sap.m.MessageBox.Action.NO],
-                emphasizedAction: sap.m.MessageBox.Action.YES,
-                onClose: function (sAction) {
-                    if (sAction === sap.m.MessageBox.Action.YES) {
-                        // Remove the object from the model
-                        var aData = oModel.getProperty("/Models");
-                        var iIndex = parseInt(sPath.split("/")[2]); // index from binding path
-                        aData.splice(iIndex, 1); // remove 1 element at index
-                        oModel.setProperty("/Models", aData);
-
-                        //DB Deletion
-                        
-                        sap.m.MessageToast.show("Record deleted successfully.");
-                    }
+            var oBindingContext = oEvent.getSource().getBindingContext();
+            if (oBindingContext) {
+                var sPath = oBindingContext.getPath(); 
+                var oModel = this.getView().byId("modelServicesTable").getModel();
+                var oItem = oModel.getProperty(sPath);
+                console.log(oItem);
+                if (!oItem) {
+                    sap.m.MessageBox.error("Error: Could not determine the row to delete!");
+                    return;
                 }
-            });
+                sap.m.MessageBox.confirm("Are you sure you want to delete this record?", {
+                    title: "Confirm Deletion",
+                    icon: sap.m.MessageBox.Icon.WARNING,
+                    actions: [sap.m.MessageBox.Action.YES, sap.m.MessageBox.Action.NO],
+                    emphasizedAction: sap.m.MessageBox.Action.YES,
+                    onClose: function (sAction) {
+                        if (sAction === sap.m.MessageBox.Action.YES) {
+                            //Delete For DB 
+                            fetch(`/odata/v4/sales-cloud/ModelSpecificationsDetails('${oItem.modelSpecDetailsCode}')`, {
+                                method: "DELETE"
+                            })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error("Failed to delete: " + response.statusText);
+                               }
+                                // Remove the object from the model
+                                var aData = oModel.getProperty("/ModelSpecificationsDetails");
+                                var iIndex = parseInt(sPath.split("/")[2]); // index from binding path
+                                aData.splice(iIndex, 1); // remove 1 element at index
+                                oModel.setProperty("/ModelSpecificationsDetails", aData);                            
+                                sap.m.MessageToast.show("Record deleted successfully.");
+                                })
+                            .catch(err => {
+                                console.error("Error deleting Formula:", err);
+                                sap.m.MessageBox.error("Error: " + err.message);
+                            });
+                        }
+                    }
+                });
+            }
         },
 
         onPress() {
@@ -359,45 +278,58 @@ sap.ui.define([
             }
         },
         onAddRecord: function () {
-            var oModel = this.getView().getModel();
-            var models = oModel.getProperty("/Models") || [];
 
-            var newModel = {
-                line: this.byId("dialogLine").getValue(),
-                serviceNo: this.byId("dialogServiceNo").getValue(),
-                shortText: this.byId("dialogShortText").getValue(),
-                quantity: this.byId("dialogQuantity").getValue(),
-                formula: this.byId("dialogFormula").getValue(),
-                formulaParameters: this.byId("dialogFormulaParameters").getValue(),
-                grossPrice: this.byId("dialogGrossPrice").getValue(),
-                netValue: this.byId("dialogNetValue").getValue(),
-                unitOfMeasure: this.byId("dialogUnitOfMeasure").getValue(),
-                crcy: this.byId("dialogCrcy").getValue(),
-                overFPercentage: this.byId("dialogOverFPercentage").getValue(),
-                priceChangeAllowed: this.byId("dialogPriceChangeAllowed").getValue(),
-                unlimitedOverF: this.byId("dialogUnlimitedOverF").getValue(),
-                pricePerUnitOfMeasurement: this.byId("dialogPricePerUnitOfMeasurement").getValue(),
-                matGroup: this.byId("dialogMatGroup").getValue(),
-                serviceType: this.byId("dialogServiceType").getValue(),
-                externalServiceNo: this.byId("dialogExternalServiceNo").getValue(),
-                serviceText: this.byId("dialogServiceText").getValue(),
-                lineText: this.byId("dialogLineText").getValue(),
-                personnelNumber: this.byId("dialogPersonnelNumber").getValue(),
-                lineType: this.byId("dialogLineType").getValue(),
-                lineNumber: this.byId("dialogLineNumber").getValue(),
-                alt: this.byId("dialogAlt").getValue(),
-                biddersLine: this.byId("dialogBiddersLine").getValue(),
-                suppLine: this.byId("dialogSuppLine").getValue(),
-                cstgLs: this.byId("dialogCstgLs").getValue()
-            };
-            console.log(newModel);
+            var shorttxt = this.byId("dialogShortText").getValue(); //For Example # Not Working
 
-            models.push(newModel);
-            oModel.setProperty("/Models", models);
-            oModel.refresh(true);
+            const oTable = this.byId("addServiceTable");
+            const aItems = oTable.getRows();   // rows of the table
 
-            sap.m.MessageToast.show("Record added successfully!");
-            this.onCloseDialog();
+            if (aItems.length > 0) {
+                const oRow = aItems[0];        // since you only have one row
+                const aCells = oRow.getCells();
+                var newServiceModel ={
+                    serviceNumberCode: aCells[1].getValue(),
+                    shortText: aCells[2].getValue(),
+                    quantity: aCells[3].getValue(),
+                    formulaCode: aCells[4].getValue(),
+                    modelSpecifications: [
+                    {
+                        modelSpecCode: "01234567-89ab-cdef-0123-456789abcdef",
+                    }
+                    ]
+                }
+            
+            //Check Mandatories before Posting in DB
+            //Post In DB
+            fetch("/odata/v4/sales-cloud/ModelSpecificationsDetails", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(newServiceModel)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to save: " + response.statusText);
+                    }
+                    return response.json();
+                })
+                 .then(savedItem => {
+                    var oModel = this.getView().getModel();
+                    var models = oModel.getProperty("/ModelSpecificationsDetails") || [];
+                    models.push(savedItem);
+                    oModel.setProperty("/ModelSpecificationsDetails", models);
+                    oModel.refresh(true);
+                })
+                .catch(err => {
+                    console.error("Error saving Model Service:", err);
+                    sap.m.MessageBox.error("Error: " + err.message);
+                    return;
+                });
+                sap.m.MessageToast.show("Record added successfully!");
+                this.onCloseDialog();
+            }
+            
         },
 
         onCloseDialog: function () {

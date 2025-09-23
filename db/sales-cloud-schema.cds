@@ -223,7 +223,7 @@ entity InvoiceMainItem : managed {
       salesOrderItem          : String;
       salesQuotationItemText  : String;
       referenceId             : String;
-      serviceNumberCode       : Integer;
+      serviceNumberCode       : UUID;
       unitOfMeasurementCode   : String;
       currencyCode            : String;
       formulaCode             : String;
@@ -247,8 +247,8 @@ entity InvoiceMainItem : managed {
 entity InvoiceSubItem : managed {
   key invoiceSubItemCode    : UUID;
 
-      invoiceMainItemCode   : Integer;
-      serviceNumberCode     : Integer;
+      invoiceMainItemCode   : UUID;
+      serviceNumberCode     : UUID;
       unitOfMeasurementCode : String;
       currencyCode          : String;
       formulaCode           : String;

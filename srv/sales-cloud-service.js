@@ -1,4 +1,5 @@
 const cds = require('@sap/cds');
+const { string } = require('@sap/cds/lib/core/classes');
 const axios = require('axios');
 const { Buffer } = require('buffer');
 // const { v4: uuidv4 } = require('uuid'); // for unique ids if needed
@@ -8,20 +9,161 @@ module.exports = cds.service.impl(async function () {
   const password = '#yiVfheJbFolFxgkEwCBFcWvYkPzrQDENEArAXn5';
   const auth = Buffer.from(`${user}:${password}`).toString('base64');
   const authHeader = `Basic ${auth}`;
-  const 
-  {
-    Currency, LineType, MaterialGroup, Formulas,
-    PersonnelNumber, 
-    ServiceNumbers, ServiceType, InvoiceMainItem,
-    ModelSpecifications, ModelSpecificationsDetails,
-    ExecutionOrderMains, ServiceInvoiceMains, InvoiceSubItems,
-    SalesQuotations, SalesQuotationItem
-  } = this.entities;
+  const
+    {
+      Currency, LineType,
+      MaterialGroup, Formulas,
+      PersonnelNumber, InvoiceMainItems,
+      ServiceNumbers, ServiceType, InvoiceSubItems,
+      ModelSpecifications, ModelSpecificationsDetails,
+      ExecutionOrderMains, ServiceInvoiceMains
+    } = this.entities;
 
-/*-------------------------- First App -------------------------------------*/ 
+ async function deleteByReferenceIdAndSalesQuotationItem(referenceId, salesQuotationItem) {
+    return await DELETE.from(InvoiceMainItems).where({ referenceId, salesQuotationItem });
+  }
+  this.on('saveOrUpdateMainItems', async (req) => {
+  const {
+    salesQuotation,
+    salesQuotationItem,
+    pricingProcedureStep,
+    pricingProcedureCounter,
+    customerNumber,
+    invoiceMainItemCommands
+  } = req.data;
+
+  const tx = cds.transaction(req);
+  let savedItems = [];
+
+  try {
+    // Step 1: delete existing items
+    if (salesQuotation && salesQuotationItem) {
+      await deleteByReferenceIdAndSalesQuotationItem(salesQuotation, salesQuotationItem);
+    }
+
+    // Step 2: enrich & insert main item (without subItems)
+    const command = { ...invoiceMainItemCommands };
+    command.referenceId = salesQuotation;
+    command.salesQuotationItem = salesQuotationItem;
+
+    // detach subItems so we don’t insert them here
+    const subItems = command.subItemList || [];
+    delete command.subItemList;
+
+    // fetch quotation details
+    const salesQuotationApiResponse = await axios.get(
+      'https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$inlinecount=allpages&$'
+    );
+    const salesQuotationResults = salesQuotationApiResponse?.data?.d?.results || [];
+    for (const quotation of salesQuotationResults) {
+      if (quotation.SalesQuotation === salesQuotation) {
+        command.referenceSDDocument = quotation.ReferenceSDDocument;
+        break;
+      }
+    }
+
+    // insert main item
+    const insertedMain = await tx.run(INSERT.into(InvoiceMainItems).entries(command));
+    const savedMain = insertedMain[0] ?? command;
+
+    // Step 3: insert subItems with the new main item id
+    for (const sub of subItems) {
+      sub.invoiceMainItemCode = savedMain.invoiceMainItemCode; // link to parent
+      await tx.run(INSERT.into(InvoiceSubItems).entries(sub));
+    }
+
+    // Step 4: calculate & update totalHeader
+    const totalHeader = (savedMain.totalWithProfit || 0) +
+      subItems.reduce((sum, s) => sum + (s.total || 0), 0);
+
+    await tx.run(
+      UPDATE(InvoiceMainItems)
+        .set({ totalHeader })
+        .where({ invoiceMainItemCode: savedMain.invoiceMainItemCode })
+    );
+
+    savedMain.totalHeader = totalHeader;
+    savedItems.push(savedMain);
+
+    return savedItems;
+  } catch (err) {
+    req.error(500, `Error in saveOrUpdateMainItems: ${err.message}`);
+  }
+});
 
 
-//#region SD App 1 APIs
+//   this.on('saveOrUpdateMainItems', async (req) => {
+//     console.log("ssssssssssssssssss");
+    
+//     const {
+//       salesQuotation,
+//       salesQuotationItem,
+//       pricingProcedureStep,
+//       pricingProcedureCounter,
+//       customerNumber,
+//       invoiceMainItemCommands
+//     } = req.data;
+
+//     const tx = cds.transaction(req);
+//     let savedItems = [];
+
+//     try {
+//       // Step 1: delete existing items if params provided
+//       if (salesQuotation && salesQuotationItem) {
+//         console.log("fsdfas");
+        
+//         await deleteByReferenceIdAndSalesQuotationItem(salesQuotation, salesQuotationItem);
+//         console.log("nnnnn");
+        
+//       }
+// console.log("here");
+
+//       // Step 2: enrich & insert new item (single command)
+//       const command = invoiceMainItemCommands;
+//       command.referenceId = salesQuotation;
+//       command.salesQuotationItem = salesQuotationItem;
+
+//       // fetch quotation details
+//       const salesQuotationApiResponse = await axios.get('https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$inlinecount=allpages&$');
+//       const salesQuotationResults = salesQuotationApiResponse?.data?.d?.results || [];
+
+//       for (const quotation of salesQuotationResults) {
+//         if (quotation.SalesQuotation === salesQuotation) {
+//           command.referenceSDDocument = quotation.ReferenceSDDocument;
+//           break;
+//         }
+//       }
+
+//       const inserted = await tx.run(INSERT.into(InvoiceMainItems).entries(command));
+//       const savedItem = inserted[0] ?? command;
+//       savedItems.push(savedItem);
+
+//       // Step 3: calculate totalHeader
+//       const totalHeader = savedItems.reduce((sum, item) => sum + (item.totalWithProfit || 0), 0);
+
+//       // Step 4: update totalHeader
+//       await tx.run(
+//         UPDATE(InvoiceMainItems).set({ totalHeader }).where({ invoiceMainItemCode: savedItem.invoiceMainItemCode })
+//       );
+// console.log("aaaaaaaaaaaa");
+
+//       // Step 5: call pricing API
+//       await this.run(INSERT.into('InvoiceMainItems').entries(
+//       savedItems
+//     ));
+
+//     return { message: 'Saved successfully' };
+
+//       return savedItems;
+//     } catch (err) {
+//       req.error(500, `Error in saveOrUpdateMainItems: ${err.message}`);
+//     }
+//   });
+
+  /*-------------------------- First App -------------------------------------*/
+
+
+  //#region SD App 1 APIs
 
 
   // --- Currency Handlers ---
@@ -715,7 +857,7 @@ module.exports = cds.service.impl(async function () {
 
   // Get all
   this.on('READ', 'InvoiceMainItem', async (req) => {
-    return await SELECT.from(InvoiceMainItem);
+    return await SELECT.from(InvoiceMainItems);
   });
 
   // Fetch by referenceId
@@ -835,11 +977,11 @@ module.exports = cds.service.impl(async function () {
   //#endregion 
 
 
-/*-------------------------------------------------------------------------*/
+  /*-------------------------------------------------------------------------*/
 
-/**
-   * Read SalesQuotation (header)
-   */
+  /**
+     * Read SalesQuotation (header)
+     */
   // this.on('READ', SalesQuotations, async (req) => {
   //   try {
   //     const url = `https://my405604-api.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$top=20&$format=json`;
@@ -999,7 +1141,7 @@ module.exports = cds.service.impl(async function () {
     }
   }
 
-  
+
   this.on('READ', 'SalesOrders', async (req) => {
     console.log('Executing READ for SalesOrders');
     const url = 'https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder?$inlinecount=allpages';
@@ -1130,43 +1272,43 @@ module.exports = cds.service.impl(async function () {
     }
   });
 
-// this.on('READ', 'SalesQuotation', async (req) => {
-//   const { SalesQuotation } = req.data;  // key passed when selecting one entity
-  
-//   let url;
-// // var SalesQuotation = '20000001';
-//   if (SalesQuotation) {
-//     // Fetch single quotation WITH items
-//     url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation('${SalesQuotation}')?$expand=to_Item`;
-//   console.log(url);
-  
-//   } else {
-//     // Fetch all quotations (headers only)
-//     url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$format=json`;
-//   }
-// console.log(url);
+  // this.on('READ', 'SalesQuotation', async (req) => {
+  //   const { SalesQuotation } = req.data;  // key passed when selecting one entity
 
-//   try {
-//     const res = await axios.get(url, {
-//       headers: { 'Authorization': authHeader, 'Accept': 'application/json' },
-//       timeout: 10000
-//     });
+  //   let url;
+  // // var SalesQuotation = '20000001';
+  //   if (SalesQuotation) {
+  //     // Fetch single quotation WITH items
+  //     url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation('${SalesQuotation}')?$expand=to_Item`;
+  //   console.log(url);
 
-//     if (SalesQuotation) {
-//       const header = res.data.d; // single record
-//       // Map items inline
-//       header.items = header.to_Item?.results || [];
-//       delete header.to_Item;
-//       return header;
-//     } else {
-//       return res.data.d?.results || [];
-//     }
+  //   } else {
+  //     // Fetch all quotations (headers only)
+  //     url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$format=json`;
+  //   }
+  // console.log(url);
 
-//   } catch (error) {
-//     console.error('Error in READ SalesQuotation:', error.message, 'Status:', error.response?.status);
-//     req.error(500, `S/4HANA call failed: ${error.message}`);
-//   }
-// });
+  //   try {
+  //     const res = await axios.get(url, {
+  //       headers: { 'Authorization': authHeader, 'Accept': 'application/json' },
+  //       timeout: 10000
+  //     });
+
+  //     if (SalesQuotation) {
+  //       const header = res.data.d; // single record
+  //       // Map items inline
+  //       header.items = header.to_Item?.results || [];
+  //       delete header.to_Item;
+  //       return header;
+  //     } else {
+  //       return res.data.d?.results || [];
+  //     }
+
+  //   } catch (error) {
+  //     console.error('Error in READ SalesQuotation:', error.message, 'Status:', error.response?.status);
+  //     req.error(500, `S/4HANA call failed: ${error.message}`);
+  //   }
+  // });
 
   // this.on('READ',SalesQuotationItem, async (req) => {
   //   console.log('Executing READ for SalesQuotationItem');
@@ -1187,10 +1329,10 @@ module.exports = cds.service.impl(async function () {
   //     throw new Error(`S/4HANA call failed: ${error.message} (Status: ${error.response?.status || 500})`);
   //   }
   // });
-// --- new API for SalesQuotationItem -> to_SalesQuotation ---
+  // --- new API for SalesQuotationItem -> to_SalesQuotation ---
   // this.on('getRelatedSalesQuotation', async (req) => {
   //   console.log('ssssssssssssssssss');
-    
+
   //   const { SalesQuotation, SalesQuotationItem } = req.data;
   //   console.log(`Fetching SalesQuotation for Item: ${SalesQuotation}/${SalesQuotationItem}`);
 
@@ -1210,27 +1352,27 @@ module.exports = cds.service.impl(async function () {
   //     throw new Error(`S/4HANA call failed: ${error.message} (Status: ${error.response?.status || 500})`);
   //   }
   // });
-  
-this.on('READ', 'SalesQuotationItem', async (req) => {
-  const { SalesQuotation } = req.data;
-  // var SalesQuotation = 20000001;
-  if (!SalesQuotation) return [];
 
-  const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation('${SalesQuotation}')/to_Item`;
+  this.on('READ', 'SalesQuotationItem', async (req) => {
+    const { SalesQuotation } = req.data;
+    // var SalesQuotation = 20000001;
+    if (!SalesQuotation) return [];
 
-  try {
-    const res = await axios.get(url, {
-      headers: { 'Authorization': authHeader, 'Accept': 'application/json' },
-      timeout: 10000
-    });
+    const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation('${SalesQuotation}')/to_Item`;
 
-    return res.data.d?.results || [];
+    try {
+      const res = await axios.get(url, {
+        headers: { 'Authorization': authHeader, 'Accept': 'application/json' },
+        timeout: 10000
+      });
 
-  } catch (error) {
-    console.error('Error in READ SalesQuotationItem:', error.message, 'Status:', error.response?.status);
-    req.error(500, `S/4HANA call failed: ${error.message}`);
-  }
-});
+      return res.data.d?.results || [];
+
+    } catch (error) {
+      console.error('Error in READ SalesQuotationItem:', error.message, 'Status:', error.response?.status);
+      req.error(500, `S/4HANA call failed: ${error.message}`);
+    }
+  });
 
   // this.on('READ', 'SalesQuotationItem', async (req) => {
   //   console.log('Executing READ for SalesQuotationItems');
