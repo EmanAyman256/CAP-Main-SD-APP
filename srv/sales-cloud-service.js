@@ -19,6 +19,61 @@ module.exports = cds.service.impl(async function () {
       ExecutionOrderMains, ServiceInvoiceMains
     } = this.entities;
 
+ this.on('getInvoiceMainItemByReferenceIdAndItemNumber', async (req) => {
+  const { referenceId, salesQuotationItem } = req.data;
+
+  // Fetch matching items from DB
+  const db = cds.transaction(req);
+  // let items = await db.run(
+  //   SELECT.from(InvoiceMainItems).columns(
+  //     '*',
+  //     { subItemList: ['*'] }   
+  //   ).where({
+  //     referenceId: referenceId,
+  //     salesQuotationItem: salesQuotationItem
+  //   })
+  // );
+ const items = await cds.read(InvoiceMainItems, i => {
+    i('*', i.subItemList('*'))   // shorthand expand syntax
+  }).where({ referenceId, salesQuotationItem });
+  if (!items.length) {
+    return []; // or throw req.error(404, 'No matching items found');
+  }
+
+  // Call external S4 API for SalesQuotationItemText
+  const response = await axios.get(
+    `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?SalesQuotation=${referenceId}`,
+    { headers: { Accept: 'application/json' } }
+  );
+
+  // Extract array safely
+  const results = response.data?.d?.results || [];
+
+  // Find matching item
+  const matchingNode = results.find(
+    (node) => node.SalesQuotationItem === salesQuotationItem
+  );
+
+  if (matchingNode) {
+    items = items.map((item) => {
+      item.salesQuotationItemText = matchingNode.SalesQuotationItemText;
+      return item;
+    });
+
+    // Optionally update DB
+    for (const item of items) {
+      await db.run(
+        UPDATE(InvoiceMainItems, item.ID).set({
+          salesQuotationItemText: item.salesQuotationItemText
+        })
+      );
+    }
+  }
+
+  return items;
+});
+
+
  async function deleteByReferenceIdAndSalesQuotationItem(referenceId, salesQuotationItem) {
     return await DELETE.from(InvoiceMainItems).where({ referenceId, salesQuotationItem });
   }

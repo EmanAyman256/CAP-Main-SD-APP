@@ -206,6 +206,37 @@ service SalesCloudService {
                                customerNumber: String,
                                invoiceMainItemCommands: InvoiceMainItemCommand) returns array of InvoiceMainItemCommand;
 
+@Core.LongDescription: 'Fetches InvoiceMainItems by referenceId and salesQuotationItem'
+action getInvoiceMainItemByReferenceIdAndItemNumber(
+    referenceId: String @mandatory @title: 'Reference ID',
+    salesQuotationItem: String @mandatory @title: 'Sales Quotation Item'
+) returns array of InvoiceMainItems;
+
+// @Core.LongDescription: 'This service exposes APIs for managing Sales Cloud objects such as Line Types, Formulas, Materials, and Currencies.'
+//   action saveOrUpdateMainItems (
+//     @Core.Description: 'Sales Quotation number'
+//     @Common.FieldControl #Mandatory
+//     salesQuotation       : String,
+
+//     @Core.Description: 'Sales Quotation Item'
+//     @Common.FieldControl #Mandatory
+//     salesQuotationItem   : String,
+
+//     @Core.Description: 'Pricing Procedure Step'
+//     @Common.FieldControl #Mandatory
+//     pricingProcedureStep : String,
+
+//     @Core.Description: 'Pricing Procedure Counter'
+//     @Common.FieldControl #Mandatory
+//     pricingProcedureCounter : String,
+
+//     @Core.Description: 'Customer Number'
+//     @Common.FieldControl #Mandatory
+//     customerNumber       : String,
+
+//     @Core.Description: 'Payload with main item and subitems'
+//     invoiceMainItemCommands : InvoiceMainItemCommand
+//   ) returns array of InvoiceMainItemCommand;
 
   type InvoiceSubItemCommand {
     // invoiceSubItemCode    : UUID;
@@ -244,5 +275,6 @@ service SalesCloudService {
     lineNumber              : String;
     subItemList                : array of InvoiceSubItemCommand;
   }
+
 
 }
