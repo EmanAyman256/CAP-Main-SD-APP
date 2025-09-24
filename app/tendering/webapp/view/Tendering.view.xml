@@ -150,8 +150,9 @@
                 id="treeTable"
                 rows="{
                     path: '/MainItems',
+                     
                     parameters: {
-                        arrayNames: ['children']  
+                        arrayNames: ['subItemList']  
                     }
                 }"
                 selectionMode="Single"
@@ -189,7 +190,7 @@
                     </m:OverflowToolbar>
                 </extension>
                 <columns>
-                    <Column
+                    <!-- <Column
                         id="_IDGenColumn"
                         width="60%"
                     >
@@ -202,10 +203,13 @@
                         <template>
                             <m:Text
                                 id="_IDGenText2"
-                                text="{MainItemNo}{SubItemNo}"
+                                   text="{
+                                     parts: [{path: ''}],
+                                     formatter: '.formatHierIndex'
+                                  }"
                             />
                         </template>
-                    </Column>
+                    </Column> -->
                     <Column
                         id="_IDGenColumn1"
                         width="60%"
@@ -219,7 +223,7 @@
                         <template>
                             <m:Text
                                 id="_IDGenText4"
-                                text="{MainItemNo}{ServiceNo}"
+                                text="{MainItemNo}{serviceNumberCode}"
                             />
                         </template>
                     </Column>
@@ -236,7 +240,7 @@
                         <template>
                             <m:Text
                                 id="_IDGenText6"
-                                text="{Description}"
+                                text="{description}"
                             />
                         </template>
                     </Column>
@@ -253,7 +257,7 @@
                         <template>
                             <m:Text
                                 id="_IDGenText8"
-                                text="{MainItemNo}{Quantity}"
+                                text="{MainItemNo}{quantity}"
                             />
                         </template>
                     </Column>
@@ -270,7 +274,7 @@
                         <template>
                             <m:Text
                                 id="_IDGenText10"
-                                text="{UOM}"
+                                text="{unitOfMeasurementCode}"
                             />
                         </template>
                     </Column>
@@ -287,7 +291,7 @@
                         <template>
                             <m:Text
                                 id="_IDGenText16"
-                                text="{UOM}"
+                                text="{formulaCode}"
                             />
                         </template>
                     </Column>
@@ -321,7 +325,7 @@
                         <template>
                             <m:Text
                                 id="_IDGenText20"
-                                text="{UOM}"
+                                text="{amountPerUnit}"
                             />
                         </template>
                     </Column>
@@ -338,7 +342,7 @@
                         <template>
                             <m:Text
                                 id="_IDGenText22"
-                                text="{UOM}"
+                                text="{currencyCode}"
                             />
                         </template>
                     </Column>
@@ -355,7 +359,7 @@
                         <template>
                             <m:Text
                                 id="_IDGenText24"
-                                text="{UOM}"
+                                text="{total}"
                             />
                         </template>
                     </Column>
@@ -372,7 +376,7 @@
                         <template>
                             <m:Text
                                 id="_IDGenText26"
-                                text="{UOM}"
+                                text="{profitMargin}"
                             />
                         </template>
                     </Column>
@@ -389,7 +393,7 @@
                         <template>
                             <m:Text
                                 id="_IDGenText28"
-                                text="{UOM}"
+                                text="{amountPerUnitWithProfit}"
                             />
                         </template>
                     </Column>
@@ -406,7 +410,7 @@
                         <template>
                             <m:Text
                                 id="_IDGenText30"
-                                text="{UOM}"
+                                text="{totalWithProfit}"
                             />
                         </template>
                     </Column>
@@ -429,7 +433,7 @@
                                     type="Transparent"
                                     tooltip="Add Sub Item"
                                     press=".onOpenSubDialogForRow"
-                                    visible="{= ${children} ? true : false }"
+                                    visible="{= ${subItemList} ? true : false }"
                                 />
 
                                 <!-- Edit -->

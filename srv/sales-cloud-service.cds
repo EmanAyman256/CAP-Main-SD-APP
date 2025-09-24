@@ -199,6 +199,16 @@ service SalesCloudService {
   action findBySubItemCode(subItemCode: Integer)                                returns InvoiceSubItems;
   action searchSubItem(keyword: String)                                         returns many InvoiceSubItems;
 
+
+// action updateMainItemCommand(
+//   salesQuotation        : String,
+//   salesQuotationItem    : String,
+//   pricingProcedureStep  : Integer,
+//   pricingProcedureCounter : Integer,
+//   customerNumber        : String,
+//   invoiceMainItemCommand : InvoiceMainItemCommand
+// ) returns InvoiceMainItems;
+
   action saveOrUpdateMainItems(salesQuotation: String,
                                salesQuotationItem: String,
                                pricingProcedureStep: String,

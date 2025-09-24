@@ -7,61 +7,16 @@ sap.ui.define([
     "sap/m/Label",
     "sap/m/VBox",
     "sap/m/MessageToast",
-    "sap/m/MessageBox"
+    "sap/m/MessageBox",
+    "sap/ui/layout/form/SimpleForm",
+    "sap/ui/layout/form/ResponsiveGridLayout"
 
-], (Controller, JSONModel, Dialog, Button, Input, Label, VBox, MessageToast, MessageBox) => {
+], (Controller, JSONModel, Dialog, Button, Input, Label, VBox, MessageToast, SimpleForm, ResponsiveGridLayout, MessageBox) => {
     "use strict";
 
     return Controller.extend("tendering.controller.View1", {
 
         onInit: function () {
-            var oRouter = sap.ui.core.UIComponent.getRouterFor(this);
-            oRouter.getRoute("tendering").attachPatternMatched(this._onRouteMatched, this);
-
-            // Define entity structures (reference to CAP entities)
-            // this.InvoiceMainItemTemplate = {
-            //     invoiceMainItemCode: "",
-            //     // uniqueId: "",
-            //     // referenceSDDocument: "",
-            //     // salesQuotationItem: "",
-            //     // salesOrderItem: "",
-            //     // salesQuotationItemText: "",
-            //     // referenceId: "",
-            //     serviceNumberCode: 0,
-            //     unitOfMeasurementCode: "",
-            //     currencyCode: "",
-            //     formulaCode: "",
-            //     description: "",
-            //     quantity: 0,
-            //     amountPerUnit: 0,
-            //     total: 0,
-            //     totalHeader: 0,
-            //     profitMargin: 0,
-            //     totalWithProfit: 0,
-            //     amountPerUnitWithProfit: 0,
-            //     doNotPrint: false,
-            //     lineNumber: "",
-            //     subItemList: []
-            // };
-
-            // this.InvoiceSubItemTemplate = {
-            //     invoiceSubItemCode: "",
-            //     invoiceMainItemCode: "",
-            //     serviceNumberCode: null,
-            //     unitOfMeasurementCode: "",
-            //     currencyCode: "",
-            //     formulaCode: "",
-            //     description: "",
-            //     quantity: 0,
-            //     amountPerUnit: 0,
-            //     total: 0
-            // };
-
-            // // Example: set JSON model with empty array of MainItems
-            // var oModel = new JSONModel({
-            //     MainItems: []
-            // });
-            // this.getView().setModel(oModel, "tendering");
 
             var oModel = new sap.ui.model.json.JSONModel({
                 docNumber: "",
@@ -77,11 +32,12 @@ sap.ui.define([
             });
             this.getView().setModel(oModel);
 
-
+            var oRouter = sap.ui.core.UIComponent.getRouterFor(this);
+            oRouter.getRoute("tendering").attachPatternMatched(this._onRouteMatched, this);
 
             this._createSubItemDialog();
 
-            // Service Numbers
+            // Fetch Service Numbers
             fetch("/odata/v4/sales-cloud/ServiceNumbers")
                 .then(response => {
                     if (!response.ok) throw new Error(response.statusText);
@@ -103,6 +59,7 @@ sap.ui.define([
                 .catch(err => {
                     console.error("Error fetching ServiceNumbers:", err);
                 });
+            // Fetch Formulas
             fetch("/odata/v4/sales-cloud/Formulas")
                 .then(response => {
                     if (!response.ok) {
@@ -123,6 +80,7 @@ sap.ui.define([
                     console.error("Error fetching Formulas:", err);
                     sap.m.MessageBox.error("Failed to load Formulas: " + err.message);
                 });
+            // Fetch UOM
             fetch("/odata/v4/sales-cloud/UnitOfMeasurements")
                 .then(response => {
                     if (!response.ok) {
@@ -143,6 +101,7 @@ sap.ui.define([
                     console.error("Error fetching Unit of Measurements:", err);
                     sap.m.MessageBox.error("Failed to load  Unit of Measurements: " + err.message);
                 });
+            // Fetch Currencies
             fetch("/odata/v4/sales-cloud/Currencies")
                 .then(response => {
                     if (!response.ok) {
@@ -163,17 +122,8 @@ sap.ui.define([
                     console.error("Error fetching Currency:", err);
                     sap.m.MessageBox.error("Failed to load  Currency: " + err.message);
                 });
-
-
         },
 
-        // _createMainItem: function () {
-        //     return JSON.parse(JSON.stringify(this.InvoiceMainItemTemplate));
-        // },
-
-        // _createSubItem: function () {
-        //     return JSON.parse(JSON.stringify(this.InvoiceSubItemTemplate));
-        // },
 
         _onRouteMatched: function (oEvent) {
             var oView = this.getView();
@@ -188,14 +138,24 @@ sap.ui.define([
             oModel.setProperty("/itemNumber", itemNumber);
 
             // OData request URL
-            var sUrl = `/odata/v4/sales-cloud/SalesQuotationItem(SalesQuotation='${docNumber}',SalesQuotationItem='${itemNumber}')`;
+            //var sUrl = `/odata/v4/sales-cloud/getInvoiceMainItemByReferenceIdAndItemNumber(SalesQuotation='${docNumber}',SalesQuotationItem='${itemNumber}')`;
+            var sUrl = `/odata/v4/sales-cloud/getInvoiceMainItemByReferenceIdAndItemNumber`;
 
             // Fetch the data
-            fetch(sUrl)
+            fetch(sUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    referenceId: docNumber,
+                    salesQuotationItem: itemNumber
+                })
+            })
                 .then(response => response.json())
                 .then(data => {
-                    console.log(data);
-                    oModel.setProperty("/MainItems", [data]);
+                    console.log(data.value);
+                    oModel.setProperty("/MainItems", data.value);
 
                     // if it's an array, do:
                     // oModel.setProperty("/MainItems", data.value);
@@ -204,7 +164,21 @@ sap.ui.define([
                 .catch(err => {
                     console.error("Error fetching MainItems", err);
                 });
+
         },
+
+        // formatHierIndex: function (oContext) {
+        //     if (!oContext || !oContext.getPath) {
+        //         return ""; // avoid crashes
+        //     }
+        //     // e.g. "/MainItems/0/subItemList/1"
+        //     const sPath = oContext.getPath();
+        //     const parts = sPath.match(/\d+/g); // ["0","1"]
+        //     if (!parts) return "";
+
+        //     // Convert to 1-based numbering
+        //     return parts.map(p => parseInt(p, 10) + 1).join(".");
+        // },
 
         onServiceNumberChange: function (oEvent) {
             var oSelect = oEvent.getSource();
@@ -224,8 +198,8 @@ sap.ui.define([
         _createSubItemDialog: function () {
             var oVBox = new VBox({
                 items: [
-                    new Label({ text: "Sub Item No" }),
-                    new Input(this.createId("dialogSubItemNo"), { placeholder: "Enter Sub Item No" }),
+                    // new Label({ text: "Sub Item No" }),
+                    // new Input(this.createId("dialogSubItemNo"), { placeholder: "Enter Sub Item No" }),
 
                     new Label({ text: "Sub Service No" }),
                     new Input(this.createId("dialogSubServiceNo"), { placeholder: "Enter Service No" }),
@@ -237,7 +211,22 @@ sap.ui.define([
                     new Input(this.createId("dialogSubQuantity"), { type: "Number", placeholder: "Enter Quantity" }),
 
                     new Label({ text: "UOM" }),
-                    new Input(this.createId("dialogSubUOM"), { placeholder: "Enter UOM" })
+                    new Input(this.createId("dialogSubUOM"), { placeholder: "Enter UOM" }),
+
+                    new Label({ text: "Formula" }),
+                    new Input(this.createId("dialogSubFormula"), { placeholder: "Enter Formula" }),
+
+                    new Label({ text: "Parameters" }),
+                    new Input(this.createId("dialogSubParameters"), { placeholder: "Enter Parameters" }),
+
+                    new Label({ text: "AmountPerUnit" }),
+                    new Input(this.createId("dialogSubAmountPerUnit"), { placeholder: "Enter AmountPerUnit" }),
+
+                    new Label({ text: "Currency" }),
+                    new Input(this.createId("dialogSubCurrency"), { placeholder: "Enter Currency" }),
+
+                    new Label({ text: "Total" }),
+                    new Input(this.createId("dialogSubTotal"), { placeholder: "Enter Total" }),
                 ]
             }).addStyleClass("sapUiSmallMargin");
 
@@ -262,7 +251,7 @@ sap.ui.define([
             const oContext = oEvent.getSource().getBindingContext();
             const oObject = oContext.getObject();
 
-            if (!oObject.children) {
+            if (!oObject.subItemList) {
                 MessageToast.show("You can only add subitems under a main item!");
                 return;
             }
@@ -270,11 +259,16 @@ sap.ui.define([
             this._selectedParent = oObject;
 
             // reset fields
-            this.byId("dialogSubItemNo").setValue("");
+            // this.byId("dialogSubItemNo").setValue("");
             this.byId("dialogSubServiceNo").setValue("");
             this.byId("dialogSubDescription").setValue("");
             this.byId("dialogSubQuantity").setValue("");
             this.byId("dialogSubUOM").setValue("");
+            this.byId("dialogSubFormula").setValue("");
+            this.byId("dialogSubParameters").setValue("");
+            this.byId("dialogSubCurrency").setValue("");
+            this.byId("dialogSubAmountPerUnit").setValue("");
+            this.byId("dialogSubTotal").setValue("");
 
             this._oSubDialog.open();
         },
@@ -291,22 +285,32 @@ sap.ui.define([
             oModel.setProperty("/editRow", Object.assign({}, oData));
 
             // check if it is a main item or sub item
-            if (oData.SubItemNo) {
+            if (oData.invoiceSubItemCode) {
                 // === SubItem ===
                 if (!this._oEditSubDialog) {
                     this._oEditSubDialog = new sap.m.Dialog({
                         title: "Edit Sub Item",
+                        contentWidth: "800px",
                         content: [
-                            new sap.m.Label({ text: "SubItem No" }),
-                            new sap.m.Input({ value: "{/editRow/SubItemNo}", editable: false }),
+                            // new sap.m.Label({ text: "SubItem No" }),
+                            // new sap.m.Input({ value: "{/editRow/SubItemNo}", editable: false }),
                             new sap.m.Label({ text: "Service No" }),
-                            new sap.m.Input({ value: "{/editRow/ServiceNo}" }),
+                            new sap.m.Input({ value: "{/editRow/serviceNumberCode}" }),
                             new sap.m.Label({ text: "Description" }),
-                            new sap.m.Input({ value: "{/editRow/Description}" }),
+                            new sap.m.Input({ value: "{/editRow/description}" }),
                             new sap.m.Label({ text: "Quantity" }),
-                            new sap.m.Input({ value: "{/editRow/Quantity}", type: "Number" }),
+                            new sap.m.Input({ value: "{/editRow/quantity}", type: "Number" }),
                             new sap.m.Label({ text: "UOM" }),
-                            new sap.m.Input({ value: "{/editRow/UOM}" })
+                            new sap.m.Input({ value: "{/editRow/unitOfMeasurementCode}" }),
+                            new sap.m.Label({ text: "Formula" }),
+                            new sap.m.Input({ value: "{/editRow/formulaCode}" }),
+                            new sap.m.Label({ text: "AmountPerUnit" }),
+                            new sap.m.Input({ value: "{/editRow/amountPerUnit}" }),
+                            new sap.m.Label({ text: "Currency" }),
+                            new sap.m.Input({ value: "{/editRow/currencyCode}" }),
+                            new sap.m.Label({ text: "Total" }),
+                            new sap.m.Input({ value: "{/editRow/total}" }),
+
                         ],
                         beginButton: new sap.m.Button({
                             text: "Save",
@@ -327,37 +331,39 @@ sap.ui.define([
                 if (!this._oEditMainDialog) {
                     this._oEditMainDialog = new sap.m.Dialog({
                         title: "Edit Main Item",
-                        contentWidth: "600px",
+                        contentWidth: "800px",
                         contentHeight: "80%",
                         resizable: true,
                         draggable: true,
+
+                        // content: new VBox({}),
                         content: [
                             new sap.m.Label({ text: "Main Item No" }),
                             new sap.m.Input({ value: "{/editRow/MainItemNo}", editable: false }),
 
                             new sap.m.Label({ text: "Service No" }),
-                            new sap.m.Input({ value: "{/editRow/ServiceNo}" }),
+                            new sap.m.Input({ value: "{/editRow/serviceNumberCode}" }),
 
                             new sap.m.Label({ text: "Description" }),
-                            new sap.m.Input({ value: "{/editRow/Description}" }),
+                            new sap.m.Input({ value: "{/editRow/description}" }),
 
                             new sap.m.Label({ text: "Quantity" }),
-                            new sap.m.Input({ value: "{/editRow/Quantity}" }),
+                            new sap.m.Input({ value: "{/editRow/quantity}" }),
 
                             new sap.m.Label({ text: "UOM" }),
-                            new sap.m.Input({ value: "{/editRow/UOM}" }),
+                            new sap.m.Input({ value: "{/editRow/unitOfMeasurementCode}" }),
 
                             new sap.m.Label({ text: "Formula" }),
-                            new sap.m.Input({ value: "{/editRow/formula}" }),
+                            new sap.m.Input({ value: "{/editRow/formulaCode}" }),
 
                             new sap.m.Label({ text: "Parameters" }),
-                            new sap.m.Input({ value: "{/editRow/parameters}" }),
+                            new sap.m.Input({ value: "{/editRow/Parameters}" }),
 
                             new sap.m.Label({ text: "Amount Per Unit" }),
-                            new sap.m.Input({ value: "{/editRow/AmountPerUnit}" }),
+                            new sap.m.Input({ value: "{/editRow/amountPerUnit}" }),
 
                             new sap.m.Label({ text: "Currency" }),
-                            new sap.m.Input({ value: "{/editRow/currency}" }),
+                            new sap.m.Input({ value: "{/editRow/currencyCode}" }),
 
                             new sap.m.Label({ text: "Total" }),
                             new sap.m.Input({ value: "{/editRow/total}" }),
@@ -371,6 +377,7 @@ sap.ui.define([
                             new sap.m.Label({ text: "Total with Profit" }),
                             new sap.m.Input({ value: "{/editRow/totalWithProfit}" })
                         ],
+
                         beginButton: new sap.m.Button({
                             text: "Save",
                             press: this.onSaveEdit.bind(this)
@@ -384,6 +391,54 @@ sap.ui.define([
                     });
                     this.getView().addDependent(this._oEditMainDialog);
                 }
+                //  this._oEditMainDialog.removeAllContent();
+                // this._oEditMainDialog.addContent(
+                //    // new sap.ui.layout.form.
+                //     new SimpleForm({
+                //         editable: true,
+                //         layout: "ResponsiveGridLayout",
+                //         content: [
+                //             new sap.m.Label({ text: "Main Item No" }),
+                //             new sap.m.Input({ value: "{/editRow/MainItemNo}", editable: false }),
+
+                //             new sap.m.Label({ text: "Service No" }),
+                //             new sap.m.Input({ value: "{/editRow/serviceNumberCode}" }),
+
+                //             new sap.m.Label({ text: "Description" }),
+                //             new sap.m.Input({ value: "{/editRow/description}" }),
+
+                //             new sap.m.Label({ text: "Quantity" }),
+                //             new sap.m.Input({ value: "{/editRow/quantity}" }),
+
+                //             new sap.m.Label({ text: "UOM" }),
+                //             new sap.m.Input({ value: "{/editRow/unitOfMeasurementCode}" }),
+
+                //             new sap.m.Label({ text: "Formula" }),
+                //             new sap.m.Input({ value: "{/editRow/formulaCode}" }),
+
+                //             new sap.m.Label({ text: "Parameters" }),
+                //             new sap.m.Input({ value: "{/editRow/Parameters}" }),
+
+                //             new sap.m.Label({ text: "Amount Per Unit" }),
+                //             new sap.m.Input({ value: "{/editRow/amountPerUnit}" }),
+
+                //             new sap.m.Label({ text: "Currency" }),
+                //             new sap.m.Input({ value: "{/editRow/currencyCode}" }),
+
+                //             new sap.m.Label({ text: "Total" }),
+                //             new sap.m.Input({ value: "{/editRow/total}" }),
+
+                //             new sap.m.Label({ text: "Profit Margin" }),
+                //             new sap.m.Input({ value: "{/editRow/profitMargin}" }),
+
+                //             new sap.m.Label({ text: "Amount/Unit with Profit" }),
+                //             new sap.m.Input({ value: "{/editRow/amountPerUnitWithProfit}" }),
+
+                //             new sap.m.Label({ text: "Total with Profit" }),
+                //             new sap.m.Input({ value: "{/editRow/totalWithProfit}" })
+                //         ],
+                //     })
+                // );
 
                 this._oEditMainDialog.open();
             }
@@ -406,75 +461,27 @@ sap.ui.define([
             }
         },
 
-        //     onEditRow: function (oEvent) {
-        //         var oContext = oEvent.getSource().getBindingContext();
-        //         var oData = oContext.getObject();
-
-        //         var oModel = this.getView().getModel();
-
-        //    oModel.setProperty("/editRow", Object.assign({}, oData));
-        //         this._editPath = oContext.getPath();
-        //      if (!this._oEditDialog) {
-        //             this._oEditDialog = new sap.m.Dialog({
-        //                 title: "Edit Subitem",
-        //                 content: [
-        //                     new sap.m.Label({ text: "SubItem No" }),
-        //                     new sap.m.Input({
-        //                         value: "{/editRow/SubItemNo}",
-        //                         editable: false
-        //                     }),
-        //                     new sap.m.Label({ text: "Service No" }),
-        //                     new sap.m.Input({ value: "{/editRow/ServiceNo}" }),
-        //                     new sap.m.Label({ text: "Description" }),
-        //                     new sap.m.Input({ value: "{/editRow/Description}" }),
-        //                     new sap.m.Label({ text: "Quantity" }),
-        //                     new sap.m.Input({
-        //                         value: "{/editRow/Quantity}",
-        //                         type: "Number"
-        //                     }),
-        //                     new sap.m.Label({ text: "UOM" }),
-        //                     new sap.m.Input({ value: "{/editRow/UOM}" })
-        //                 ],
-        //                 beginButton: new sap.m.Button({
-        //                     text: "Save",
-        //                     press: this.onSaveEdit.bind(this)
-        //                 }),
-        //                 endButton: new sap.m.Button({
-        //                     text: "Cancel",
-        //                     press: function () {
-        //                         this._oEditDialog.close();
-        //                     }.bind(this)
-        //                 })
-        //             });
-
-        //             this.getView().addDependent(this._oEditDialog);
-        //         }
-
-        //         this._oEditDialog.open();
-        //     },
-
-        //     onSaveEdit: function () {
-        //         var oModel = this.getView().getModel();
-        //         var oEdited = oModel.getProperty("/editRow");
-
-        //         oModel.setProperty(this._editPath, oEdited);
-
-        //         this._oEditDialog.close();
-        //     },
-
         onAddSubItem: function () {
             var oSubItem = {
-                SubItemNo: this.byId("dialogSubItemNo").getValue(),
-                ServiceNo: this.byId("dialogSubServiceNo").getValue(),
-                Description: this.byId("dialogSubDescription").getValue(),
-                Quantity: this.byId("dialogSubQuantity").getValue(),
-                UOM: this.byId("dialogSubUOM").getValue()
+                // SubItemNo: this.byId("dialogSubItemNo").getValue(),
+                invoiceSubItemCode: Date.now(),
+
+                serviceNumberCode: this.byId("dialogSubServiceNo").getValue(),
+                description: this.byId("dialogSubDescription").getValue(),
+                quantity: this.byId("dialogSubQuantity").getValue(),
+                unitOfMeasurementCode: this.byId("dialogSubUOM").getValue(),
+                formulaCode: this.byId("dialogSubFormula").getValue(),
+                amountPerUnit: this.byId("dialogSubAmountPerUnit").getValue(),
+                currencyCode: this.byId("dialogSubCurrency").getValue(),
+                total: this.byId("dialogSubTotal").getValue(),
             };
 
-            if (!this._selectedParent.children) {
-                this._selectedParent.children = [];
+            if (!this._selectedParent.subItemList) {
+                this._selectedParent.subItemList = [];
             }
-            this._selectedParent.children.push(oSubItem);
+            this._selectedParent.subItemList.push(oSubItem);
+            console.log(oSubItem);
+            console.log(this._selectedParent);
 
             this.getView().getModel().refresh(true);
             this._oSubDialog.close();
@@ -492,16 +499,16 @@ sap.ui.define([
                     actions: [sap.m.MessageBox.Action.YES, sap.m.MessageBox.Action.NO],
                     onClose: (sAction) => {
                         if (sAction === sap.m.MessageBox.Action.YES) {
-                            if (oObject.SubItemNo) {
+                            if (oObject.invoiceSubItemCode) {
                                 // Subitem deletion
                                 const aParts = sPath.split("/"); // "/MainItems/0/children/1"
                                 const iMainIndex = parseInt(aParts[2]);
                                 const iSubIndex = parseInt(aParts[4]);
 
                                 const aMainItems = oModel.getProperty("/MainItems");
-                                aMainItems[iMainIndex].children.splice(iSubIndex, 1);
+                                aMainItems[iMainIndex].subItemList.splice(iSubIndex, 1);
 
-                                sap.m.MessageToast.show("Subitem deleted");
+                                sap.m.MessageToast.show("SubItem deleted successfully");
                             } else {
                                 // Main item deletion
                                 const iMainIndex = parseInt(sPath.split("/")[2]);
@@ -509,7 +516,7 @@ sap.ui.define([
                                 const aMainItems = oModel.getProperty("/MainItems");
                                 aMainItems.splice(iMainIndex, 1);
 
-                                sap.m.MessageToast.show("Main item deleted");
+                                sap.m.MessageToast.show("MainItem deleted successfully");
                             }
 
                             oModel.refresh();
@@ -578,27 +585,19 @@ sap.ui.define([
         },
 
         onAddMainItem: function () {
-            // const oView = this.getView();
-            // var oModel = this.getView().getModel("tendering");
-            // var aMainItems = oModel.getProperty("/MainItems");
-
-            // var oNewMainItem = this._createMainItem();
-            // oNewMainItem.invoiceMainItemCode = crypto.randomUUID(); // or Date.now()
-            // oNewMainItem.description = "New Main Item";
-
-            // // push to array
-            // aMainItems.push(oNewMainItem);
-            // oModel.setProperty("/MainItems", aMainItems);
 
             const oView = this.getView();
-            const oModel = oView.getModel();
-            const aMainItems = oModel.getProperty("/MainItems");
+            // const oModel = oView.getModel();
+            const oModel = this.getView().getModel(); // default model
+            let newww = oModel.getProperty("/MainItems");
+            // const aMainItems = oModel.getProperty("/MainItems");
+            console.log(newww);
+
             const invoiceMainItemCommands = {
                 serviceNumberCode: oModel.getProperty("SelectedServiceNumber"),
                 description: oView.byId("mainDescriptionInput").getValue(),
                 quantity: oView.byId("mainQuantityInput").getValue(),
-                unitOfMeasurementCode:oView.byId("_IDGenSelect4").getSelectedKey(),
-                //oView.byId("_IDGenSelect").getSelectedKey()
+                unitOfMeasurementCode: oView.byId("_IDGenSelect4").getSelectedKey(),
                 formulaCode: oView.byId("_IDGenSelect2").getSelectedKey(),
                 amountPerUnit: oView.byId("mainAmountPerUnitInput").getValue(),
                 currencyCode: oView.byId("_IDGenSelect5").getSelectedKey(),
@@ -606,48 +605,72 @@ sap.ui.define([
                 profitMargin: oView.byId("mainProfitMarginInput").getValue(),
                 amountPerUnitWithProfit: oView.byId("mainAmountPerUnitWithProfitInput").getValue(),
                 totalWithProfit: oView.byId("mainTotalWithProfitInput").getValue(),
-
                 subItemList: []
-
             }
             const oNewMain = {
-
                 salesQuotation: oModel.getProperty("/docNumber"),
                 salesQuotationItem: oModel.getProperty("/itemNumber"),
                 pricingProcedureStep: "1",
                 pricingProcedureCounter: "10",
                 customerNumber: "120000",
-                invoiceMainItemCommands: invoiceMainItemCommands
+                // invoiceMainItemCommands: invoiceMainItemCommands
+
+                invoiceMainItemCode: Date.now(),
+
+                serviceNumberCode: oModel.getProperty("SelectedServiceNumber"),
+                description: oView.byId("mainDescriptionInput").getValue(),
+                quantity: oView.byId("mainQuantityInput").getValue(),
+                unitOfMeasurementCode: oView.byId("_IDGenSelect4").getSelectedKey(),
+                formulaCode: oView.byId("_IDGenSelect2").getSelectedKey(),
+                amountPerUnit: oView.byId("mainAmountPerUnitInput").getValue(),
+                currencyCode: oView.byId("_IDGenSelect5").getSelectedKey(),
+                total: oView.byId("mainTotalInput").getValue(),
+                profitMargin: oView.byId("mainProfitMarginInput").getValue(),
+                amountPerUnitWithProfit: oView.byId("mainAmountPerUnitWithProfitInput").getValue(),
+                totalWithProfit: oView.byId("mainTotalWithProfitInput").getValue(),
+                subItemList: []
 
             };
-            fetch("/odata/v4/sales-cloud/saveOrUpdateMainItems", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(oNewMain)
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error("Failed to save: " + response.statusText);
-                    }
-                    return response.json();
-                })
-                .then(savedItem => {
-                    var aServiceTypes = oModel.getProperty("/MainItems") || [];
-                    aServiceTypes.push(savedItem);
-                    oModel.setProperty("/MainItems", aServiceTypes);
+            console.log(oModel.getProperty("/MainItems"));
 
-                    // Reset form
-                    oModel.setProperty("/newCode", "");
-                    oModel.setProperty("/newDescription", "");
-                })
-                .catch(err => {
-                    console.error("Error saving MainItem:", err);
-                    sap.m.MessageBox.error("Error: " + err.message);
-                });
+            const aMainItems = oModel.getProperty("/MainItems");
+            console.log(aMainItems);
+            aMainItems.push(oNewMain);
+            var aRecords = oModel.getProperty("/MainItems") || [];
+            console.log(aRecords);
 
-            // aMainItems.push(oNewMain);
+            //aRecords.push(oNewMain);
+            oModel.setProperty("/MainItems", aRecords);
+            console.log(oModel.getProperty("/MainItems"));
+
+            //////////////////////////////////
+            // fetch("/odata/v4/sales-cloud/saveOrUpdateMainItems", {
+            //     method: "POST",
+            //     headers: {
+            //         "Content-Type": "application/json"
+            //     },
+            //     body: JSON.stringify(oNewMain)
+            // })
+            //     .then(response => {
+            //         if (!response.ok) {
+            //             throw new Error("Failed to save: " + response.statusText);
+            //         }
+            //         return response.json();
+            //     })
+            //     .then(savedItem => {
+            //         var aServiceTypes = oModel.getProperty("/MainItems") || [];
+            //         aServiceTypes.push(savedItem);
+            //         oModel.setProperty("/MainItems", aServiceTypes);
+
+            //         // Reset form
+            //         oModel.setProperty("/newCode", "");
+            //         oModel.setProperty("/newDescription", "");
+            //     })
+            //     .catch(err => {
+            //         console.error("Error saving MainItem:", err);
+            //         sap.m.MessageBox.error("Error: " + err.message);
+            //     });
+
             oModel.refresh();
 
             this.byId("addMainDialog").close();
