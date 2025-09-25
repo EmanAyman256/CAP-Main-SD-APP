@@ -19,7 +19,139 @@ module.exports = cds.service.impl(async function () {
       ExecutionOrderMains, ServiceInvoiceMains
     } = this.entities;
 
-this.on('saveOrUpdateMainItems', async (req) => {
+// this.on('saveOrUpdateMainItems', async (req) => {
+//     const {
+//       salesQuotation,
+//       salesQuotationItem,
+//       pricingProcedureStep,
+//       pricingProcedureCounter,
+//       customerNumber,
+//       invoiceMainItemCommands
+//     } = req.data;
+
+//     const tx = cds.transaction(req);
+//     let savedItems = [];
+
+//     try {
+//       // Step 1: delete existing items
+//       if (salesQuotation && salesQuotationItem) {
+//         await tx.run(
+//           DELETE.from(InvoiceMainItems)
+//             .where({ referenceId: salesQuotation, salesQuotationItem })
+//         );
+//       }
+
+//       // Step 2: enrich & insert main item (without subItems)
+//       const command = { ...invoiceMainItemCommands };
+//       command.referenceId = salesQuotation;
+//       command.salesQuotationItem = salesQuotationItem;
+
+//       const subItems = command.subItemList || [];
+//       delete command.subItemList;
+
+//       // fetch quotation details
+//       const salesQuotationApiResponse = await axios.get(
+//         'https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$top=50',
+//         {
+//           headers: { 'Accept': 'application/json' }
+//         }
+//       );
+
+//       const salesQuotationResults = salesQuotationApiResponse?.data?.d?.results || [];
+//       for (const quotation of salesQuotationResults) {
+//         if (quotation.SalesQuotation === salesQuotation) {
+//           command.referenceSDDocument = quotation.ReferenceSDDocument;
+//           break;
+//         }
+//       }
+
+//       // insert main item
+//       const insertedMain = await tx.run(INSERT.into(InvoiceMainItems).entries(command));
+//       const savedMain = insertedMain[0] ?? command;
+
+//       // Step 3: insert subItems
+//       for (const sub of subItems) {
+//         sub.invoiceMainItemCode = savedMain.invoiceMainItemCode;
+//         await tx.run(INSERT.into(InvoiceSubItems).entries(sub));
+//       }
+
+//       // Step 4: calculate & update totalHeader
+//       const totalHeader = (savedMain.totalWithProfit || 0) +
+//         subItems.reduce((sum, s) => sum + (s.total || 0), 0);
+
+//       await tx.run(
+//         UPDATE(InvoiceMainItems)
+//           .set({ totalHeader })
+//           .where({ invoiceMainItemCode: savedMain.invoiceMainItemCode })
+//       );
+
+//       savedMain.totalHeader = totalHeader;
+//       savedItems.push(savedMain);
+
+//       // 🔹 Step 5: Call external Invoice Pricing API
+//       try {
+//         await callInvoicePricingAPI(
+//           salesQuotation,
+//           salesQuotationItem,
+//           pricingProcedureStep,
+//           pricingProcedureCounter,
+//           totalHeader
+//         );
+//       } catch (apiErr) {
+//         req.warn(`Failed to update invoice pricing: ${apiErr.message}`);
+//       }
+
+//       return savedItems;
+//     } catch (err) {
+//       req.error(500, `Error in saveOrUpdateMainItems: ${err.message}`);
+//     }
+//   });
+
+//   async function callInvoicePricingAPI(salesQuotation, salesQuotationItem, pricingProcedureStep, pricingProcedureCounter, totalHeader) {
+//     // prepare request body
+//     const body = {
+//       ConditionType: "PPR0",
+//       ConditionRateValue: String(totalHeader)
+//     };
+
+//     // TODO: move credentials to destination / env vars
+//     const credentials = "BTP_USER1:#yiVfheJbFolFxgkEwCBFcWvYkPzrQDENEArAXn5";
+//     const encoded = Buffer.from(credentials, 'utf8').toString('base64');
+
+//     // fetch CSRF token
+//     const tokenResp = await axios.get(
+//       `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItem(SalesQuotation='${salesQuotation}',SalesQuotationItem='${salesQuotationItem}')/to_PricingElement?$top=50`,
+//       {
+//         headers: {
+//           'x-csrf-token': 'Fetch',
+//           'Authorization': `Basic ${encoded}`,
+//           'Accept': 'application/json'
+//         }
+//       }
+//     );
+
+//     const csrfToken = tokenResp.headers['x-csrf-token'];
+//     const cookies = tokenResp.headers['set-cookie'];
+
+//     if (!csrfToken) throw new Error("Failed to fetch CSRF token");
+
+//     // patch request
+//     const patchURL = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItemPrcgElmnt(SalesQuotation='${salesQuotation}',SalesQuotationItem='${salesQuotationItem}',PricingProcedureStep='${pricingProcedureStep}',PricingProcedureCounter='${pricingProcedureCounter}')`;
+
+//     await axios.patch(patchURL, body, {
+//       headers: {
+//         'Authorization': `Basic ${encoded}`,
+//         'x-csrf-token': csrfToken,
+//         'If-Match': '*',
+//         'Content-Type': 'application/json',
+//         'Cookie': cookies.join('; ')
+//       }
+//     });
+//   }
+
+
+///////////////////////////////////////////////////////////////////////////
+  this.on('saveOrUpdateMainItems', async (req) => {
     const {
       salesQuotation,
       salesQuotationItem,
@@ -33,72 +165,82 @@ this.on('saveOrUpdateMainItems', async (req) => {
     let savedItems = [];
 
     try {
-      // Step 1: delete existing items
+      // Step 1: delete existing items for that quotation/item
       if (salesQuotation && salesQuotationItem) {
         await tx.run(
-          DELETE.from(InvoiceMainItems)
-            .where({ referenceId: salesQuotation, salesQuotationItem })
+          DELETE.from(InvoiceMainItems).where({
+            referenceId: salesQuotation,
+            salesQuotationItem
+          })
         );
       }
 
-      // Step 2: enrich & insert main item (without subItems)
-      const command = { ...invoiceMainItemCommands };
-      command.referenceId = salesQuotation;
-      command.salesQuotationItem = salesQuotationItem;
+      // Step 2: process each main item
+      for (const command of invoiceMainItemCommands) {
+        const mainItem = { ...command };
+        mainItem.referenceId = salesQuotation;
+        mainItem.salesQuotationItem = salesQuotationItem;
 
-      const subItems = command.subItemList || [];
-      delete command.subItemList;
+        const subItems = mainItem.subItemList || [];
+        delete mainItem.subItemList;
 
-      // fetch quotation details
-      const salesQuotationApiResponse = await axios.get(
-        'https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$top=50',
-        {
-          headers: { 'Accept': 'application/json' }
+        // 🔹 fetch quotation details
+        const response = await axios.get(
+          'https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$top=50',
+          { headers: { Accept: 'application/json' } }
+        );
+
+        const quotations = response?.data?.d?.results || [];
+        for (const quotation of quotations) {
+          if (quotation.SalesQuotation === salesQuotation) {
+            mainItem.referenceSDDocument = quotation.ReferenceSDDocument;
+            break;
+          }
         }
-      );
 
-      const salesQuotationResults = salesQuotationApiResponse?.data?.d?.results || [];
-      for (const quotation of salesQuotationResults) {
-        if (quotation.SalesQuotation === salesQuotation) {
-          command.referenceSDDocument = quotation.ReferenceSDDocument;
-          break;
+        // insert main item
+        const inserted = await tx.run(
+          INSERT.into(InvoiceMainItems).entries(mainItem)
+        );
+        const savedMain = inserted[0] ?? mainItem;
+
+        // insert sub items
+        for (const sub of subItems) {
+          sub.invoiceMainItemCode = savedMain.invoiceMainItemCode;
+          await tx.run(INSERT.into(InvoiceSubItems).entries(sub));
         }
+
+        // calculate total header
+        const totalHeader =
+          (savedMain.totalWithProfit || 0) +
+          subItems.reduce((sum, s) => sum + (s.total || 0), 0);
+
+        await tx.run(
+          UPDATE(InvoiceMainItems)
+            .set({ totalHeader })
+            .where({ invoiceMainItemCode: savedMain.invoiceMainItemCode })
+        );
+
+        savedMain.totalHeader = totalHeader;
+        savedItems.push(savedMain);
       }
 
-      // insert main item
-      const insertedMain = await tx.run(INSERT.into(InvoiceMainItems).entries(command));
-      const savedMain = insertedMain[0] ?? command;
-
-      // Step 3: insert subItems
-      for (const sub of subItems) {
-        sub.invoiceMainItemCode = savedMain.invoiceMainItemCode;
-        await tx.run(INSERT.into(InvoiceSubItems).entries(sub));
-      }
-
-      // Step 4: calculate & update totalHeader
-      const totalHeader = (savedMain.totalWithProfit || 0) +
-        subItems.reduce((sum, s) => sum + (s.total || 0), 0);
-
-      await tx.run(
-        UPDATE(InvoiceMainItems)
-          .set({ totalHeader })
-          .where({ invoiceMainItemCode: savedMain.invoiceMainItemCode })
-      );
-
-      savedMain.totalHeader = totalHeader;
-      savedItems.push(savedMain);
-
-      // 🔹 Step 5: Call external Invoice Pricing API
+      // Step 3: Call external pricing API (like in your Java code)
       try {
+        const totalHeaderSum = savedItems.reduce(
+          (sum, item) => sum + (item.totalHeader || 0),
+          0
+        );
+
         await callInvoicePricingAPI(
           salesQuotation,
           salesQuotationItem,
           pricingProcedureStep,
           pricingProcedureCounter,
-          totalHeader
+          totalHeaderSum
         );
       } catch (apiErr) {
-        req.warn(`Failed to update invoice pricing: ${apiErr.message}`);
+        req.warn(`Failed to update pricing: ${apiErr.message}`);
       }
 
       return savedItems;
@@ -107,50 +249,49 @@ this.on('saveOrUpdateMainItems', async (req) => {
     }
   });
 
-  async function callInvoicePricingAPI(salesQuotation, salesQuotationItem, pricingProcedureStep, pricingProcedureCounter, totalHeader) {
-    // prepare request body
+  async function callInvoicePricingAPI(
+    salesQuotation,
+    salesQuotationItem,
+    pricingProcedureStep,
+    pricingProcedureCounter,
+    totalHeader
+  ) {
     const body = {
-      ConditionType: "PPR0",
+      ConditionType: 'PPR0',
       ConditionRateValue: String(totalHeader)
     };
 
-    // TODO: move credentials to destination / env vars
-    const credentials = "BTP_USER1:#yiVfheJbFolFxgkEwCBFcWvYkPzrQDENEArAXn5";
+    const credentials = 'BTP_USER1:#yiVfheJbFolFxgkEwCBFcWvYkPzrQDENEArAXn5';
     const encoded = Buffer.from(credentials, 'utf8').toString('base64');
 
-    // fetch CSRF token
     const tokenResp = await axios.get(
       `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItem(SalesQuotation='${salesQuotation}',SalesQuotationItem='${salesQuotationItem}')/to_PricingElement?$top=50`,
       {
         headers: {
           'x-csrf-token': 'Fetch',
-          'Authorization': `Basic ${encoded}`,
-          'Accept': 'application/json'
+          Authorization: `Basic ${encoded}`,
+          Accept: 'application/json'
         }
       }
     );
 
     const csrfToken = tokenResp.headers['x-csrf-token'];
     const cookies = tokenResp.headers['set-cookie'];
+    if (!csrfToken) throw new Error('Failed to fetch CSRF token');
 
-    if (!csrfToken) throw new Error("Failed to fetch CSRF token");
-
-    // patch request
     const patchURL = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItemPrcgElmnt(SalesQuotation='${salesQuotation}',SalesQuotationItem='${salesQuotationItem}',PricingProcedureStep='${pricingProcedureStep}',PricingProcedureCounter='${pricingProcedureCounter}')`;
 
     await axios.patch(patchURL, body, {
       headers: {
-        'Authorization': `Basic ${encoded}`,
+        Authorization: `Basic ${encoded}`,
         'x-csrf-token': csrfToken,
         'If-Match': '*',
         'Content-Type': 'application/json',
-        'Cookie': cookies.join('; ')
+        Cookie: cookies.join('; ')
       }
     });
   }
-
-
-///////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////
  this.on('getInvoiceMainItemByReferenceIdAndItemNumber', async (req) => {
   const { referenceId, salesQuotationItem } = req.data;
 

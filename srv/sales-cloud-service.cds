@@ -209,12 +209,14 @@ service SalesCloudService {
 //   invoiceMainItemCommand : InvoiceMainItemCommand
 // ) returns InvoiceMainItems;
 
-  action saveOrUpdateMainItems(salesQuotation: String,
-                               salesQuotationItem: String,
-                               pricingProcedureStep: String,
-                               pricingProcedureCounter: String,
-                               customerNumber: String,
-                               invoiceMainItemCommands: InvoiceMainItemCommand) returns array of InvoiceMainItemCommand;
+ action saveOrUpdateMainItems(
+    salesQuotation         : String,
+    salesQuotationItem     : String,
+    pricingProcedureStep   : String,
+    pricingProcedureCounter: String,
+    customerNumber         : String,
+    invoiceMainItemCommands: array of InvoiceMainItemCommand
+) returns array of InvoiceMainItemCommand;
 
 @Core.LongDescription: 'Fetches InvoiceMainItems by referenceId and salesQuotationItem'
 action getInvoiceMainItemByReferenceIdAndItemNumber(
