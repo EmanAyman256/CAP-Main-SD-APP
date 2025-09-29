@@ -246,6 +246,60 @@ sap.ui.define([
 
             this.getView().addDependent(this._oSubDialog);
         },
+        onSaveDocument: function () {
+            const oModel = this.getView().getModel(); // default model
+            let Items = oModel.getProperty("/MainItems")|| [];
+            Items = Items.map(({ createdAt, modifiedAt, createdBy, modifiedBy, invoiceMainItemCode,serviceNumber_serviceNumberCode,...rest }) => rest);
+
+            console.log("Mainitems Sent to Doc", Items);
+
+            let body = {
+                salesQuotation: oModel.getProperty("/docNumber"),
+                salesQuotationItem: oModel.getProperty("/itemNumber"),
+                pricingProcedureStep: "20",
+                pricingProcedureCounter: "1",
+                customerNumber: "120000",
+                invoiceMainItemCommands: Items,
+                
+                
+            }
+            console.log(body);
+            
+            fetch("/odata/v4/sales-cloud/saveOrUpdateMainItems", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body:JSON.stringify(body)
+          
+
+
+            })
+
+
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to save: " + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(savedItem => {
+                    var aServiceTypes = oModel.getProperty("/MainItems") || [];
+                    aServiceTypes.push(savedItem);
+                    oModel.setProperty("/MainItems", aServiceTypes);
+
+                    // Reset form
+                    // oModel.setProperty("/newCode", "");
+                    // oModel.setProperty("/newDescription", "");
+                })
+                .catch(err => {
+                    console.error("Error saving MainItem:", err);
+                    sap.m.MessageBox.error("Error: " + err.message);
+                });
+
+
+        },
+
 
         onOpenSubDialogForRow: function (oEvent) {
             const oContext = oEvent.getSource().getBindingContext();
@@ -593,7 +647,7 @@ sap.ui.define([
             // const aMainItems = oModel.getProperty("/MainItems");
             console.log(newww);
 
-            const invoiceMainItemCommands = {
+            const invoiceMainItemCommands = [{
                 serviceNumberCode: oModel.getProperty("SelectedServiceNumber"),
                 description: oView.byId("mainDescriptionInput").getValue(),
                 quantity: oView.byId("mainQuantityInput").getValue(),
@@ -605,8 +659,9 @@ sap.ui.define([
                 profitMargin: oView.byId("mainProfitMarginInput").getValue(),
                 amountPerUnitWithProfit: oView.byId("mainAmountPerUnitWithProfitInput").getValue(),
                 totalWithProfit: oView.byId("mainTotalWithProfitInput").getValue(),
+                
                 subItemList: []
-            }
+            }]
             const oNewMain = {
                 salesQuotation: oModel.getProperty("/docNumber"),
                 salesQuotationItem: oModel.getProperty("/itemNumber"),
