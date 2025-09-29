@@ -536,6 +536,7 @@
                 <m:Input
                     id="mainQuantityInput"
                     placeholder="Quantity"
+                    liveChange=".onInputChange"
                 />
                 <!-- <m:Input
                     id="mainUOMInput"
@@ -547,11 +548,10 @@
                     text="Select Formula"
                 />
                 <m:Select
-                    id="_IDGenSelect2"
-                    class="sapUiSmallMarginStart"
-                    width="200px"
+                    id="formulaSelect"
                     forceSelection="false"
                     items="{path: '/Formulas'}"
+                    change=".onFormulaSelected('main')"
                 >
                     <core:Item
                         id="_IDGenItem3"
@@ -559,6 +559,26 @@
                         text="{description}"
                     />
                 </m:Select>
+
+                <!-- Button (disabled until formula is chosen) -->
+
+                <!-- Popup -->
+                <m:Dialog
+                    id="formulaDialog"
+                    title="Enter Formula Parameters"
+                    class="sapUiContentPadding"
+                >
+                    <m:VBox id="formulaParamContainer" />
+                    <m:endButton>
+                        <m:Button
+                            id="_IDGenButton21"
+                            text="OK"
+                            type="Emphasized"
+                            press=".onFormulaDialogOK"
+                        />
+                    </m:endButton>
+                </m:Dialog>
+
                 <m:Label
                     id="_IDGenLabel1"
                     class="sapUiSmallMarginEnd"
@@ -596,23 +616,27 @@
                     />
                 </m:Select>
                 <!-- <m:Input id="mainFormulaInput" placeholder="Formula"/> -->
-                <m:Input
+                <!-- <m:Input
                     id="mainParametersInput"
                     placeholder="Parameters"
+                /> -->
+                <m:Button
+                    id="btnParameters"
+                    text="Enter Parameters"
+                    enabled="false"
+                    press=".onOpenFormulaDialog"
                 />
-
                 <m:Input
                     id="mainAmountPerUnitInput"
                     placeholder="AmountPerUnit"
+                    liveChange=".onInputChange"
                 />
-                <!-- <m:Input
-                    id="mainCurrencyInput"
-                    placeholder="Currency"
-                /> -->
+           
 
                 <m:Input
                     id="mainTotalInput"
                     placeholder="Total"
+                    editable="false" value="{/Total}"
                 />
                 <m:Input
                     id="mainProfitMarginInput"

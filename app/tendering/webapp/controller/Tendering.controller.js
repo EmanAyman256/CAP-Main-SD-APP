@@ -25,8 +25,10 @@ sap.ui.define([
                 Formulas: [],
                 Currency: [],
                 UOM: [],
+                Total: 0,
                 ServiceNumbers: [],
                 SelectedServiceNumber: "",
+                SelectedSubServiceNumber: "",
                 SelectedServiceNumberDescription: ""
 
             });
@@ -61,66 +63,27 @@ sap.ui.define([
                 });
             // Fetch Formulas
             fetch("/odata/v4/sales-cloud/Formulas")
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}, ${response.statusText}`);
-                    }
-                    return response.json();
-                })
+                .then(r => r.json())
                 .then(data => {
-                    console.log("Fetched Formulas:", data); // Log the raw response
-                    // Ensure data.value is an array
                     const formulas = Array.isArray(data.value) ? data.value : [];
-                    oModel.setData({ Formulas: formulas });
-                    console.log("ServiceNumbers set in model:", oModel.getProperty("/Formulas")); // Log the model data
-                    // Refresh the model to ensure the table updates
+                    oModel.setProperty("/Formulas", formulas);
                     oModel.refresh(true);
-                })
-                .catch(err => {
-                    console.error("Error fetching Formulas:", err);
-                    sap.m.MessageBox.error("Failed to load Formulas: " + err.message);
                 });
-            // Fetch UOM
             fetch("/odata/v4/sales-cloud/UnitOfMeasurements")
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}, ${response.statusText}`);
-                    }
-                    return response.json();
-                })
+                .then(r => r.json())
                 .then(data => {
-                    console.log("Fetched UOM:", data); // Log the raw response
-                    // Ensure data.value is an array
                     const uom = Array.isArray(data.value) ? data.value : [];
-                    oModel.setData({ UOM: uom });
-                    console.log("Uom set in model:", oModel.getProperty("/UOM")); // Log the model data
-                    // Refresh the model to ensure the table updates
+                    oModel.setProperty("/UOM", uom);
                     oModel.refresh(true);
-                })
-                .catch(err => {
-                    console.error("Error fetching Unit of Measurements:", err);
-                    sap.m.MessageBox.error("Failed to load  Unit of Measurements: " + err.message);
                 });
+
             // Fetch Currencies
             fetch("/odata/v4/sales-cloud/Currencies")
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}, ${response.statusText}`);
-                    }
-                    return response.json();
-                })
+                .then(r => r.json())
                 .then(data => {
-                    console.log("Fetched Currency:", data); // Log the raw response
-                    // Ensure data.value is an array
-                    const Currency = Array.isArray(data.value) ? data.value : [];
-                    oModel.setData({ Currency: Currency });
-                    console.log("Currency set in model:", oModel.getProperty("/Currency")); // Log the model data
-                    // Refresh the model to ensure the table updates
+                    const currency = Array.isArray(data.value) ? data.value : [];
+                    oModel.setProperty("/Currency", currency);
                     oModel.refresh(true);
-                })
-                .catch(err => {
-                    console.error("Error fetching Currency:", err);
-                    sap.m.MessageBox.error("Failed to load  Currency: " + err.message);
                 });
         },
 
@@ -166,67 +129,217 @@ sap.ui.define([
                 });
 
         },
+        onInputChange: function () {
+            var oView = this.getView();
+            var oModel = oView.getModel();
 
-        // formatHierIndex: function (oContext) {
-        //     if (!oContext || !oContext.getPath) {
-        //         return ""; // avoid crashes
-        //     }
-        //     // e.g. "/MainItems/0/subItemList/1"
-        //     const sPath = oContext.getPath();
-        //     const parts = sPath.match(/\d+/g); // ["0","1"]
-        //     if (!parts) return "";
+            // Get values
+            var sQuantity = oView.byId("mainQuantityInput").getValue();
+            var sAmount = oView.byId("mainAmountPerUnitInput").getValue();
 
-        //     // Convert to 1-based numbering
-        //     return parts.map(p => parseInt(p, 10) + 1).join(".");
-        // },
+            var iQuantity = parseFloat(sQuantity) || 0;
+            var iAmount = parseFloat(sAmount) || 0;
+
+            // Calculate total
+            var iTotal = iQuantity * iAmount;
+
+            // Update model
+            oModel.setProperty("/Total", iTotal);
+        }
+        ,
+        onFormulaSelected: function (oEvent, sItemType) {
+            var sKey = oEvent.getSource().getSelectedKey();
+            var oModel = this.getView().getModel();
+            var aFormulas = oModel.getProperty("/Formulas") || [];
+            var oFormula = aFormulas.find(f => f.formulaCode === sKey);
+
+
+
+            if (sItemType === "sub") {
+                oModel.setProperty("/SelectedSubFormula", oFormula || null);
+                this.byId("btnSubParameters").setEnabled(!!oFormula);
+            }
+            else {
+                oModel.setProperty("/SelectedFormula", oFormula || null);
+                // Enable button only if formula exists
+                this.byId("btnParameters").setEnabled(!!oFormula);
+            }
+        },
+        onOpenFormulaDialog: function (sItemType) {
+            var oModel = this.getView().getModel();
+
+            if (sItemType === "sub") {
+                var oFormula = oModel.getProperty("/SelectedSubFormula");
+                var oVBox = this.byId("subFormulaParamContainer");
+                oVBox.removeAllItems();
+                // Create inputs for each parameter dynamically
+                var oParams = {};
+                oFormula.parameterIds.forEach((sId, i) => {
+                    oParams[sId] = ""; // init empty
+                    oVBox.addItem(new sap.m.Label({ text: oFormula.parameterDescriptions[i] }));
+                    oVBox.addItem(new sap.m.Input({
+                        placeholder: "Enter " + oFormula.parameterDescriptions[i],
+                        value: "{/FormulaParameters/" + sId + "}"
+                    }));
+                });
+
+                // Reset FormulaParameters in model
+                oModel.setProperty("/FormulaParameters", oParams);
+
+                this.byId("subFormulaDialog").open();
+            }
+            else {
+                var oFormula = oModel.getProperty("/SelectedFormula");
+                if (!oFormula) {
+                    sap.m.MessageToast.show("Please select a formula first.");
+                    return;
+                }
+                var oVBox = this.byId("formulaParamContainer");
+                oVBox.removeAllItems();
+
+                // Create inputs for each parameter dynamically
+                var oParams = {};
+                oFormula.parameterIds.forEach((sId, i) => {
+                    oParams[sId] = ""; // init empty
+                    oVBox.addItem(new sap.m.Label({ text: oFormula.parameterDescriptions[i] }));
+                    oVBox.addItem(new sap.m.Input({
+                        placeholder: "Enter " + oFormula.parameterDescriptions[i],
+                        value: "{/FormulaParameters/" + sId + "}"
+                    }));
+                });
+
+                // Reset FormulaParameters in model
+                oModel.setProperty("/FormulaParameters", oParams);
+
+                this.byId("formulaDialog").open();
+            }
+        },
+
+        onFormulaDialogOK: function () {
+            var oModel = this.getView().getModel();
+            var oParams = oModel.getProperty("/FormulaParameters");
+
+            console.log("User entered parameters:", oParams);
+
+            // Example: save into Main Item
+            oModel.setProperty("/SelectedFormulaParams", oParams);
+
+            this.byId("formulaDialog").close();
+        },
 
         onServiceNumberChange: function (oEvent) {
             var oSelect = oEvent.getSource();
             var oSelectedItem = oSelect.getSelectedItem();
+            var oDescriptionInput = this.byId("mainDescriptionInput");
 
-            var sKey = oSelectedItem.getKey();   // serviceNumberCode
-            var sText = oSelectedItem.getText(); // description
+            if (oSelectedItem) {
+                var sKey = oSelectedItem.getKey();   // serviceNumberCode
+                var sText = oSelectedItem.getText(); // description
 
-            console.log("Selected Key:", sKey, " | Text:", sText);
+                console.log("Selected Key:", sKey, " | Text:", sText);
 
-            // Example: store both in model
-            var oModel = this.getView().getModel();
-            oModel.setProperty("/SelectedServiceNumber", sKey);
-            oModel.setProperty("/SelectedServiceNumberDescription", sText);
-        },
+                // Store both in model
+                var oModel = this.getView().getModel();
+                oModel.setProperty("/SelectedServiceNumber", sKey);
+                oModel.setProperty("/SelectedServiceNumberDescription", sText);
+
+                // Fill input & lock it
+                oDescriptionInput.setValue(sText);
+                oDescriptionInput.setEditable(false);
+            } else {
+                // If nothing selected -> clear & allow manual typing
+                oDescriptionInput.setValue("");
+                oDescriptionInput.setEditable(true);
+            }
+        }
+        ,
 
         _createSubItemDialog: function () {
             var oVBox = new VBox({
                 items: [
-                    // new Label({ text: "Sub Item No" }),
-                    // new Input(this.createId("dialogSubItemNo"), { placeholder: "Enter Sub Item No" }),
 
                     new Label({ text: "Sub Service No" }),
-                    new Input(this.createId("dialogSubServiceNo"), { placeholder: "Enter Service No" }),
+                    new sap.m.Select(this.createId("dialogSubServiceNo"), {
+                        items: {
+                            path: "/ServiceNumbers",
+                            selectedKey: "/SelectedSubServiceNumber",
+                            template: new sap.ui.core.Item({
+                                key: "{serviceNumberCode}",
+                                text: "{description}"
+                            })
+                        }
+                    }),
 
                     new Label({ text: "Description" }),
                     new Input(this.createId("dialogSubDescription"), { placeholder: "Enter Description" }),
 
                     new Label({ text: "Quantity" }),
-                    new Input(this.createId("dialogSubQuantity"), { type: "Number", placeholder: "Enter Quantity" }),
+                    new Input(this.createId("dialogSubQuantity"), { type: "Number", placeholder: "Enter Quantity", liveChange: this._recalculateSubTotal.bind(this) }),
 
                     new Label({ text: "UOM" }),
-                    new Input(this.createId("dialogSubUOM"), { placeholder: "Enter UOM" }),
+                    new sap.m.Select(this.createId("dialogSubUOM"), {
+                        items: {
+                            path: "/UOM",
+                            template: new sap.ui.core.Item({
+                                key: "{unitOfMeasurementCode}",
+                                text: "{description}"
+                            })
+                        }
+                    }),
 
                     new Label({ text: "Formula" }),
-                    new Input(this.createId("dialogSubFormula"), { placeholder: "Enter Formula" }),
+                    new sap.m.Select(this.createId("dialogSubFormula"), {
+                        items: {
+                            path: "/Formulas",
+                            template: new sap.ui.core.Item({
+                                key: "{formulaCode}",
+                                text: "{description}"
+                            })
+                        },
+                        change: this.onFormulaSelected.bind(this, "sub")
+                    }),
+                    new sap.m.Button(this.createId("btnSubParameters"), {
+                        text: "Enter Parameters",
+                        enabled: false, // initially disabled
+                        press: this.onOpenFormulaDialog.bind(this)
+                    }),
+                    new sap.m.Dialog(this.createId("SubFormulaDialog"), {
+                        title: "Enter Formula Parameters",
+                        content: [
+                            new sap.m.VBox(this.createId("subFormulaParamContainer"))
+                        ],
+                        endButton: new sap.m.Button({
+                            text: "OK",
+                            type: "Emphasized",
+                            press: this.onFormulaDialogOK.bind(this)
+                        })
+                    }),
 
-                    new Label({ text: "Parameters" }),
-                    new Input(this.createId("dialogSubParameters"), { placeholder: "Enter Parameters" }),
+                    //new Label({ text: "Parameters" }),
+                    //new Input(this.createId("dialogSubParameters"), { placeholder: "Enter Parameters" }),
 
                     new Label({ text: "AmountPerUnit" }),
-                    new Input(this.createId("dialogSubAmountPerUnit"), { placeholder: "Enter AmountPerUnit" }),
+                    new Input(this.createId("dialogSubAmountPerUnit"), { type: "Number", placeholder: "Enter AmountPerUnit", liveChange: this._recalculateSubTotal.bind(this) }),
 
-                    new Label({ text: "Currency" }),
-                    new Input(this.createId("dialogSubCurrency"), { placeholder: "Enter Currency" }),
-
+                    new sap.m.Label({ text: "Currency" }),
+                    new sap.m.Select(this.createId("dialogSubCurrency"), {
+                        items: [
+                            new sap.ui.core.Item({ key: "", text: "-- None --" })
+                        ],
+                        selectedKey: "",
+                        items: {
+                            path: "/Currency",
+                            template: new sap.ui.core.Item({
+                                key: "{currencyCode}",
+                                text: "{description}"
+                            })
+                        }
+                    }),
                     new Label({ text: "Total" }),
-                    new Input(this.createId("dialogSubTotal"), { placeholder: "Enter Total" }),
+                    new Input(this.createId("dialogSubTotal"), {
+                        editable: false,
+                        value: "0"
+                    }),
                 ]
             }).addStyleClass("sapUiSmallMargin");
 
@@ -246,10 +359,25 @@ sap.ui.define([
 
             this.getView().addDependent(this._oSubDialog);
         },
+
+        _recalculateSubTotal: function () {
+            var oQuantityInput = this.byId("dialogSubQuantity");
+            var oAmountInput = this.byId("dialogSubAmountPerUnit");
+            var oTotalInput = this.byId("dialogSubTotal");
+
+            var qty = parseFloat(oQuantityInput.getValue()) || 0;
+            var amount = parseFloat(oAmountInput.getValue()) || 0;
+
+            var total = qty * amount;
+
+            oTotalInput.setValue(total.toFixed(2)); // show with 2 decimals
+        },
+
+
         onSaveDocument: function () {
             const oModel = this.getView().getModel(); // default model
-            let Items = oModel.getProperty("/MainItems")|| [];
-            Items = Items.map(({ createdAt, modifiedAt, createdBy, modifiedBy, invoiceMainItemCode,serviceNumber_serviceNumberCode,...rest }) => rest);
+            let Items = oModel.getProperty("/MainItems") || [];
+            Items = Items.map(({ createdAt, modifiedAt, createdBy, modifiedBy, invoiceMainItemCode, serviceNumber_serviceNumberCode, ...rest }) => rest);
 
             console.log("Mainitems Sent to Doc", Items);
 
@@ -260,18 +388,18 @@ sap.ui.define([
                 pricingProcedureCounter: "1",
                 customerNumber: "120000",
                 invoiceMainItemCommands: Items,
-                
-                
+
+
             }
             console.log(body);
-            
+
             fetch("/odata/v4/sales-cloud/saveOrUpdateMainItems", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body:JSON.stringify(body)
-          
+                body: JSON.stringify(body)
+
 
 
             })
@@ -319,7 +447,7 @@ sap.ui.define([
             this.byId("dialogSubQuantity").setValue("");
             this.byId("dialogSubUOM").setValue("");
             this.byId("dialogSubFormula").setValue("");
-            this.byId("dialogSubParameters").setValue("");
+            // this.byId("dialogSubParameters").setValue("");
             this.byId("dialogSubCurrency").setValue("");
             this.byId("dialogSubAmountPerUnit").setValue("");
             this.byId("dialogSubTotal").setValue("");
@@ -517,16 +645,15 @@ sap.ui.define([
 
         onAddSubItem: function () {
             var oSubItem = {
-                // SubItemNo: this.byId("dialogSubItemNo").getValue(),
                 invoiceSubItemCode: Date.now(),
 
-                serviceNumberCode: this.byId("dialogSubServiceNo").getValue(),
+                serviceNumberCode: this.byId("dialogSubServiceNo").getSelectedKey(),
                 description: this.byId("dialogSubDescription").getValue(),
                 quantity: this.byId("dialogSubQuantity").getValue(),
-                unitOfMeasurementCode: this.byId("dialogSubUOM").getValue(),
-                formulaCode: this.byId("dialogSubFormula").getValue(),
+                unitOfMeasurementCode: this.byId("dialogSubUOM").getSelectedKey(),
+                formulaCode: this.byId("dialogSubFormula").getSelectedKey(),
                 amountPerUnit: this.byId("dialogSubAmountPerUnit").getValue(),
-                currencyCode: this.byId("dialogSubCurrency").getValue(),
+                currencyCode: this.byId("dialogSubCurrency").getSelectedKey(),
                 total: this.byId("dialogSubTotal").getValue(),
             };
 
@@ -615,24 +742,6 @@ sap.ui.define([
             oEvent.getSource().getParent().close();
         },
 
-        // Add Main Item
-        // onAddMainItem: function () {
-        //     var oModel = this.getView().getModel();
-        //     var aMainItems = oModel.getProperty("/MainItems");
-        //     var oNewItem = Object.assign({}, oModel.getProperty("/newMainItem"));
-
-        //     // initialize children if not present
-        //     oNewItem.children = [];
-
-        //     // push to model
-        //     aMainItems.push(oNewItem);
-        //     oModel.setProperty("/MainItems", aMainItems);
-
-        //     // clear form after adding
-        //     oModel.setProperty("/newMainItem", {});
-
-        //     this.byId("addMainItemDialog").close();
-        // },
 
         onCloseMainItemDialog: function () {
             this.byId("addMainItemDialog").close();
@@ -659,7 +768,7 @@ sap.ui.define([
                 profitMargin: oView.byId("mainProfitMarginInput").getValue(),
                 amountPerUnitWithProfit: oView.byId("mainAmountPerUnitWithProfitInput").getValue(),
                 totalWithProfit: oView.byId("mainTotalWithProfitInput").getValue(),
-                
+
                 subItemList: []
             }]
             const oNewMain = {
