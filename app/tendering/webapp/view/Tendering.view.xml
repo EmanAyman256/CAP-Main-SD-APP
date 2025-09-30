@@ -4,6 +4,7 @@
     xmlns="sap.ui.table"
     xmlns:m="sap.m"
     xmlns:l="sap.ui.layout"
+    xmlns:f="sap.ui.layout.form"
     xmlns:core="sap.ui.core"
     xmlns:table="sap.ui.table"
     xmlns:r="sap.ui.table.rowmodes"
@@ -41,27 +42,40 @@
                         type="Transparent"
                         press=".onPrint"
                     />
-                    <m:Button
-                        id="_IDGenButton4"
-                        text="Export"
-                        icon="sap-icon://download"
-                        type="Transparent"
-                        press=".onExport"
-                    />
-                    <m:Button
-                        id="_IDGenButton5"
-                        text="Import"
-                        icon="sap-icon://upload"
-                        type="Transparent"
-                        press=".onImport"
-                    />
-                    <m:Button
+                    <m:MenuButton
+                        id="_IDGenMenuButton1"
+                        text="Actions"
+                        buttonMode="Split"
+                        menu="{
+        path: '/',
+        factory: '.menuFactory'
+    }"
+                    >
+                        <m:menu>
+                            <m:Menu id="_IDGenMenu">
+                                <m:MenuItem
+                                    id="_IDGenMenuItem"
+                                    text="Export"
+                                    icon="sap-icon://download"
+                                    press=".onExport"
+                                />
+                                <m:MenuItem
+                                    id="_IDGenMenuItem1"
+                                    text="Import"
+                                    icon="sap-icon://upload"
+                                    press=".onImport"
+                                />
+                            </m:Menu>
+                        </m:menu>
+                    </m:MenuButton>
+
+                    <!-- <m:Button
                         id="_IDGenButton6"
                         text="Delete"
                         icon="sap-icon://delete"
                         type="Transparent"
-                        press=".onDelete"
-                    />
+                        press=".onDeleteRow"
+                    /> -->
                 </m:HBox>
             </m:HBox>
             <m:HBox
@@ -136,15 +150,15 @@
         </m:VBox>
 
         <m:VBox id="_IDGenVBox">
-            <m:Toolbar id="_IDGenToolbar2">
-                <m:Button
+            <!-- <m:Toolbar id="_IDGenToolbar2"> -->
+            <!-- <m:Button
                     id="_IDGenButton9"
                     text="Add Main Item"
                     press=".onOpenMainDialog"
                     type="Emphasized"
-                />
-                <!-- <m:Button id="_IDGenButton10" text="Add Sub Item" press=".onOpenSubDialog" type="Emphasized"/> -->
-            </m:Toolbar>
+                /> -->
+            <!-- <m:Button id="_IDGenButton10" text="Add Sub Item" press=".onOpenSubDialog" type="Emphasized"/> -->
+            <!-- </m:Toolbar> -->
 
             <TreeTable
                 id="treeTable"
@@ -165,6 +179,12 @@
                         style="Clear"
                         class="sapUiMediumMargin"
                     >
+                        <m:Button
+                            id="_IDGenButton9"
+                            text="Add Main Item"
+                            press=".onOpenMainDialog"
+                            type="Emphasized"
+                        />
                         <!-- <m:Title id="title" text="Clothing"/> -->
                         <m:ToolbarSpacer id="_IDGenToolbarSpacer" />
                         <m:Button
@@ -503,6 +523,191 @@
         <m:Dialog
             id="addMainDialog"
             title="Add Main Item"
+            contentWidth="800px"
+            contentHeight="80%"
+            resizable="true"
+            draggable="true"
+        >
+            <f:SimpleForm
+                id="mainItemForm"
+                editable="true"
+                layout="ResponsiveGridLayout"
+                class="sapUiSmallMargin"
+            >
+                <f:content>
+                    <m:Label
+                        id="_IDGenLabel3"
+                        text="Main Item No"
+                    />
+                    <m:Input
+                        id="mainItemNoInput"
+                        placeholder="Main Item No"
+                    />
+
+                    <m:Label
+                        id="_IDGenLabel4"
+                        text="Service No"
+                    />
+                    <m:Select
+                        id="mainServiceNoSelect"
+                        selectedKey="{/SelectedServiceNumber}"
+                        forceSelection="false"
+                        items="{path: '/ServiceNumbers'}"
+                        change=".onServiceNumberChange"
+                    >
+                        <core:Item
+                            id="_IDGenItem1"
+                            key="{serviceNumberCode}"
+                            text="{description}"
+                        />
+                    </m:Select>
+
+                    <m:Label
+                        id="_IDGenLabel5"
+                        text="Description"
+                    />
+                    <m:Input
+                        id="mainDescriptionInput"
+                        placeholder="Description"
+                    />
+
+                    <m:Label
+                        id="_IDGenLabel6"
+                        text="Quantity"
+                    />
+                    <m:Input
+                        id="mainQuantityInput"
+                        placeholder="Quantity"
+                        type="Number"
+                        liveChange=".onInputChange"
+                    />
+
+                    <m:Label
+                        id="_IDGenLabel7"
+                        text="Formula"
+                    />
+                    <m:Select
+                        id="formulaSelect"
+                        forceSelection="false"
+                        items="{path: '/Formulas'}"
+                    >
+                        <core:Item
+                            id="_IDGenItem2"
+                            key="{formulaCode}"
+                            text="{description}"
+                        />
+                    </m:Select>
+
+                    <m:Label
+                        id="_IDGenLabel8"
+                        text=""
+                    />
+                    <m:Button
+                        id="btnParameters"
+                        text="Enter Parameters"
+                    />
+
+                    <m:Label
+                        id="_IDGenLabel9"
+                        text="UOM"
+                    />
+                    <m:Select
+                        id="mainUOMSelect"
+                        forceSelection="false"
+                        items="{path: '/UOM'}"
+                    >
+                        <core:Item
+                            id="_IDGenItem3"
+                            key="{unitOfMeasurementCode}"
+                            text="{description}"
+                        />
+                    </m:Select>
+
+                    <m:Label
+                        id="_IDGenLabel10"
+                        text="Currency"
+                    />
+                    <m:Select
+                        id="mainCurrencySelect"
+                        forceSelection="false"
+                        items="{path: '/Currency'}"
+                    >
+                        <core:Item
+                            id="_IDGenItem4"
+                            key="{currencyCode}"
+                            text="{description}"
+                        />
+                    </m:Select>
+
+                    <m:Label
+                        id="_IDGenLabel11"
+                        text="Amount Per Unit"
+                    />
+                    <m:Input
+                        id="mainAmountPerUnitInput"
+                        type="Number"
+                        placeholder="AmountPerUnit"
+                        liveChange=".onInputChange"
+                    />
+
+                    <m:Label
+                        id="_IDGenLabel12"
+                        text="Total"
+                    />
+                    <m:Input
+                        id="mainTotalInput"
+                        placeholder="Total"
+                        editable="false"
+                        value="{/Total}"
+                    />
+
+                    <m:Label
+                        id="_IDGenLabel13"
+                        text="Profit Margin"
+                    />
+                    <m:Input
+                        id="mainProfitMarginInput"
+                        placeholder="ProfitMargin"
+                    />
+
+                    <m:Label
+                        id="_IDGenLabel14"
+                        text="Amount/Unit with Profit"
+                    />
+                    <m:Input
+                        id="mainAmountPerUnitWithProfitInput"
+                        placeholder="AmountPerUnitWithProfit"
+                    />
+
+                    <m:Label
+                        id="_IDGenLabel15"
+                        text="Total with Profit"
+                    />
+                    <m:Input
+                        id="mainTotalWithProfitInput"
+                        placeholder="TotalWithProfit"
+                    />
+                </f:content>
+            </f:SimpleForm>
+
+            <m:buttons>
+                <m:Button
+                    id="_IDGenButton4"
+                    text="Add"
+                    type="Emphasized"
+                    press=".onAddMainItem"
+                />
+                <m:Button
+                    id="_IDGenButton5"
+                    text="Cancel"
+                    press=".onCloseDialog"
+                />
+            </m:buttons>
+        </m:Dialog>
+
+        <!-- <m:Dialog
+            id="addMainDialog"
+            title="Add Main Item"
         >
             <m:VBox
                 id="_IDGenVBox6"
@@ -512,7 +717,6 @@
                     id="mainItemNoInput"
                     placeholder="Main Item No"
                 />
-                <!-- <m:Input id="mainServiceNoInput" placeholder="Service No"/> -->
 
                 <m:Select
                     id="_IDGenSelect1"
@@ -538,10 +742,7 @@
                     placeholder="Quantity"
                     liveChange=".onInputChange"
                 />
-                <!-- <m:Input
-                    id="mainUOMInput"
-                    placeholder="UOM"
-                /> -->
+              
                 <m:Label
                     id="_IDGenLabel4"
                     class="sapUiSmallMarginEnd"
@@ -560,9 +761,6 @@
                     />
                 </m:Select>
 
-                <!-- Button (disabled until formula is chosen) -->
-
-                <!-- Popup -->
                 <m:Dialog
                     id="formulaDialog"
                     title="Enter Formula Parameters"
@@ -615,11 +813,7 @@
                         text="{description}"
                     />
                 </m:Select>
-                <!-- <m:Input id="mainFormulaInput" placeholder="Formula"/> -->
-                <!-- <m:Input
-                    id="mainParametersInput"
-                    placeholder="Parameters"
-                /> -->
+             
                 <m:Button
                     id="btnParameters"
                     text="Enter Parameters"
@@ -652,21 +846,7 @@
                     placeholder="TotalWithProfit"
                 />
 
-                <!--             
-           <m:Input id="mainItemNoInput" placeholder="Main Item No" value="{/newMainItem/MainItemNo}" />
-        <m:Input id="mainServiceNoInput" placeholder="Service No" value="{/newMainItem/ServiceNo}" />
-        <m:Input id="mainDescriptionInput" placeholder="Description" value="{/newMainItem/Description}" />
-        <m:Input id="mainQuantityInput" placeholder="Quantity" value="{/newMainItem/Quantity}" type="Number" />
-        <m:Input id="mainUOMInput" placeholder="UOM" value="{/newMainItem/UOM}" />
-        <m:Input id="mainFormulaInput" placeholder="Formula" value="{/newMainItem/formula}" />
-        <m:Input id="mainParametersInput" placeholder="Parameters" value="{/newMainItem/parameters}" />
-        <m:Input id="mainAmountPerUnitInput" placeholder="Amount Per Unit" value="{/newMainItem/AmountPerUnit}" type="Number" />
-        <m:Input id="mainCurrencyInput" placeholder="Currency" value="{/newMainItem/currency}" />
-        <m:Input id="mainTotalInput" placeholder="Total" value="{/newMainItem/total}" type="Number" />
-        <m:Input id="mainProfitMarginInput" placeholder="Profit Margin" value="{/newMainItem/profitMargin}" type="Number" />
-        <m:Input id="mainAmountPerUnitWithProfitInput" placeholder="Amount/Unit with Profit" value="{/newMainItem/amountPerUnitWithProfit}" type="Number" />
-        <m:Input id="mainTotalWithProfitInput" placeholder="Total With Profit" value="{/newMainItem/totalWithProfit}" type="Number" /> -->
-            </m:VBox>
+              </m:VBox>
             <m:buttons>
                 <m:Button
                     id="_IDGenButton11"
@@ -679,56 +859,196 @@
                     press=".onCloseDialog"
                 />
             </m:buttons>
-        </m:Dialog>
+        </m:Dialog> -->
 
+        <!-- Sub Item Dialog -->
         <!-- Sub Item Dialog -->
         <m:Dialog
             id="addSubDialog"
             title="Add Sub Item"
+            contentWidth="800px"
+            resizable="true"
+            draggable="true"
         >
-            <m:VBox
-                id="_IDGenVBox7"
+            <f:SimpleForm
+                id="subItemForm"
+                editable="true"
+                layout="ResponsiveGridLayout"
                 class="sapUiSmallMargin"
             >
-                <m:Input
-                    id="parentMainItemNoInput"
-                    placeholder="Main Item No (Parent)"
-                />
-                <m:Input
-                    id="subItemNoInput"
-                    placeholder="Sub Item No"
-                />
-                <m:Input
-                    id="subServiceNoInput"
-                    placeholder="Service No"
-                />
-                <m:Input
-                    id="subDescriptionInput"
-                    placeholder="Description"
-                />
-                <m:Input
-                    id="subQuantityInput"
-                    placeholder="Quantity"
-                />
-                <m:Input
-                    id="subUOMInput"
-                    placeholder="UOM"
-                />
-            </m:VBox>
+                <f:content>
+                    <m:Label
+                        id="_IDGenLabel16"
+                        text="Main Item No (Parent)"
+                    />
+                    <m:Input
+                        id="parentMainItemNoInput"
+                        placeholder="Main Item No (Parent)"
+                    />
+
+                    <m:Label
+                        id="_IDGenLabel17"
+                        text="Sub Item No"
+                    />
+                    <m:Input
+                        id="subItemNoInput"
+                        placeholder="Sub Item No"
+                    />
+
+                    <m:Label
+                        id="_IDGenLabel18"
+                        text="Service No"
+                    />
+                    <m:Select
+                        id="subServiceNoInput"
+                        selectedKey="{/SelectedSubServiceNumber}"
+                        forceSelection="false"
+                        items="{path: '/ServiceNumbers'}"
+                        change=".onSubServiceNumberChange"
+                    >
+                        <core:Item
+                            id="_IDGenItem5"
+                            key="{serviceNumberCode}"
+                            text="{description}"
+                        />
+                    </m:Select>
+
+                    <m:Label
+                        id="_IDGenLabel19"
+                        text="Description"
+                    />
+                    <m:Input
+                        id="subDescriptionInput"
+                        placeholder="Description"
+                        value="{/SelectedSubDescriptionText}"
+                        editable="{/SubDescriptionEditable}"
+                    />
+
+                    <m:Label
+                        id="_IDGenLabel20"
+                        text="Quantity"
+                    />
+                    <m:Input
+                        id="subQuantityInput"
+                        placeholder="Quantity"
+                        type="Number"
+                        liveChange=".onSubInputChange"
+                    />
+
+                    <m:Label
+                        id="_IDGenLabel21"
+                        text="UOM"
+                    />
+                    <m:Select
+                        id="subUOMInput"
+                        forceSelection="false"
+                        items="{path: '/UOM'}"
+                    >
+                        <core:Item
+                            id="_IDGenItem6"
+                            key="{unitOfMeasurementCode}"
+                            text="{description}"
+                        />
+                    </m:Select>
+
+                    <m:Label
+                        id="_IDGenLabel22"
+                        text="Formula"
+                    />
+                    <m:Select
+                        id="subFormulaSelect"
+                        forceSelection="false"
+                        items="{path: '/Formulas'}"
+                        change=".onFormulaSelected('sub')"
+                    >
+                        <core:Item
+                            id="_IDGenItem7"
+                            key="{formulaCode}"
+                            text="{description}"
+                        />
+                    </m:Select>
+
+                    <m:Label
+                        id="_IDGenLabel23"
+                        text=""
+                    />
+                    <m:Button
+                        id="btnSubParameters"
+                        text="Enter Parameters"
+                        enabled="{/HasSelectedSubFormula}"
+                        press=".onOpenFormulaDialog('sub')"
+                    />
+
+                    <m:Label
+                        id="_IDGenLabel24"
+                        text="Amount Per Unit"
+                    />
+                    <m:Input
+                        id="subAmountPerUnitInput"
+                        placeholder="AmountPerUnit"
+                        type="Number"
+                        liveChange=".onSubInputChange"
+                    />
+
+                    <m:Label
+                        id="_IDGenLabel25"
+                        text="Currency"
+                    />
+                    <m:Select
+                        id="subCurrencyInput"
+                        forceSelection="false"
+                        items="{path: '/Currency'}"
+                    >
+                        <core:Item
+                            id="_IDGenItem8"
+                            key="{currencyCode}"
+                            text="{description}"
+                        />
+                    </m:Select>
+
+                    <m:Label
+                        id="_IDGenLabel26"
+                        text="Total"
+                    />
+                    <m:Input
+                        id="subTotalInput"
+                        placeholder="Total"
+                        editable="false"
+                        value="{/SubTotal}"
+                    />
+                </f:content>
+            </f:SimpleForm>
+
             <m:buttons>
                 <m:Button
                     id="_IDGenButton13"
                     text="Add"
+                    type="Emphasized"
                     press=".onAddSubItem"
                 />
                 <m:Button
                     id="_IDGenButton14"
                     text="Cancel"
-                    press=".onCloseDialog"
+                    press=".onCancelSubDialog"
                 />
             </m:buttons>
         </m:Dialog>
 
+        <m:Dialog
+            id="SubFormulaDialog"
+            title="Enter Formula Parameters"
+            class="sapUiContentPadding"
+        >
+            <m:VBox id="subFormulaParamContainer" />
+            <m:endButton>
+                <m:Button
+                    id="_IDGenButton22"
+                    text="OK"
+                    type="Emphasized"
+                    press=".onSubFormulaDialogOK"
+                />
+            </m:endButton>
+        </m:Dialog>
         <!-- Main Item Dialog -->
         <!-- <m:Dialog id="addMainDialog" title="Add Main Item">
         <table:Table id="mainItemDialogTable"
