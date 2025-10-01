@@ -163,16 +163,16 @@ service SalesCloudService {
 
   action searchFormulas(keyword: String)                                        returns many Formulas;
   action searchModelSpecifications(keyword: String)                             returns many ModelSpecifications;
-  action getExecutionOrderMainById(executionOrderMainCode: Integer)             returns ExecutionOrderMains;
+  // action getExecutionOrderMainById(executionOrderMainCode: Integer)             returns ExecutionOrderMains;
 
-  action saveOrUpdateExecutionOrders(executionOrders: array of ExecutionOrderMains,
-                                     salesOrder: String,
-                                     salesOrderItem: String,
-                                     customerNumber: String)                    returns array of ExecutionOrderMains;
+  // action saveOrUpdateExecutionOrders(executionOrders: array of ExecutionOrderMains,
+  //                                    salesOrder: String,
+  //                                    salesOrderItem: String,
+  //                                    customerNumber: String)                    returns array of ExecutionOrderMains;
 
-  action findBySalesOrderAndItem(salesOrder: String, salesOrderItem: String)    returns String;
-  action getInvoiceMainItemsByReferenceId(referenceId: String)                  returns array of ExecutionOrderMains;
-  action findByLineNumber(lineNumber: String)                                   returns array of ExecutionOrderMains;
+  // action findBySalesOrderAndItem(salesOrder: String, salesOrderItem: String)    returns String;
+  // action getInvoiceMainItemsByReferenceId(referenceId: String)                  returns array of ExecutionOrderMains;
+  // action findByLineNumber(lineNumber: String)                                   returns array of ExecutionOrderMains;
 
   @readonly
   action calculateTotal(invoiceMainItemCode: Integer)                           returns Decimal(15, 2);
@@ -288,5 +288,78 @@ action getInvoiceMainItemByReferenceIdAndItemNumber(
     subItemList                : array of InvoiceSubItemCommand;
   }
 
+ // -------------------------------- Third App - Execution order main ------------------------------ //
+
+action getExecutionOrderMainById(executionOrderMainCode: Integer)
+    returns ExecutionOrderMains;
+
+action fetchExecutionOrderMainByDebitMemo(
+    debitMemoRequest: String,
+    debitMemoRequestItem: String
+) returns array of ExecutionOrderMains;
+
+function fetchExecutionOrderMainByDebitMemoFunction(
+    debitMemoRequest: String,
+    debitMemoRequestItem: String
+) returns array of ExecutionOrderMains;
+
+function getExecutionOrderMainByReferenceId(
+    referenceId: String,
+    salesOrderItem: String
+) returns array of ExecutionOrderMains;
+
+function findBySalesOrderAndItem(salesOrder: String, salesOrderItem: String) returns String;
+
+function findItemsBySalesOrder(salesOrder: String) returns String;
+
+function findByLineNumber(lineNumber: String) returns array of ExecutionOrderMains;
+
+
+action saveOrUpdateExecutionOrders(
+    executionOrders        : array of ExecutionOrderMainCommand,
+    salesOrder             : String,
+    salesOrderItem         : String,
+    pricingProcedureStep   : Integer,
+    pricingProcedureCounter: Integer,
+    customerNumber         : String
+) returns array of ExecutionOrderMainCommand;
+
+type ExecutionOrderMainCommand {
+  referenceSDDocument      : String;
+  salesOrderItem           : String;
+  debitMemoRequestItem     : String;
+  salesOrderItemText       : String;
+  referenceId              : String;
+  serviceNumberCode        : Integer;
+  description              : String;
+  unitOfMeasurementCode    : String;
+  currencyCode             : String;
+  materialGroupCode        : String;
+  personnelNumberCode      : String;
+  lineTypeCode             : String;
+  serviceTypeCode          : String;
+  totalQuantity            : Decimal(15,3);
+  remainingQuantity        : Decimal(15,3);
+  amountPerUnit            : Decimal(15,3);
+  total                    : Decimal(15,3);
+  totalHeader              : Decimal(15,3);
+  actualQuantity           : Decimal(15,3);
+  previousQuantity         : Decimal(15,3);
+  actualPercentage         : Decimal(15,3);
+  overFulfillmentPercent   : Decimal(15,3);
+  unlimitedOverFulfillment : Boolean;
+  manualPriceEntryAllowed  : Boolean;
+  externalServiceNumber    : String;
+  serviceText              : String;
+  lineText                 : String;
+  lineNumber               : String(225);
+  biddersLine              : Boolean;
+  supplementaryLine        : Boolean;
+  lotCostOne               : Boolean;
+  doNotPrint               : Boolean;
+  deletionIndicator        : Boolean;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }

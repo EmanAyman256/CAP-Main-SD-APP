@@ -148,27 +148,16 @@
                 </m:HBox>
             </m:HBox>
         </m:VBox>
-
         <m:VBox id="_IDGenVBox">
-            <!-- <m:Toolbar id="_IDGenToolbar2"> -->
-            <!-- <m:Button
-                    id="_IDGenButton9"
-                    text="Add Main Item"
-                    press=".onOpenMainDialog"
-                    type="Emphasized"
-                /> -->
-            <!-- <m:Button id="_IDGenButton10" text="Add Sub Item" press=".onOpenSubDialog" type="Emphasized"/> -->
-            <!-- </m:Toolbar> -->
-
             <TreeTable
                 id="treeTable"
                 rows="{
-                    path: '/MainItems',
-                     
-                    parameters: {
-                        arrayNames: ['subItemList']  
-                    }
-                }"
+            path: '/MainItems',
+             
+            parameters: {
+                arrayNames: ['subItemList']  
+            }
+        }"
                 selectionMode="Single"
                 visibleRowCount="5"
                 expandFirstLevel="true"
@@ -210,29 +199,9 @@
                     </m:OverflowToolbar>
                 </extension>
                 <columns>
-                    <!-- <Column
-                        id="_IDGenColumn"
-                        width="60%"
-                    >
-                        <label>
-                            <m:Text
-                                id="_IDGenText1"
-                                text="Item No"
-                            />
-                        </label>
-                        <template>
-                            <m:Text
-                                id="_IDGenText2"
-                                   text="{
-                                     parts: [{path: ''}],
-                                     formatter: '.formatHierIndex'
-                                  }"
-                            />
-                        </template>
-                    </Column> -->
                     <Column
                         id="_IDGenColumn1"
-                        width="60%"
+                        width="12%"
                     >
                         <label>
                             <m:Text
@@ -243,13 +212,13 @@
                         <template>
                             <m:Text
                                 id="_IDGenText4"
-                                text="{MainItemNo}{serviceNumberCode}"
+                                text="{serviceNumberCode}"
                             />
                         </template>
                     </Column>
                     <Column
                         id="_IDGenColumn2"
-                        width="60%"
+                        width="20%"
                     >
                         <label>
                             <m:Text
@@ -266,7 +235,7 @@
                     </Column>
                     <Column
                         id="_IDGenColumn3"
-                        width="60%"
+                        width="8%"
                     >
                         <label>
                             <m:Text
@@ -277,13 +246,13 @@
                         <template>
                             <m:Text
                                 id="_IDGenText8"
-                                text="{MainItemNo}{quantity}"
+                                text="{quantity}"
                             />
                         </template>
                     </Column>
                     <Column
                         id="_IDGenColumn4"
-                        width="60%"
+                        width="8%"
                     >
                         <label>
                             <m:Text
@@ -300,7 +269,7 @@
                     </Column>
                     <Column
                         id="_IDGenColumn6"
-                        width="60%"
+                        width="10%"
                     >
                         <label>
                             <m:Text
@@ -317,7 +286,7 @@
                     </Column>
                     <Column
                         id="_IDGenColumn7"
-                        width="60%"
+                        width="12%"
                     >
                         <label>
                             <m:Text
@@ -328,13 +297,13 @@
                         <template>
                             <m:Text
                                 id="_IDGenText18"
-                                text="{UOM}"
+                                text="{= ${parameters} ? Object.keys(${parameters}).join(', ') : 'None'}"
                             />
                         </template>
                     </Column>
                     <Column
                         id="_IDGenColumn8"
-                        width="60%"
+                        width="10%"
                     >
                         <label>
                             <m:Text
@@ -351,7 +320,7 @@
                     </Column>
                     <Column
                         id="_IDGenColumn9"
-                        width="60%"
+                        width="8%"
                     >
                         <label>
                             <m:Text
@@ -368,7 +337,7 @@
                     </Column>
                     <Column
                         id="_IDGenColumn10"
-                        width="60%"
+                        width="8%"
                     >
                         <label>
                             <m:Text
@@ -385,7 +354,7 @@
                     </Column>
                     <Column
                         id="_IDGenColumn11"
-                        width="60%"
+                        width="8%"
                     >
                         <label>
                             <m:Text
@@ -402,7 +371,7 @@
                     </Column>
                     <Column
                         id="_IDGenColumn12"
-                        width="60%"
+                        width="12%"
                     >
                         <label>
                             <m:Text
@@ -419,7 +388,7 @@
                     </Column>
                     <Column
                         id="_IDGenColumn13"
-                        width="60%"
+                        width="8%"
                     >
                         <label>
                             <m:Text
@@ -436,7 +405,7 @@
                     </Column>
                     <Column
                         id="_IDGenColumn14"
-                        width="60%"
+                        width="6%"
                     >
                         <label>
                             <m:Text
@@ -453,7 +422,7 @@
                                     type="Transparent"
                                     tooltip="Add Sub Item"
                                     press=".onOpenSubDialogForRow"
-                                    visible="{= ${subItemList} ? true : false }"
+                                    visible="{= !!${subItemList} }"
                                 />
 
                                 <!-- Edit -->
@@ -590,6 +559,7 @@
                         id="formulaSelect"
                         forceSelection="false"
                         items="{path: '/Formulas'}"
+                        change="onFormulaSelected"
                     >
                         <core:Item
                             id="_IDGenItem2"
@@ -605,6 +575,8 @@
                     <m:Button
                         id="btnParameters"
                         text="Enter Parameters"
+                        enabled="{/HasSelectedFormula}"
+                        press="onOpenFormulaDialog"
                     />
 
                     <m:Label
@@ -703,6 +675,22 @@
                     press=".onCloseDialog"
                 />
             </m:buttons>
+        </m:Dialog>
+        <m:Dialog
+            id="formulaDialog"
+            title="Enter Formula Parameters"
+            class="sapUiContentPadding"
+        >
+            <m:VBox id="formulaParamContainer" />
+            <!-- This is the missing piece! -->
+            <m:endButton>
+                <m:Button
+                    id="_IDGenButton21"
+                    text="OK"
+                    type="Emphasized"
+                    press=".onFormulaDialogOK"
+                />
+            </m:endButton>
         </m:Dialog>
 
         <!-- <m:Dialog
@@ -862,7 +850,6 @@
         </m:Dialog> -->
 
         <!-- Sub Item Dialog -->
-        <!-- Sub Item Dialog -->
         <m:Dialog
             id="addSubDialog"
             title="Add Sub Item"
@@ -959,7 +946,7 @@
                         id="subFormulaSelect"
                         forceSelection="false"
                         items="{path: '/Formulas'}"
-                        change=".onFormulaSelected('sub')"
+                        change="onFormulaSelected"
                     >
                         <core:Item
                             id="_IDGenItem7"
@@ -976,7 +963,7 @@
                         id="btnSubParameters"
                         text="Enter Parameters"
                         enabled="{/HasSelectedSubFormula}"
-                        press=".onOpenFormulaDialog('sub')"
+                        press="onOpenFormulaDialog"
                     />
 
                     <m:Label

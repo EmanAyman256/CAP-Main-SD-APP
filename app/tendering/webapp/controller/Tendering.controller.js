@@ -14,9 +14,7 @@ sap.ui.define([
 
 ], (Controller, JSONModel, Dialog, Button, Input, Label, VBox, MessageToast, SimpleForm, ResponsiveGridLayout, MessageBox) => {
     "use strict";
-
     return Controller.extend("tendering.controller.View1", {
-
         onInit: function () {
 
             var oModel = new sap.ui.model.json.JSONModel({
@@ -101,8 +99,6 @@ sap.ui.define([
                     oModel.refresh(true);
                 });
         },
-
-
         _onRouteMatched: function (oEvent) {
             var oView = this.getView();
             var oModel = oView.getModel();
@@ -160,61 +156,6 @@ sap.ui.define([
 
             // Update model
             oModel.setProperty("/Total", iTotal);
-        }
-        ,
-        onFormulaSelected: function (sItemType, oEvent) {
-            var sKey = oEvent.getSource().getSelectedKey();
-            var oModel = this.getView().getModel();
-            var aFormulas = oModel.getProperty("/Formulas") || [];
-            var oFormula = aFormulas.find(f => f.formulaCode === sKey);
-
-            if (sItemType === "sub") {
-                oModel.setProperty("/SelectedSubFormula", oFormula || null);
-                oModel.setProperty("/HasSelectedSubFormula", !!oFormula);
-            } else {
-                oModel.setProperty("/SelectedFormula", oFormula || null);
-                oModel.setProperty("/HasSelectedFormula", !!oFormula);
-            }
-        },
-        onOpenFormulaDialog: function (sItemType) {
-            var oModel = this.getView().getModel();
-            var oFormula = sItemType === "sub" ? oModel.getProperty("/SelectedSubFormula") : oModel.getProperty("/SelectedFormula");
-
-            if (!oFormula) {
-                MessageToast.show("Please select a formula first.");
-                return;
-            }
-
-            var oVBox = sItemType === "sub" ? this.byId("subFormulaParamContainer") : this.byId("formulaParamContainer");
-            oVBox.removeAllItems();
-
-            var oParams = {};
-            oFormula.parameterIds.forEach((sId, i) => {
-                oParams[sId] = "";
-                oVBox.addItem(new Label({ text: oFormula.parameterDescriptions[i] }));
-                oVBox.addItem(new Input({
-                    placeholder: "Enter " + oFormula.parameterDescriptions[i],
-                    value: `{/${sItemType === "sub" ? "SubFormulaParameters" : "FormulaParameters"}/${sId}}`
-                }));
-            });
-
-            oModel.setProperty(sItemType === "sub" ? "/SubFormulaParameters" : "/FormulaParameters", oParams);
-
-            var oDialog = sItemType === "sub" ? this.byId("SubFormulaDialog") : this.byId("formulaDialog");
-            oDialog.open();
-        },
-        onFormulaDialogOK: function () {
-            var oModel = this.getView().getModel();
-            var oParams = oModel.getProperty("/FormulaParameters");
-            oModel.setProperty("/SelectedFormulaParams", oParams);
-            this.byId("formulaDialog").close();
-        },
-
-        onSubFormulaDialogOK: function () {
-            var oModel = this.getView().getModel();
-            var oParams = oModel.getProperty("/SubFormulaParameters");
-            oModel.setProperty("/SelectedSubFormulaParams", oParams);
-            this.byId("SubFormulaDialog").close();
         },
         onServiceNumberChange: function (oEvent) {
             var oSelect = oEvent.getSource();
@@ -242,6 +183,83 @@ sap.ui.define([
             }
         }
         ,
+        onFormulaSelected: function (oEvent) {
+            console.log("CHANGE EVENT FIRED! Source ID:", oEvent.getSource().getId()); // This will tell us everything
+            var oSelect = oEvent.getSource();
+            var sSelectId = oSelect.getId();
+            var sItemType = sSelectId.includes("subFormula") ? "sub" : "main"; // Broader match for "subFormulaSelect"
+            var sKey = oSelect.getSelectedKey();
+            console.log("Selected Key:", sKey); // Check if key is captured
+            var oModel = this.getView().getModel();
+            var aFormulas = oModel.getProperty("/Formulas") || [];
+            console.log("Available Formulas:", aFormulas.length); // If 0, data issue
+            var oFormula = aFormulas.find(f => f.formulaCode === sKey);
+
+            if (sItemType === "sub") {
+                oModel.setProperty("/SelectedSubFormula", oFormula || null);
+                oModel.setProperty("/HasSelectedSubFormula", !!oFormula);
+                console.log("Updated sub model. HasSelectedSubFormula:", oModel.getProperty("/HasSelectedSubFormula"));
+            } else {
+                oModel.setProperty("/SelectedFormula", oFormula || null);
+                oModel.setProperty("/HasSelectedFormula", !!oFormula);
+            }
+            console.log("Selected formula for " + sItemType + ":", oFormula);
+        },
+
+        onOpenFormulaDialog: function (oEvent) {
+            var oButton = oEvent.getSource();
+            var sButtonId = oButton.getId();
+            console.log("BUTTON PRESS FIRED! Button ID:", sButtonId); // Key: Share this log!
+
+            // More robust ID check: Split on '--' to get local ID, then check
+            var sLocalId = sButtonId.split('--').pop(); // Gets "btnSubParameters" from namespaced ID
+            var sItemType = sLocalId === "btnSubParameters" ? "sub" : "main"; // Exact local match
+            console.log("Detected Item Type:", sItemType); // Should be "sub"
+
+            var oModel = this.getView().getModel();
+            var oFormula = sItemType === "sub" ? oModel.getProperty("/SelectedSubFormula") : oModel.getProperty("/SelectedFormula");
+
+            console.log("Raw /SelectedSubFormula from model:", oModel.getProperty("/SelectedSubFormula")); // Always log this
+            console.log("Raw /SelectedFormula from model:", oModel.getProperty("/SelectedFormula")); // For comparison
+            console.log("Formula retrieved for " + sItemType + ":", oFormula); // This triggers toast if null
+
+            if (!oFormula) {
+                MessageToast.show("Please select a formula first.");
+                return;
+            }
+
+            // Rest unchanged...
+            var oVBox = sItemType === "sub" ? this.byId("subFormulaParamContainer") : this.byId("formulaParamContainer");
+            oVBox.removeAllItems();
+
+            var oParams = {};
+            oFormula.parameterIds.forEach((sId, i) => {
+                oParams[sId] = "";
+                oVBox.addItem(new Label({ text: oFormula.parameterDescriptions[i] }));
+                oVBox.addItem(new Input({
+                    placeholder: "Enter " + oFormula.parameterDescriptions[i],
+                    value: `{/${sItemType === "sub" ? "SubFormulaParameters" : "FormulaParameters"}/${sId}}`
+                }));
+            });
+
+            oModel.setProperty(sItemType === "sub" ? "/SubFormulaParameters" : "/FormulaParameters", oParams);
+
+            var oDialog = sItemType === "sub" ? this.byId("SubFormulaDialog") : this.byId("formulaDialog");
+            oDialog.open();
+            console.log("Opening dialog for " + sItemType + " with formula:", oFormula);
+        },
+        onFormulaDialogOK: function () {
+            var oModel = this.getView().getModel();
+            var oParams = oModel.getProperty("/FormulaParameters");
+            oModel.setProperty("/SelectedFormulaParams", oParams);
+            this.byId("formulaDialog").close();
+        },
+        onSubFormulaDialogOK: function () {
+            var oModel = this.getView().getModel();
+            var oParams = oModel.getProperty("/SubFormulaParameters");
+            oModel.setProperty("/SelectedSubFormulaParams", oParams);
+            this.byId("SubFormulaDialog").close();
+        },
         onSubInputChange: function () {
             var oView = this.getView();
             var oModel = oView.getModel();
@@ -280,118 +298,6 @@ sap.ui.define([
                 oDescriptionInput.setEditable(true);
             }
         },
-        // _createSubItemDialog: function () {
-        //     var oVBox = new sap.m.VBox({
-        //         width: "90%",
-        //         items: [
-        //             new sap.m.Label({ text: "Sub Service No" }),
-        //             new sap.m.Select(this.createId("dialogSubServiceNo"), {
-        //                 width: "90%",
-        //                 items: {
-        //                     path: "/ServiceNumbers",
-        //                     template: new sap.ui.core.Item({
-        //                         key: "{serviceNumberCode}",
-        //                         text: "{description}"
-        //                     })
-        //                 },
-        //                 change: this.onSubServiceNumberChange.bind(this)
-        //             }),
-
-        //             new sap.m.Label({ text: "Description" }),
-        //             new sap.m.Input(this.createId("dialogSubDescription"), {
-        //                 width: "90%",
-        //                 placeholder: "Enter Description",
-        //                 value: "{/SelectedSubDescriptionText}",
-        //                 editable: "{/SubDescriptionEditable}"
-        //             }),
-
-        //             new sap.m.Label({ text: "Quantity" }),
-        //             new sap.m.Input(this.createId("dialogSubQuantity"), {
-        //                 width: "90%",
-        //                 type: "Number",
-        //                 placeholder: "Enter Quantity",
-        //                 liveChange: this._recalculateSubTotal.bind(this)
-        //             }),
-
-        //             new sap.m.Label({ text: "UOM" }),
-        //             new sap.m.Select(this.createId("dialogSubUOM"), {
-        //                 width: "90%",
-        //                 items: {
-        //                     path: "/UOM",
-        //                     template: new sap.ui.core.Item({
-        //                         key: "{unitOfMeasurementCode}",
-        //                         text: "{description}"
-        //                     })
-        //                 }
-        //             }),
-
-        //             new sap.m.Label({ text: "Formula" }),
-        //             new sap.m.Select(this.createId("dialogSubFormula"), {
-        //                 width: "90%",
-        //                 items: {
-        //                     path: "/Formulas",
-        //                     template: new sap.ui.core.Item({
-        //                         key: "{formulaCode}",
-        //                         text: "{description}"
-        //                     })
-        //                 },
-        //                 // change: this.onFormulaSelected.bind(this, "sub")
-        //             }),
-        //             new sap.m.Button(this.createId("btnSubParameters"), {
-        //                 text: "Enter Formula Parameters",
-        //                 width: "90%",
-        //                 // enabled: "{/HasSelectedSubFormula}", // Fix: Use HasSelectedSubFormula
-        //                 // press: this.onOpenFormulaDialog.bind(this, "sub")
-        //             }),
-        //             new sap.m.Label({ text: "AmountPerUnit" }),
-        //             new sap.m.Input(this.createId("dialogSubAmountPerUnit"), {
-        //                 width: "90%",
-        //                 type: "Number",
-        //                 placeholder: "Enter AmountPerUnit",
-        //                 liveChange: this._recalculateSubTotal.bind(this)
-        //             }),
-
-        //             new sap.m.Label({ text: "Currency" }),
-        //             new sap.m.Select(this.createId("dialogSubCurrency"), {
-        //                 width: "90%",
-        //                 items: [
-        //                     new sap.ui.core.Item({ key: "", text: "-- None --" })
-        //                 ].concat({
-        //                     path: "/Currency",
-        //                     template: new sap.ui.core.Item({
-        //                         key: "{currencyCode}",
-        //                         text: "{description}"
-        //                     })
-        //                 })
-        //             }),
-
-        //             new sap.m.Label({ text: "Total" }),
-        //             new sap.m.Input(this.createId("dialogSubTotal"), {
-        //                 width: "90%",
-        //                 editable: false,
-        //                 value: "0"
-        //             })
-        //         ]
-        //     }).addStyleClass("sapUiSmallMargin");
-
-        //     this._oSubDialog = new sap.m.Dialog({
-        //         title: "Add Subitem",
-        //         content: [oVBox],
-        //         contentWidth: "700px",
-        //         beginButton: new sap.m.Button({
-        //             text: "Add",
-        //             type: "Emphasized",
-        //             press: this.onAddSubItem.bind(this)
-        //         }),
-        //         endButton: new sap.m.Button({
-        //             text: "Cancel",
-        //             press: this.onCancelSubDialog.bind(this)
-        //         })
-        //     });
-
-        //     this.getView().addDependent(this._oSubDialog);
-        // },
-
         _recalculateSubTotal: function () {
             var oQuantityInput = this.byId("dialogSubQuantity");
             var oAmountInput = this.byId("dialogSubAmountPerUnit");
@@ -404,12 +310,14 @@ sap.ui.define([
 
             oTotalInput.setValue(total.toFixed(2)); // show with 2 decimals
         },
-
-
         onSaveDocument: function () {
             const oModel = this.getView().getModel(); // default model
             let Items = oModel.getProperty("/MainItems") || [];
-            Items = Items.map(({ createdAt, modifiedAt, createdBy, modifiedBy, invoiceMainItemCode, serviceNumber_serviceNumberCode, ...rest }) => rest);
+            Items = Items.map(({ createdAt, modifiedAt, createdBy,
+                modifiedBy, invoiceMainItemCode, serviceNumber_serviceNumberCode,
+                salesQuotation, salesQuotationItem
+                , pricingProcedureCounter, pricingProcedureStep, customerNumber,
+                ...rest }) => rest);
 
             console.log("Mainitems Sent to Doc", Items);
 
@@ -444,13 +352,12 @@ sap.ui.define([
                     return response.json();
                 })
                 .then(savedItem => {
+
                     var aServiceTypes = oModel.getProperty("/MainItems") || [];
                     aServiceTypes.push(savedItem);
                     oModel.setProperty("/MainItems", aServiceTypes);
 
-                    // Reset form
-                    // oModel.setProperty("/newCode", "");
-                    // oModel.setProperty("/newDescription", "");
+
                 })
                 .catch(err => {
                     console.error("Error saving MainItem:", err);
@@ -459,8 +366,6 @@ sap.ui.define([
 
 
         },
-
-
         onOpenSubDialogForRow: function (oEvent) {
             const oContext = oEvent.getSource().getBindingContext();
             const oObject = oContext.getObject();
@@ -492,48 +397,53 @@ sap.ui.define([
 
             this.byId("addSubDialog").open();
         },
+        _calculateTotals: function (oItem) {
+            // Parse safely with nullish coalescing (?? 0)
+            var quantity = parseFloat(oItem.quantity) ?? 0;
+            var amountPerUnit = parseFloat(oItem.amountPerUnit) ?? 0;
+            var profitMargin = parseFloat(oItem.profitMargin) ?? 0;
+
+            console.log("Calc inputs:", { quantity, amountPerUnit, profitMargin });
+
+            // Basic total (always quantity * amountPerUnit)
+            oItem.total = (quantity * amountPerUnit).toFixed(2);
+
+            // Compute amountPerUnitWithProfit (with fallback if null/0)
+            var amountPerUnitWithProfit = parseFloat(oItem.amountPerUnitWithProfit) ?? 0;
+            if (amountPerUnitWithProfit === null || amountPerUnitWithProfit === 0) {
+                amountPerUnitWithProfit = (amountPerUnit * (1 + profitMargin / 100)).toFixed(2);
+            }
+            oItem.amountPerUnitWithProfit = parseFloat(amountPerUnitWithProfit);  // Ensure number
+
+            // Your exact totalWithProfit logic (conditional fallback)
+            oItem.totalWithProfit = (amountPerUnitWithProfit != null && amountPerUnitWithProfit !== 0) ?
+                (quantity ?? 0) * amountPerUnitWithProfit :
+                (quantity ?? 0) * (amountPerUnit ?? 0) * ((profitMargin ?? 0) / 100) + (quantity ?? 0) * (amountPerUnit ?? 0);
+
+            // Round to 2 decimals for display
+            oItem.totalWithProfit = parseFloat(oItem.totalWithProfit).toFixed(2);
+
+            console.log("Calc outputs:", { total: oItem.total, amountPerUnitWithProfit: oItem.amountPerUnitWithProfit, totalWithProfit: oItem.totalWithProfit });
+        },
         // for edit :
         _calculateTotals: function (oItem) {
-            console.log(oItem);
 
+            console.log(oItem);
             var amountPerUnit = parseFloat(oItem.amountPerUnit) || 0;
             var quantity = parseFloat(oItem.quantity) || 0;
             //var amountPerUnit = parseFloat(oItem.amountPerUnit) || 0;
             var profitMargin = parseFloat(oItem.profitMargin) || 0;
-
             console.log(quantity, amountPerUnit, profitMargin);
 
             // Calculate totals
             oItem.total = quantity * amountPerUnit;
             console.log(oItem.total);
 
-
             // Profit calculations
             var amountPerUnitWithProfit = amountPerUnit * (1 + profitMargin / 100);
             oItem.amountPerUnitWithProfit = amountPerUnitWithProfit;
             oItem.totalWithProfit = quantity * amountPerUnitWithProfit;
         },
-        // _onValueChange: function (oEvent) {
-        //     var oInput = oEvent.getSource();
-        //     var sValue = oInput.getValue();
-        //     var oModel = this.getView().getModel();
-        //     var oEditRow = oModel.getProperty("/editRow");
-
-
-        //     var sId = oInput.getId();
-        //     if (sId.includes("quantity")) {
-        //         oEditRow.quantity = parseFloat(sValue) || 0;
-        //     } else if (sId.includes("amountPerUnit")) {
-        //         oEditRow.amountPerUnit = parseFloat(sValue) || 0;
-        //     } else if (sId.includes("profitMargin")) {
-        //         oEditRow.profitMargin = parseFloat(sValue) || 0;
-        //     }
-
-        //     // Recalculate totals
-        //     this._calculateTotals(oEditRow);
-        //     oModel.setProperty("/editRow", Object.assign({}, oEditRow));
-        // },
-
         _onValueChange: function (oEvent) {
             var oModel = this.getView().getModel();
             var oEditRow = oModel.getProperty("/editRow");
@@ -565,12 +475,6 @@ sap.ui.define([
 
             oModel.setProperty("/editRow", oEditRow);
         },
-
-
-
-
-
-
         onEditRow: function (oEvent) {
             var oContext = oEvent.getSource().getBindingContext();
             var oData = oContext.getObject();
@@ -804,7 +708,6 @@ sap.ui.define([
             }
 
         },
-
         onSaveEdit: function () {
             var oModel = this.getView().getModel();
             var oEdited = oModel.getProperty("/editRow");
@@ -825,19 +728,18 @@ sap.ui.define([
                 this._oEditMainDialog.close();
             }
         },
-
         onAddSubItem: function () {
             var oModel = this.getView().getModel();
             var oSubItem = {
-                invoiceSubItemCode: Date.now(),
-                serviceNumberCode: this.byId("subServiceNoInput").getSelectedKey(),
+                //invoiceSubItemCode: Date.now(),
+                serviceNumberCode: this.byId("subServiceNoInput").getSelectedItem().getText(),
                 description: this.byId("subDescriptionInput").getValue(),
                 quantity: this.byId("subQuantityInput").getValue(),
-                unitOfMeasurementCode: this.byId("subUOMInput").getSelectedKey(),
-                formulaCode: this.byId("subFormulaSelect").getSelectedKey(),
-                parameters: oModel.getProperty("/SelectedSubFormulaParams") || {},
+                unitOfMeasurementCode: this.byId("subUOMInput").getSelectedItem().getText(),
+                formulaCode: this.byId("subFormulaSelect").getSelectedItem().getText(),
+                // parameters: oModel.getProperty("/SelectedSubFormulaParams") || {},
                 amountPerUnit: this.byId("subAmountPerUnitInput").getValue(),
-                currencyCode: this.byId("subCurrencyInput").getSelectedKey(),
+                currencyCode: this.byId("subCurrencyInput").getSelectedItem().getText(),
                 total: this.byId("subTotalInput").getValue()
             };
 
@@ -923,12 +825,9 @@ sap.ui.define([
         onCloseDialog: function (oEvent) {
             oEvent.getSource().getParent().close();
         },
-
-
         onCloseMainItemDialog: function () {
             this.byId("addMainItemDialog").close();
         },
-
         onAddMainItem: function () {
 
             const oView = this.getView();
@@ -938,21 +837,20 @@ sap.ui.define([
             // const aMainItems = oModel.getProperty("/MainItems");
             console.log(newww);
 
-            const invoiceMainItemCommands = [{
-                serviceNumberCode: oModel.getProperty("SelectedServiceNumber"),
-                description: oView.byId("mainDescriptionInput").getValue(),
-                quantity: oView.byId("mainQuantityInput").getValue(),
-                unitOfMeasurementCode: oView.byId("_IDGenSelect4").getSelectedKey(),
-                formulaCode: oView.byId("_IDGenSelect2").getSelectedKey(),
-                amountPerUnit: oView.byId("mainAmountPerUnitInput").getValue(),
-                currencyCode: oView.byId("_IDGenSelect5").getSelectedKey(),
-                total: oView.byId("mainTotalInput").getValue(),
-                profitMargin: oView.byId("mainProfitMarginInput").getValue(),
-                amountPerUnitWithProfit: oView.byId("mainAmountPerUnitWithProfitInput").getValue(),
-                totalWithProfit: oView.byId("mainTotalWithProfitInput").getValue(),
-
-                subItemList: []
-            }]
+            // const invoiceMainItemCommands = [{
+            //     serviceNumberCode: oModel.getProperty("/SelectedServiceNumber") || "", // Fixed: Added /
+            //     description: oView.byId("mainDescriptionInput").getValue() || "",
+            //     quantity: parseFloat(oView.byId("mainQuantityInput").getValue()) || 0, // Parse to number
+            //     unitOfMeasurementCode: oView.byId("mainUOMSelect").getSelectedKey() || "", // Fixed ID
+            //     formulaCode: oView.byId("formulaSelect").getSelectedKey() || "", // Fixed ID
+            //     amountPerUnit: parseFloat(oView.byId("mainAmountPerUnitInput").getValue()) || 0,
+            //     currencyCode: oView.byId("mainCurrencySelect").getSelectedKey() || "", // Fixed ID
+            //     total: parseFloat(oView.byId("mainTotalInput").getValue()) || 0,
+            //     profitMargin: parseFloat(oView.byId("mainProfitMarginInput").getValue()) || 0,
+            //     amountPerUnitWithProfit: parseFloat(oView.byId("mainAmountPerUnitWithProfitInput").getValue()) || 0,
+            //     totalWithProfit: parseFloat(oView.byId("mainTotalWithProfitInput").getValue()) || 0,
+            //     subItemList: []
+            // }]
             const oNewMain = {
                 salesQuotation: oModel.getProperty("/docNumber"),
                 salesQuotationItem: oModel.getProperty("/itemNumber"),
@@ -963,17 +861,17 @@ sap.ui.define([
 
                 invoiceMainItemCode: Date.now(),
 
-                serviceNumberCode: oModel.getProperty("SelectedServiceNumber"),
-                description: oView.byId("mainDescriptionInput").getValue(),
-                quantity: oView.byId("mainQuantityInput").getValue(),
-                unitOfMeasurementCode: oView.byId("_IDGenSelect4").getSelectedKey(),
-                formulaCode: oView.byId("_IDGenSelect2").getSelectedKey(),
-                amountPerUnit: oView.byId("mainAmountPerUnitInput").getValue(),
-                currencyCode: oView.byId("_IDGenSelect5").getSelectedKey(),
-                total: oView.byId("mainTotalInput").getValue(),
-                profitMargin: oView.byId("mainProfitMarginInput").getValue(),
-                amountPerUnitWithProfit: oView.byId("mainAmountPerUnitWithProfitInput").getValue(),
-                totalWithProfit: oView.byId("mainTotalWithProfitInput").getValue(),
+                serviceNumberCode: oModel.getProperty("/SelectedServiceNumberDescription") || "", // Fixed: Added /
+                description: oView.byId("mainDescriptionInput").getValue() || "",
+                quantity: parseFloat(oView.byId("mainQuantityInput").getValue()) || 0, // Parse to number
+                unitOfMeasurementCode: oView.byId("mainUOMSelect").getSelectedItem().getText() || "", // Fixed ID
+                formulaCode: oView.byId("formulaSelect").getSelectedItem().getText() || "", // Fixed ID
+                amountPerUnit: parseFloat(oView.byId("mainAmountPerUnitInput").getValue()) || 0,
+                currencyCode: oView.byId("mainCurrencySelect").getSelectedItem().getText() || "", // Fixed ID
+                total: parseFloat(oView.byId("mainTotalInput").getValue()) || 0,
+                profitMargin: parseFloat(oView.byId("mainProfitMarginInput").getValue()) || 0,
+                amountPerUnitWithProfit: parseFloat(oView.byId("mainAmountPerUnitWithProfitInput").getValue()) || 0,
+                totalWithProfit: parseFloat(oView.byId("mainTotalWithProfitInput").getValue()) || 0,
                 subItemList: []
 
             };
@@ -1021,7 +919,6 @@ sap.ui.define([
 
             this.byId("addMainDialog").close();
         },
-
         onSearch: function (oEvent) {
             var sQuery = oEvent.getParameter("query");
             var oTable = this.byId("treeTable");

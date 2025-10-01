@@ -1113,74 +1113,74 @@ module.exports = cds.service.impl(async function () {
   })
 
 
-  // === GET all (READ is automatic)
-  this.on('READ', ExecutionOrderMains, async (req) => {
-    if (req.data.executionOrderMainCode) {
-      return SELECT.one.from(ExecutionOrderMains).where({ executionOrderMainCode: req.data.executionOrderMainCode })
-    }
-    return SELECT.from(ExecutionOrderMains)
-  })
+  // // === GET all (READ is automatic)
+  // this.on('READ', ExecutionOrderMains, async (req) => {
+  //   if (req.data.executionOrderMainCode) {
+  //     return SELECT.one.from(ExecutionOrderMains).where({ executionOrderMainCode: req.data.executionOrderMainCode })
+  //   }
+  //   return SELECT.from(ExecutionOrderMains)
+  // })
 
-  // === CREATE (POST)
-  this.on('CREATE', ExecutionOrderMains, async (req) => {
-    const data = req.data
-    return INSERT.into(ExecutionOrderMains).entries(data)
-  })
+  // // === CREATE (POST)
+  // this.on('CREATE', ExecutionOrderMains, async (req) => {
+  //   const data = req.data
+  //   return INSERT.into(ExecutionOrderMains).entries(data)
+  // })
 
-  // === DELETE
-  this.on('DELETE', ExecutionOrderMains, async (req) => {
-    const { executionOrderMainCode } = req.data
-    return DELETE.from(ExecutionOrderMains).where({ executionOrderMainCode })
-  })
+  // // === DELETE
+  // this.on('DELETE', ExecutionOrderMains, async (req) => {
+  //   const { executionOrderMainCode } = req.data
+  //   return DELETE.from(ExecutionOrderMains).where({ executionOrderMainCode })
+  // })
 
-  // === UPDATE (PATCH)
-  this.on('UPDATE', ExecutionOrderMains, async (req) => {
-    const { executionOrderMainCode, ...rest } = req.data
-    return UPDATE(ExecutionOrderMains).set(rest).where({ executionOrderMainCode })
-  })
+  // // === UPDATE (PATCH)
+  // this.on('UPDATE', ExecutionOrderMains, async (req) => {
+  //   const { executionOrderMainCode, ...rest } = req.data
+  //   return UPDATE(ExecutionOrderMains).set(rest).where({ executionOrderMainCode })
+  // })
 
-  // === Action: getExecutionOrderMainById
-  this.on('getExecutionOrderMainById', async (req) => {
-    const { executionOrderMainCode } = req.data
-    return SELECT.one.from(ExecutionOrderMains).where({ executionOrderMainCode })
-  })
+  // // === Action: getExecutionOrderMainById
+  // this.on('getExecutionOrderMainById', async (req) => {
+  //   const { executionOrderMainCode } = req.data
+  //   return SELECT.one.from(ExecutionOrderMains).where({ executionOrderMainCode })
+  // })
 
-  // === Action: saveOrUpdateExecutionOrders
-  this.on('saveOrUpdateExecutionOrders', async (req) => {
-    const { executionOrders, salesOrder, salesOrderItem, customerNumber } = req.data
+  // // === Action: saveOrUpdateExecutionOrders
+  // this.on('saveOrUpdateExecutionOrders', async (req) => {
+  //   const { executionOrders, salesOrder, salesOrderItem, customerNumber } = req.data
 
-    // delete all first
-    await DELETE.from(ExecutionOrderMains)
+  //   // delete all first
+  //   await DELETE.from(ExecutionOrderMains)
 
-    // enrich + insert each
-    for (const order of executionOrders) {
-      order.referenceId = salesOrder
-      // TODO: fetch sales order details (via external service if needed)
-      // TODO: call pricing API (mock it for now)
-      await INSERT.into(ExecutionOrderMains).entries(order)
-    }
+  //   // enrich + insert each
+  //   for (const order of executionOrders) {
+  //     order.referenceId = salesOrder
+  //     // TODO: fetch sales order details (via external service if needed)
+  //     // TODO: call pricing API (mock it for now)
+  //     await INSERT.into(ExecutionOrderMains).entries(order)
+  //   }
 
-    return SELECT.from(ExecutionOrderMains)
-  })
+  //   return SELECT.from(ExecutionOrderMains)
+  // })
 
-  // === Action: findBySalesOrderAndItem
-  this.on('findBySalesOrderAndItem', async (req) => {
-    const { salesOrder, salesOrderItem } = req.data
-    // mimic external API call
-    return `Sales Order ${salesOrder}, Item ${salesOrderItem}`
-  })
+  // // === Action: findBySalesOrderAndItem
+  // this.on('findBySalesOrderAndItem', async (req) => {
+  //   const { salesOrder, salesOrderItem } = req.data
+  //   // mimic external API call
+  //   return `Sales Order ${salesOrder}, Item ${salesOrderItem}`
+  // })
 
-  // === Action: getInvoiceMainItemsByReferenceId
-  this.on('getInvoiceMainItemsByReferenceId', async (req) => {
-    const { referenceId } = req.data
-    return SELECT.from(ExecutionOrderMains).where({ referenceId })
-  })
+  // // === Action: getInvoiceMainItemsByReferenceId
+  // this.on('getInvoiceMainItemsByReferenceId', async (req) => {
+  //   const { referenceId } = req.data
+  //   return SELECT.from(ExecutionOrderMains).where({ referenceId })
+  // })
 
-  // === Action: findByLineNumber
-  this.on('findByLineNumber', async (req) => {
-    const { lineNumber } = req.data
-    return SELECT.from(ExecutionOrderMains).where({ lineNumber })
-  })
+  // // === Action: findByLineNumber
+  // this.on('findByLineNumber', async (req) => {
+  //   const { lineNumber } = req.data
+  //   return SELECT.from(ExecutionOrderMains).where({ lineNumber })
+  // })
 
 
   // Get all
@@ -2196,5 +2196,237 @@ module.exports = cds.service.impl(async function () {
       req.error(500, `Failed to fetch UOM data: ${e.message}`)
     }
   })
+
+ // -------------------------------- Third App - Execution order main ------------------------------ //
+//GET all
+this.on('READ', ExecutionOrderMains, async (req) => {
+  if (req.data.executionOrderMainCode) {
+    return SELECT.one.from(ExecutionOrderMains).where({ executionOrderMainCode: req.data.executionOrderMainCode })
+  }
+  return SELECT.from(ExecutionOrderMains)
+})
+
+//DELETE
+this.on('DELETE', ExecutionOrderMains, async (req) => {
+  const { executionOrderMainCode } = req.data
+  return DELETE.from(ExecutionOrderMains).where({ executionOrderMainCode })
+})
+
+//UPDATE
+this.on('UPDATE', ExecutionOrderMains, async (req) => {
+  const { executionOrderMainCode, ...rest } = req.data
+  return UPDATE(ExecutionOrderMains).set(rest).where({ executionOrderMainCode })
+})
+
+//Action: getExecutionOrderMainById
+this.on('getExecutionOrderMainById', async (req) => {
+  const { executionOrderMainCode } = req.data
+  return SELECT.one.from(ExecutionOrderMains).where({ executionOrderMainCode })
+})
+
+//Action: fetchExecutionOrderMainByDebitMemo
+this.on('fetchExecutionOrderMainByDebitMemo', async (req) => {
+  const { debitMemoRequest, debitMemoRequestItem } = req.data
+
+  try {
+    const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_DEBIT_MEMO_REQUEST_SRV/A_DebitMemoRequest?$top=200`
+    const res = await axios.get(url, {
+      headers: { Authorization: authHeader, Accept: 'application/json' }
+    })
+    const results = res?.data?.d?.results || []
+
+    const matched = results.find(r => r.DebitMemoRequest === debitMemoRequest)
+    if (!matched) req.error(404, `DebitMemoRequest ${debitMemoRequest} not found in S/4`)
+
+    const referenceSDDocument = matched.ReferenceSDDocument
+    if (!referenceSDDocument) req.error(404, `No ReferenceSDDocument for ${debitMemoRequest}`)
+
+    let executionOrders = await SELECT.from(ExecutionOrderMains).where({ referenceId: referenceSDDocument })
+    if (!executionOrders.length) req.error(404, `No ExecutionOrders with ReferenceSDDocument ${referenceSDDocument}`)
+
+    if (debitMemoRequestItem) {
+      executionOrders = executionOrders.filter(o => o.salesOrderItem === debitMemoRequestItem)
+      if (!executionOrders.length) {
+        req.error(404, `No ExecutionOrders with ReferenceSDDocument ${referenceSDDocument} and item ${debitMemoRequestItem}`)
+      }
+    }
+
+    return executionOrders
+  } catch (err) {
+    req.error(500, `Failed to fetch debit memo execution orders: ${err.message}`)
+  }
+})
+
+//Action: saveOrUpdateExecutionOrders
+this.on('saveOrUpdateExecutionOrders', async (req) => {
+  const {
+    executionOrders,
+    salesOrder,
+    salesOrderItem,
+    pricingProcedureStep,
+    pricingProcedureCounter,
+    customerNumber
+  } = req.data
+
+  const tx = cds.transaction(req)
+  let savedOrders = []
+
+  try {
+    // Step 1: Delete only matching records
+    if (salesOrder && salesOrderItem) {
+      await tx.run(
+        DELETE.from(ExecutionOrderMains).where({ referenceId: salesOrder, salesOrderItem })
+      )
+    }
+
+    // Step 2: Fetch S/4 sales orders for ReferenceSDDocument enrichment
+    let salesOrderResults = []
+    try {
+      const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder?$top=200`
+      const res = await axios.get(url, { headers: { Authorization: authHeader, Accept: 'application/json' } })
+      salesOrderResults = res?.data?.d?.results || []
+    } catch (e) {
+      console.warn('Could not load SalesOrders from S/4:', e.message)
+    }
+
+    // Step 2b: Insert each execution order
+    for (const command of executionOrders) {
+      const order = { ...command }
+      order.referenceId = salesOrder
+      order.salesOrderItem = salesOrderItem
+
+      if (salesOrder && salesOrderResults.length) {
+        const match = salesOrderResults.find(o => o.SalesOrder === salesOrder)
+        if (match) order.referenceSDDocument = match.ReferenceSDDocument
+      }
+
+      const inserted = await tx.run(INSERT.into(ExecutionOrderMains).entries(order))
+      const saved = inserted[0] ?? order
+      savedOrders.push(saved)
+    }
+
+    // Step 3: Calculate totalHeader and update
+    const totalHeader = savedOrders.reduce((sum, item) => sum + (Number(item.total) || 0), 0)
+    for (const saved of savedOrders) {
+      await tx.run(
+        UPDATE(ExecutionOrderMains).set({ totalHeader }).where({ executionOrderMainCode: saved.executionOrderMainCode })
+      )
+      saved.totalHeader = totalHeader
+    }
+
+    // Step 4: Call Pricing API
+    try {
+      await callSalesOrderPricingAPI(
+        salesOrder,
+        salesOrderItem,
+        pricingProcedureStep,
+        pricingProcedureCounter,
+        totalHeader
+      )
+    } catch (apiErr) {
+      req.warn(`Pricing API call failed: ${apiErr.message}`)
+    }
+
+    return savedOrders
+  } catch (err) {
+    req.error(500, `Error in saveOrUpdateExecutionOrders: ${err.message}`)
+  }
+})
+
+async function callSalesOrderPricingAPI(
+  salesOrder,
+  salesOrderItem,
+  pricingProcedureStep,
+  pricingProcedureCounter,
+  totalHeader
+) {
+  const body = {
+    ConditionType: 'PPR0',
+    ConditionRateValue: String(totalHeader)
+  }
+
+  // Step 1: Fetch CSRF token
+  const tokenResp = await axios.get(
+    `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrderItem(SalesOrder='${salesOrder}',SalesOrderItem='${salesOrderItem}')/to_PricingElement?$top=50`,
+    {
+      headers: {
+        'x-csrf-token': 'Fetch',
+        Authorization: authHeader,
+        Accept: 'application/json'
+      }
+    }
+  )
+  const csrfToken = tokenResp.headers['x-csrf-token']
+  const cookies = tokenResp.headers['set-cookie']
+  if (!csrfToken) throw new Error('Failed to fetch CSRF token')
+
+  // Step 2: PATCH request
+  const patchURL = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrderItemPrcgElmnt(SalesOrder='${salesOrder}',SalesOrderItem='${salesOrderItem}',PricingProcedureStep='${pricingProcedureStep}',PricingProcedureCounter='${pricingProcedureCounter}')`
+
+  await axios.patch(patchURL, body, {
+    headers: {
+      Authorization: authHeader,
+      'x-csrf-token': csrfToken,
+      'If-Match': '*',
+      'Content-Type': 'application/json',
+      Cookie: cookies.join('; ')
+    }
+  })
+}
+
+//Action: findBySalesOrderAndItem
+this.on('findBySalesOrderAndItem', async (req) => {
+  const { salesOrder, salesOrderItem } = req.data
+  const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder('${salesOrder}')/to_Item('${salesOrderItem}')`
+  const res = await axios.get(url, { headers: { Authorization: authHeader, Accept: 'application/json' } })
+  return JSON.stringify(res.data)
+})
+
+//Action: findItemsBySalesOrder
+this.on('findItemsBySalesOrder', async (req) => {
+  const { salesOrder } = req.data
+  const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder('${salesOrder}')/to_Item?$top=200`
+  const res = await axios.get(url, { headers: { Authorization: authHeader, Accept: 'application/json' } })
+  return JSON.stringify(res.data)
+})
+
+//Action: getExecutionOrderMainByReferenceId
+this.on('getExecutionOrderMainByReferenceId', async (req) => {
+  const { referenceId, salesOrderItem } = req.data
+  let items = await SELECT.from(ExecutionOrderMains).where(
+    salesOrderItem ? { referenceId, salesOrderItem } : { referenceId }
+  )
+  if (!items.length) return []
+
+  try {
+    const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder('${referenceId}')/to_Item?$top=200`
+    const res = await axios.get(url, { headers: { Authorization: authHeader, Accept: 'application/json' } })
+    const results = res?.data?.d?.results || []
+
+    if (salesOrderItem) {
+      const match = results.find(r => r.SalesOrderItem === salesOrderItem)
+      if (match) {
+        const text = match.SalesOrderItemText
+        items = items.map(it => ({ ...it, salesOrderItemText: text }))
+        const tx = cds.transaction(req)
+        for (const it of items) {
+          await tx.run(UPDATE(ExecutionOrderMains).set({ salesOrderItemText: text }).where({ executionOrderMainCode: it.executionOrderMainCode }))
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Could not enrich SalesOrderItemText:', e.message)
+  }
+
+  return items
+})
+
+//Action: findByLineNumber
+this.on('findByLineNumber', async (req) => {
+  const { lineNumber } = req.data
+  return SELECT.from(ExecutionOrderMains).where({ lineNumber })
+})
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 });
