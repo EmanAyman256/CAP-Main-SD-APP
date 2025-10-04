@@ -17,7 +17,7 @@
     },
     "dataSources": {
       "mainService": {
-        "uri": "/odata/v4/simulation/",
+        "uri": "/odata/v4/sales-cloud/",
         "type": "OData",
         "settings": {
           "annotations": [],
@@ -100,10 +100,10 @@
           ]
         },
         {
-          "name": "ExecutionOrderView",
-          "pattern": "ExecutionOrderView/{documentID}/{ItemName}",
+          "name": "ExecutionOrder",
+          "pattern": "ExecutionOrder/{docNumber}/{itemNumber}",
           "target": [
-            "ExecutionOrderView"
+            "ExecutionOrder"
           ]
         }
       ],
@@ -112,7 +112,7 @@
           "id": "Home",
           "name": "Home"
         },
-        "ExecutionOrderView": {
+        "ExecutionOrder": {
           "id": "ExecutionOrder",
           "name": "ExecutionOrder"
         }

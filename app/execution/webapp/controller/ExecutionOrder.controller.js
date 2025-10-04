@@ -18,9 +18,10 @@ sap.ui.define([
   return Controller.extend("execution.controller.ExecutionOrder", {
       onInit() {
 
-        //For Navigate with Parameter Purpose
-          var oRouter = sap.ui.core.UIComponent.getRouterFor(this);
-          oRouter.getRoute("ExecutionOrderView").attachPatternMatched(this._onObjectMatched, this);
+        
+            var oRouter = sap.ui.core.UIComponent.getRouterFor(this);
+            oRouter.getRoute("ExecutionOrder").attachPatternMatched(this._onRouteMatched, this);
+
 
           //Set Dummy Data
           var ItemModel = new sap.ui.model.json.JSONModel({
@@ -32,12 +33,47 @@ sap.ui.define([
           this.getView().setModel(ItemModel);
       },
 
-      _onObjectMatched: function (oEvent) {
-      var documentID = decodeURIComponent(oEvent.getParameter("arguments").documentID);
-      var itemName = decodeURIComponent(oEvent.getParameter("arguments").ItemName);
-      this.byId("_IDGenLabel1").setText("Document: " + documentID + " - " + itemName);
+       _onRouteMatched: function (oEvent) {
+            var oView = this.getView();
+            var oModel = oView.getModel();
 
-    },
+            var args = oEvent.getParameter("arguments");
+            var docNumber = args.docNumber;
+            var itemNumber = args.itemNumber;
+
+            console.log("Params:", docNumber, itemNumber);
+            oModel.setProperty("/docNumber", docNumber);
+            oModel.setProperty("/itemNumber", itemNumber);
+
+            // OData request URL
+            //var sUrl = `/odata/v4/sales-cloud/getInvoiceMainItemByReferenceIdAndItemNumber(SalesQuotation='${docNumber}',SalesQuotationItem='${itemNumber}')`;
+            var sUrl = `/odata/v4/sales-cloud/getInvoiceMainItemByReferenceIdAndItemNumber`;
+
+            // Fetch the data
+            fetch(sUrl, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    referenceId: docNumber,
+                    salesOrderItem: itemNumber
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data.value);
+                    oModel.setProperty("/MainItems", data.value);
+
+                    // if it's an array, do:
+                    // oModel.setProperty("/MainItems", data.value);
+                    oView.byId("treeTable").setModel(oModel);
+                })
+                .catch(err => {
+                    console.error("Error fetching MainItems", err);
+                });
+
+        },
     onSearchItem : function(oEvent){
       // Get the search query
       var sQuery = oEvent.getSource().getValue();

@@ -25,8 +25,8 @@ service SalesCloudService {
 
 
   /**
-     * External projection of Sales Quotation Header
-     */
+       * External projection of Sales Quotation Header
+            */
   entity SalesQuotation {
     key SalesQuotation      : String(20);
         SalesOrganization   : String(10);
@@ -43,8 +43,8 @@ service SalesCloudService {
   }
 
   /**
-   * External projection of Sales Quotation Item
-   */
+     * External projection of Sales Quotation Item
+        */
   entity SalesQuotationItem {
     key SalesQuotation        : String(20);
     key SalesQuotationItem    : String(6);
@@ -136,33 +136,33 @@ service SalesCloudService {
   }
 
   // === Actions (POST operations) ===
-  action postSalesOrder(body: LargeString)                                      returns String;
-  action postSalesQuotation(body: LargeString)                                  returns String;
+  action   postSalesOrder(body: LargeString)                                               returns String;
+  action   postSalesQuotation(body: LargeString)                                           returns String;
 
-  action postSalesOrderItemPricing(SalesOrder: String,
-                                   SalesOrderItem: String,
-                                   body: LargeString)                           returns String;
+  action   postSalesOrderItemPricing(SalesOrder: String,
+                                     SalesOrderItem: String,
+                                     body: LargeString)                                    returns String;
 
-  action patchSalesQuotationItemPricing(SalesQuotation: String,
-                                        SalesQuotationItem: String,
-                                        PricingProcedureStep: String,
-                                        PricingProcedureCounter: String,
-                                        body: LargeString)                      returns String;
+  action   patchSalesQuotationItemPricing(SalesQuotation: String,
+                                          SalesQuotationItem: String,
+                                          PricingProcedureStep: String,
+                                          PricingProcedureCounter: String,
+                                          body: LargeString)                               returns String;
 
-  action patchSalesOrderItemPricing(SalesOrder: String,
-                                    SalesOrderItem: String,
-                                    PricingProcedureStep: String,
-                                    PricingProcedureCounter: String,
-                                    body: LargeString)                          returns String;
+  action   patchSalesOrderItemPricing(SalesOrder: String,
+                                      SalesOrderItem: String,
+                                      PricingProcedureStep: String,
+                                      PricingProcedureCounter: String,
+                                      body: LargeString)                                   returns String;
 
-  action patchDebitMemoItemPricing(DebitMemoRequest: String,
-                                   DebitMemoRequestItem: String,
-                                   PricingProcedureStep: String,
-                                   PricingProcedureCounter: String,
-                                   body: LargeString)                           returns String;
+  action   patchDebitMemoItemPricing(DebitMemoRequest: String,
+                                     DebitMemoRequestItem: String,
+                                     PricingProcedureStep: String,
+                                     PricingProcedureCounter: String,
+                                     body: LargeString)                                    returns String;
 
-  action searchFormulas(keyword: String)                                        returns many Formulas;
-  action searchModelSpecifications(keyword: String)                             returns many ModelSpecifications;
+  action   searchFormulas(keyword: String)                                                 returns many Formulas;
+  action   searchModelSpecifications(keyword: String)                                      returns many ModelSpecifications;
   // action getExecutionOrderMainById(executionOrderMainCode: Integer)             returns ExecutionOrderMains;
 
   // action saveOrUpdateExecutionOrders(executionOrders: array of ExecutionOrderMains,
@@ -175,80 +175,77 @@ service SalesCloudService {
   // action findByLineNumber(lineNumber: String)                                   returns array of ExecutionOrderMains;
 
   @readonly
-  action calculateTotal(invoiceMainItemCode: Integer)                           returns Decimal(15, 2);
+  action   calculateTotal(invoiceMainItemCode: Integer)                                    returns Decimal(15, 2);
 
   @readonly
-  action calculateTotalHeader()                                                 returns Decimal(15, 2);
+  action   calculateTotalHeader()                                                          returns Decimal(15, 2);
 
   @readonly
-  action fetchByReferenceId(referenceId: String)                                returns many InvoiceMainItems;
+  action   fetchByReferenceId(referenceId: String)                                         returns many InvoiceMainItems;
 
   @readonly
-  action search(keyword: String)                                                returns many InvoiceMainItems;
+  action   search(keyword: String)                                                         returns many InvoiceMainItems;
 
-  action searchServiceNumber(keyword: String)                                   returns many ServiceNumbers;
+  action   searchServiceNumber(keyword: String)                                            returns many ServiceNumbers;
 
-  action calculateTotalHeaderServiceInvoice()                                   returns Decimal(15, 2);
-  action calculateTotalServiceInvoice(serviceInvoiceCode: Integer)              returns Decimal(15, 2);
-  action calculateQuantities(data: ServiceInvoiceMains)                         returns ServiceInvoiceMains;
+  // action   calculateTotalHeaderServiceInvoice()                                            returns Decimal(15, 2);
+  // action   calculateTotalServiceInvoice(serviceInvoiceCode: Integer)                       returns Decimal(15, 2);
+  // action   calculateQuantities(data: ServiceInvoiceMains)                                  returns ServiceInvoiceMains;
 
-  action findByReferenceIdServiceInvoice(referenceId: String)                   returns many ServiceInvoiceMains;
-  action findByLineNumberServiceInvoice(lineNumber: String)                     returns many ServiceInvoiceMains;
-
-
-  action findBySubItemCode(subItemCode: Integer)                                returns InvoiceSubItems;
-  action searchSubItem(keyword: String)                                         returns many InvoiceSubItems;
+  // action   findByReferenceIdServiceInvoice(referenceId: String)                            returns many ServiceInvoiceMains;
+  // action   findByLineNumberServiceInvoice(lineNumber: String)                              returns many ServiceInvoiceMains;
 
 
-// action updateMainItemCommand(
-//   salesQuotation        : String,
-//   salesQuotationItem    : String,
-//   pricingProcedureStep  : Integer,
-//   pricingProcedureCounter : Integer,
-//   customerNumber        : String,
-//   invoiceMainItemCommand : InvoiceMainItemCommand
-// ) returns InvoiceMainItems;
+  action   findBySubItemCode(subItemCode: Integer)                                         returns InvoiceSubItems;
+  action   searchSubItem(keyword: String)                                                  returns many InvoiceSubItems;
 
- action saveOrUpdateMainItems(
-    salesQuotation         : String,
-    salesQuotationItem     : String,
-    pricingProcedureStep   : String,
-    pricingProcedureCounter: String,
-    customerNumber         : String,
-    invoiceMainItemCommands: array of InvoiceMainItemCommand
-) returns array of InvoiceMainItemCommand;
 
-@Core.LongDescription: 'Fetches InvoiceMainItems by referenceId and salesQuotationItem'
-action getInvoiceMainItemByReferenceIdAndItemNumber(
-    referenceId: String @mandatory @title: 'Reference ID',
-    salesQuotationItem: String @mandatory @title: 'Sales Quotation Item'
-) returns array of InvoiceMainItems;
+  // action updateMainItemCommand(
+  //   salesQuotation        : String,
+  //   salesQuotationItem    : String,
+  //   pricingProcedureStep  : Integer,
+  //   pricingProcedureCounter : Integer,
+  //   customerNumber        : String,
+  //   invoiceMainItemCommand : InvoiceMainItemCommand
+  // ) returns InvoiceMainItems;
 
-// @Core.LongDescription: 'This service exposes APIs for managing Sales Cloud objects such as Line Types, Formulas, Materials, and Currencies.'
-//   action saveOrUpdateMainItems (
-//     @Core.Description: 'Sales Quotation number'
-//     @Common.FieldControl #Mandatory
-//     salesQuotation       : String,
+  action   saveOrUpdateMainItems(salesQuotation: String,
+                                 salesQuotationItem: String,
+                                 pricingProcedureStep: String,
+                                 pricingProcedureCounter: String,
+                                 customerNumber: String,
+                                 invoiceMainItemCommands: array of InvoiceMainItemCommand) returns array of InvoiceMainItemCommand;
 
-//     @Core.Description: 'Sales Quotation Item'
-//     @Common.FieldControl #Mandatory
-//     salesQuotationItem   : String,
+  @Core.LongDescription: 'Fetches InvoiceMainItems by referenceId and salesQuotationItem'
+  action   getInvoiceMainItemByReferenceIdAndItemNumber(referenceId: String  @mandatory  @title: 'Reference ID',
+                                                        salesQuotationItem: String  @mandatory  @title: 'Sales Quotation Item'
+  )                                                                                        returns array of InvoiceMainItems;
 
-//     @Core.Description: 'Pricing Procedure Step'
-//     @Common.FieldControl #Mandatory
-//     pricingProcedureStep : String,
+  // @Core.LongDescription: 'This service exposes APIs for managing Sales Cloud objects such as Line Types, Formulas, Materials, and Currencies.'
+  //   action saveOrUpdateMainItems (
+  //     @Core.Description: 'Sales Quotation number'
+  //     @Common.FieldControl #Mandatory
+  //     salesQuotation       : String,
 
-//     @Core.Description: 'Pricing Procedure Counter'
-//     @Common.FieldControl #Mandatory
-//     pricingProcedureCounter : String,
+  //     @Core.Description: 'Sales Quotation Item'
+  //     @Common.FieldControl #Mandatory
+  //     salesQuotationItem   : String,
 
-//     @Core.Description: 'Customer Number'
-//     @Common.FieldControl #Mandatory
-//     customerNumber       : String,
+  //     @Core.Description: 'Pricing Procedure Step'
+  //     @Common.FieldControl #Mandatory
+  //     pricingProcedureStep : String,
 
-//     @Core.Description: 'Payload with main item and subitems'
-//     invoiceMainItemCommands : InvoiceMainItemCommand
-//   ) returns array of InvoiceMainItemCommand;
+  //     @Core.Description: 'Pricing Procedure Counter'
+  //     @Common.FieldControl #Mandatory
+  //     pricingProcedureCounter : String,
+
+  //     @Core.Description: 'Customer Number'
+  //     @Common.FieldControl #Mandatory
+  //     customerNumber       : String,
+
+  //     @Core.Description: 'Payload with main item and subitems'
+  //     invoiceMainItemCommands : InvoiceMainItemCommand
+  //   ) returns array of InvoiceMainItemCommand;
 
   type InvoiceSubItemCommand {
     // invoiceSubItemCode    : UUID;
@@ -285,50 +282,122 @@ action getInvoiceMainItemByReferenceIdAndItemNumber(
     doNotPrint              : Boolean;
     amountPerUnitWithProfit : Decimal(15, 3);
     lineNumber              : String;
-    subItemList                : array of InvoiceSubItemCommand;
+    subItemList             : array of InvoiceSubItemCommand;
   }
 
- // -------------------------------- Third App - Execution order main ------------------------------ //
+  // -------------------------------- Third App - Execution order main ------------------------------ //
 
-action getExecutionOrderMainById(executionOrderMainCode: Integer)
-    returns ExecutionOrderMains;
+  action   getExecutionOrderMainById(executionOrderMainCode: Integer)                      returns ExecutionOrderMains;
 
-action fetchExecutionOrderMainByDebitMemo(
-    debitMemoRequest: String,
-    debitMemoRequestItem: String
-) returns array of ExecutionOrderMains;
+  action   fetchExecutionOrderMainByDebitMemo(debitMemoRequest: String,
+                                              debitMemoRequestItem: String)                returns array of ExecutionOrderMains;
 
-function fetchExecutionOrderMainByDebitMemoFunction(
-    debitMemoRequest: String,
-    debitMemoRequestItem: String
-) returns array of ExecutionOrderMains;
+  function fetchExecutionOrderMainByDebitMemoFunction(debitMemoRequest: String,
+                                                      debitMemoRequestItem: String)        returns array of ExecutionOrderMains;
 
-function getExecutionOrderMainByReferenceId(
-    referenceId: String,
-    salesOrderItem: String
-) returns array of ExecutionOrderMains;
+  function getExecutionOrderMainByReferenceId(referenceId: String,
+                                              salesOrderItem: String)                      returns array of ExecutionOrderMains;
 
-function findBySalesOrderAndItem(salesOrder: String, salesOrderItem: String) returns String;
+  function findBySalesOrderAndItem(salesOrder: String, salesOrderItem: String)             returns String;
 
-function findItemsBySalesOrder(salesOrder: String) returns String;
+  function findItemsBySalesOrder(salesOrder: String)                                       returns String;
 
-function findByLineNumber(lineNumber: String) returns array of ExecutionOrderMains;
+  function findByLineNumber(lineNumber: String)                                            returns array of ExecutionOrderMains;
 
 
-action saveOrUpdateExecutionOrders(
-    executionOrders        : array of ExecutionOrderMainCommand,
-    salesOrder             : String,
-    salesOrderItem         : String,
-    pricingProcedureStep   : Integer,
-    pricingProcedureCounter: Integer,
-    customerNumber         : String
-) returns array of ExecutionOrderMainCommand;
+  action   saveOrUpdateExecutionOrders(executionOrders: array of ExecutionOrderMainCommand,
+                                       salesOrder: String,
+                                       salesOrderItem: String,
+                                       pricingProcedureStep: Integer,
+                                       pricingProcedureCounter: Integer,
+                                       customerNumber: String)                             returns array of ExecutionOrderMainCommand;
 
-type ExecutionOrderMainCommand {
+  type ExecutionOrderMainCommand {
+    referenceSDDocument      : String;
+    salesOrderItem           : String;
+    debitMemoRequestItem     : String;
+    salesOrderItemText       : String;
+    referenceId              : String;
+    serviceNumberCode        : Integer;
+    description              : String;
+    unitOfMeasurementCode    : String;
+    currencyCode             : String;
+    materialGroupCode        : String;
+    personnelNumberCode      : String;
+    lineTypeCode             : String;
+    serviceTypeCode          : String;
+    totalQuantity            : Decimal(15, 3);
+    remainingQuantity        : Decimal(15, 3);
+    amountPerUnit            : Decimal(15, 3);
+    total                    : Decimal(15, 3);
+    totalHeader              : Decimal(15, 3);
+    actualQuantity           : Decimal(15, 3);
+    previousQuantity         : Decimal(15, 3);
+    actualPercentage         : Decimal(15, 3);
+    overFulfillmentPercent   : Decimal(15, 3);
+    unlimitedOverFulfillment : Boolean;
+    manualPriceEntryAllowed  : Boolean;
+    externalServiceNumber    : String;
+    serviceText              : String;
+    lineText                 : String;
+    lineNumber               : String(225);
+    biddersLine              : Boolean;
+    supplementaryLine        : Boolean;
+    lotCostOne               : Boolean;
+    doNotPrint               : Boolean;
+    deletionIndicator        : Boolean;
+  }
+
+// -------------------------------- Fourth App - Service Invoice main ------------------------------ //
+
+action getAllServiceInvoices() returns array of ServiceInvoiceMains;
+
+action getServiceInvoiceById(serviceInvoiceCode: UUID) returns ServiceInvoiceMains;
+
+function findByDebitMemoRequestAndItem(
+  debitMemoRequest: String,
+  debitMemoRequestItem: String
+) returns String;
+
+function findItemsByDebitMemoRequest(
+  debitMemoRequest: String
+) returns String;
+
+action getServiceInvoiceByReferenceId(
+  referenceId: String,
+  debitMemoRequestItem: String
+) returns array of ServiceInvoiceMains;
+
+action deleteServiceInvoice(serviceInvoiceCode: UUID) returns Boolean;
+
+@readonly
+action calculateTotalHeaderServiceInvoice() returns Decimal(15,3);
+
+@readonly
+action calculateTotalServiceInvoice(
+  serviceInvoiceCode: UUID
+) returns Decimal(15,3);
+
+action calculateQuantities(data: ServiceInvoiceMains) returns ServiceInvoiceMains;
+
+action calculateQuantitiesWithoutAccumulation(data: ServiceInvoiceMains) returns ServiceInvoiceMains;
+
+action saveOrUpdateServiceInvoices(
+  serviceInvoiceCommands: array of ServiceInvoiceMainCommand,
+  debitMemoRequest: String,
+  debitMemoRequestItem: String,
+  pricingProcedureStep: Integer,
+  pricingProcedureCounter: Integer,
+  customerNumber: String
+) returns array of ServiceInvoiceMainCommand;
+
+function findByLineNumberServiceInvoice(lineNumber: String) returns array of ServiceInvoiceMains;
+
+type ServiceInvoiceMainCommand {
+  executionOrderMainCode   : Integer;
   referenceSDDocument      : String;
-  salesOrderItem           : String;
   debitMemoRequestItem     : String;
-  salesOrderItemText       : String;
+  debitMemoRequestItemText : String;
   referenceId              : String;
   serviceNumberCode        : Integer;
   description              : String;
@@ -338,17 +407,16 @@ type ExecutionOrderMainCommand {
   personnelNumberCode      : String;
   lineTypeCode             : String;
   serviceTypeCode          : String;
-  totalQuantity            : Decimal(15,3);
   remainingQuantity        : Decimal(15,3);
+  quantity                 : Decimal(15,3);
+  currentPercentage        : Decimal(15,3);
+  totalQuantity            : Decimal(15,3);
   amountPerUnit            : Decimal(15,3);
   total                    : Decimal(15,3);
-  totalHeader              : Decimal(15,3);
   actualQuantity           : Decimal(15,3);
-  previousQuantity         : Decimal(15,3);
   actualPercentage         : Decimal(15,3);
   overFulfillmentPercent   : Decimal(15,3);
   unlimitedOverFulfillment : Boolean;
-  manualPriceEntryAllowed  : Boolean;
   externalServiceNumber    : String;
   serviceText              : String;
   lineText                 : String;
@@ -357,9 +425,10 @@ type ExecutionOrderMainCommand {
   supplementaryLine        : Boolean;
   lotCostOne               : Boolean;
   doNotPrint               : Boolean;
-  deletionIndicator        : Boolean;
+  alternatives             : String;
+  totalHeader              : Decimal(15,3);
+  temporaryDeletion        : String(9);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }

@@ -68,14 +68,6 @@
                             </m:Menu>
                         </m:menu>
                     </m:MenuButton>
-
-                    <!-- <m:Button
-                        id="_IDGenButton6"
-                        text="Delete"
-                        icon="sap-icon://delete"
-                        type="Transparent"
-                        press=".onDeleteRow"
-                    /> -->
                 </m:HBox>
             </m:HBox>
             <m:HBox
@@ -640,6 +632,7 @@
                     <m:Input
                         id="mainProfitMarginInput"
                         placeholder="ProfitMargin"
+                        liveChange=".onInputChange"
                     />
 
                     <m:Label
@@ -649,6 +642,8 @@
                     <m:Input
                         id="mainAmountPerUnitWithProfitInput"
                         placeholder="AmountPerUnitWithProfit"
+                        editable="false"
+                        value="{/amountPerUnitWithProfit}"
                     />
 
                     <m:Label
@@ -658,6 +653,8 @@
                     <m:Input
                         id="mainTotalWithProfitInput"
                         placeholder="TotalWithProfit"
+                        editable="false"
+                        value="{/totalWithProfit}"
                     />
                 </f:content>
             </f:SimpleForm>

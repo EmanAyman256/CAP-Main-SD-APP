@@ -1995,91 +1995,91 @@ module.exports = cds.service.impl(async function () {
 
 
 
-  // READ all invoices
-  this.on('READ', ServiceInvoiceMains, async (req) => {
-    return SELECT.from(ServiceInvoiceMains);
-  });
+  // // READ all invoices
+  // this.on('READ', ServiceInvoiceMains, async (req) => {
+  //   return SELECT.from(ServiceInvoiceMains);
+  // });
 
-  // DELETE
-  this.on('DELETE', ServiceInvoiceMains, async (req) => {
-    const { serviceInvoiceCode } = req.data;
-    return await DELETE.from(ServiceInvoiceMains).where({ serviceInvoiceCode });
-  });
+  // // DELETE
+  // this.on('DELETE', ServiceInvoiceMains, async (req) => {
+  //   const { serviceInvoiceCode } = req.data;
+  //   return await DELETE.from(ServiceInvoiceMains).where({ serviceInvoiceCode });
+  // });
 
-  // PATCH / UPDATE
-  this.on('UPDATE', ServiceInvoiceMains, async (req) => {
-    const { serviceInvoiceCode, ...data } = req.data;
-    return await UPDATE(ServiceInvoiceMains).set(data).where({ serviceInvoiceCode });
-  });
+  // // PATCH / UPDATE
+  // this.on('UPDATE', ServiceInvoiceMains, async (req) => {
+  //   const { serviceInvoiceCode, ...data } = req.data;
+  //   return await UPDATE(ServiceInvoiceMains).set(data).where({ serviceInvoiceCode });
+  // });
 
-  // ACTION: calculateTotalHeader
-  this.on('calculateTotalHeaderServiceInvoice', async () => {
-    const items = await SELECT.from(ServiceInvoiceMains);
-    const total = items.reduce((sum, item) => sum + (item.total || 0), 0);
-    return total;
-  });
+  // // ACTION: calculateTotalHeader
+  // this.on('calculateTotalHeaderServiceInvoice', async () => {
+  //   const items = await SELECT.from(ServiceInvoiceMains);
+  //   const total = items.reduce((sum, item) => sum + (item.total || 0), 0);
+  //   return total;
+  // });
 
-  // ACTION: calculateTotal
-  this.on('calculateTotalServiceInvoice', async (req) => {
-    const { serviceInvoiceCode } = req.data;
-    const invoice = await SELECT.one.from(ServiceInvoiceMains).where({ serviceInvoiceCode });
-    if (!invoice) return 0;
-    return invoice.quantity * invoice.amountPerUnit;
-  });
+  // // ACTION: calculateTotal
+  // this.on('calculateTotalServiceInvoice', async (req) => {
+  //   const { serviceInvoiceCode } = req.data;
+  //   const invoice = await SELECT.one.from(ServiceInvoiceMains).where({ serviceInvoiceCode });
+  //   if (!invoice) return 0;
+  //   return invoice.quantity * invoice.amountPerUnit;
+  // });
 
-  // ACTION: calculateQuantities
-  this.on('calculateQuantitiesServiceInvoice', async (req) => {
-    const newInv = req.data;
+  // // ACTION: calculateQuantities
+  // this.on('calculateQuantitiesServiceInvoice', async (req) => {
+  //   const newInv = req.data;
 
-    // Fetch all previous invoices for this executionOrderMainCode
-    const prevInvoices = await SELECT.from(ServiceInvoiceMains).where({ executionOrderMainCode: newInv.executionOrderMainCode });
+  //   // Fetch all previous invoices for this executionOrderMainCode
+  //   const prevInvoices = await SELECT.from(ServiceInvoiceMains).where({ executionOrderMainCode: newInv.executionOrderMainCode });
 
-    const latestActualQuantity = prevInvoices.length
-      ? Math.max(...prevInvoices.map(inv => inv.actualQuantity || 0))
-      : 0;
+  //   const latestActualQuantity = prevInvoices.length
+  //     ? Math.max(...prevInvoices.map(inv => inv.actualQuantity || 0))
+  //     : 0;
 
-    let newActualQuantity = latestActualQuantity + newInv.quantity;
+  //   let newActualQuantity = latestActualQuantity + newInv.quantity;
 
-    // Validation logic
-    if (!newInv.unlimitedOverFulfillment) {
-      if (newInv.overFulfillmentPercentage && newInv.overFulfillmentPercentage > 0) {
-        const maxAllowed = newInv.totalQuantity + newInv.overFulfillmentPercentage;
-        if (newActualQuantity > maxAllowed) {
-          req.error(400, `Quantity exceeds the allowed over-fulfillment limit of ${newInv.overFulfillmentPercentage}`);
-        }
-      } else {
-        if (newActualQuantity > newInv.totalQuantity) {
-          req.error(400, 'Quantity exceeds the total allowed quantity.');
-        }
-      }
-    }
+  //   // Validation logic
+  //   if (!newInv.unlimitedOverFulfillment) {
+  //     if (newInv.overFulfillmentPercentage && newInv.overFulfillmentPercentage > 0) {
+  //       const maxAllowed = newInv.totalQuantity + newInv.overFulfillmentPercentage;
+  //       if (newActualQuantity > maxAllowed) {
+  //         req.error(400, `Quantity exceeds the allowed over-fulfillment limit of ${newInv.overFulfillmentPercentage}`);
+  //       }
+  //     } else {
+  //       if (newActualQuantity > newInv.totalQuantity) {
+  //         req.error(400, 'Quantity exceeds the total allowed quantity.');
+  //       }
+  //     }
+  //   }
 
-    // Set recalculated fields
-    newInv.actualQuantity = newActualQuantity;
-    newInv.remainingQuantity = Math.max(newInv.totalQuantity - newInv.actualQuantity, 0);
-    newInv.total = newInv.quantity * newInv.amountPerUnit;
+  //   // Set recalculated fields
+  //   newInv.actualQuantity = newActualQuantity;
+  //   newInv.remainingQuantity = Math.max(newInv.totalQuantity - newInv.actualQuantity, 0);
+  //   newInv.total = newInv.quantity * newInv.amountPerUnit;
 
-    const latestTotalHeader = prevInvoices.length
-      ? Math.max(...prevInvoices.map(inv => inv.totalHeader || 0))
-      : 0;
-    newInv.totalHeader = latestTotalHeader + newInv.total;
+  //   const latestTotalHeader = prevInvoices.length
+  //     ? Math.max(...prevInvoices.map(inv => inv.totalHeader || 0))
+  //     : 0;
+  //   newInv.totalHeader = latestTotalHeader + newInv.total;
 
-    newInv.actualPercentage = Math.floor((newInv.actualQuantity / newInv.totalQuantity) * 100);
+  //   newInv.actualPercentage = Math.floor((newInv.actualQuantity / newInv.totalQuantity) * 100);
 
-    await INSERT.into(ServiceInvoiceMains).entries(newInv);
+  //   await INSERT.into(ServiceInvoiceMains).entries(newInv);
 
-    return newInv;
-  });
+  //   return newInv;
+  // });
 
-  // ACTION: findByReferenceId
-  this.on('findByReferenceIdServiceInvoice', async (req) => {
-    return await SELECT.from(ServiceInvoiceMains).where({ referenceId: req.data.referenceId });
-  });
+  // // ACTION: findByReferenceId
+  // this.on('findByReferenceIdServiceInvoice', async (req) => {
+  //   return await SELECT.from(ServiceInvoiceMains).where({ referenceId: req.data.referenceId });
+  // });
 
-  // ACTION: findByLineNumber
-  this.on('findByLineNumberServiceInvoice', async (req) => {
-    return await SELECT.from(ServiceInvoiceMains).where({ lineNumber: req.data.lineNumber });
-  });
+  // // ACTION: findByLineNumber
+  // this.on('findByLineNumberServiceInvoice', async (req) => {
+  //   return await SELECT.from(ServiceInvoiceMains).where({ lineNumber: req.data.lineNumber });
+  // });
 
 
   // READ all subitems
@@ -2427,6 +2427,207 @@ this.on('findByLineNumber', async (req) => {
   return SELECT.from(ExecutionOrderMains).where({ lineNumber })
 })
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// -------------------------------- Fourth App - Service Invoice main ------------------------------ //
 
-});
+  // === Get all
+  this.on('getAllServiceInvoices', async () => {
+    return SELECT.from(ServiceInvoiceMains)
+  })
+
+  // === Get by ID
+  this.on('getServiceInvoiceById', async (req) => {
+    return SELECT.one.from(ServiceInvoiceMains).where({ serviceInvoiceCode: req.data.serviceInvoiceCode })
+  })
+
+  // === Find by DebitMemo + Item
+  this.on('findByDebitMemoRequestAndItem', async (req) => {
+    const { debitMemoRequest, debitMemoRequestItem } = req.data
+    const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_DEBIT_MEMO_REQUEST_SRV/A_DebitMemoRequest('${debitMemoRequest}')/to_Item('${debitMemoRequestItem}')`
+    const res = await axios.get(url, { headers: { Authorization: authHeader, Accept: 'application/json' } })
+    return JSON.stringify(res.data)
+  })
+
+  // === Find all items by DebitMemo
+  this.on('findItemsByDebitMemoRequest', async (req) => {
+    const { debitMemoRequest } = req.data
+    const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_DEBIT_MEMO_REQUEST_SRV/A_DebitMemoRequest('${debitMemoRequest}')/to_Item?$top=200`
+    const res = await axios.get(url, { headers: { Authorization: authHeader, Accept: 'application/json' } })
+    return JSON.stringify(res.data)
+  })
+
+  // === Get ServiceInvoice by ReferenceId
+  this.on('getServiceInvoiceByReferenceId', async (req) => {
+    const { referenceId, debitMemoRequestItem } = req.data
+    let items = await SELECT.from(ServiceInvoiceMains).where({ referenceId, debitMemoRequestItem })
+    if (!items.length) return []
+    return items
+  })
+
+  // === Delete
+  this.on('deleteServiceInvoice', async (req) => {
+    const { serviceInvoiceCode } = req.data
+    await DELETE.from(ServiceInvoiceMains).where({ serviceInvoiceCode })
+    return true
+  })
+
+  // === Calculate total header
+  this.on('calculateTotalHeaderServiceInvoice', async () => {
+    const rows = await SELECT.from(ServiceInvoiceMains)
+    return rows.reduce((sum, r) => sum + (Number(r.total) || 0), 0)
+  })
+
+  // === Calculate total for one invoice
+  this.on('calculateTotalServiceInvoice', async (req) => {
+    const row = await SELECT.one.from(ServiceInvoiceMains).where({ serviceInvoiceCode: req.data.serviceInvoiceCode })
+    if (!row) return 0
+    return (Number(row.quantity) || 0) * (Number(row.amountPerUnit) || 0)
+  })
+
+  // === Calculate Quantities (with accumulation)
+  this.on('calculateQuantities', async (req) => {
+    const { executionOrderMainCode, quantity, totalQuantity, amountPerUnit, overFulfillmentPercentage, unlimitedOverFulfillment } = req.data
+    if (!executionOrderMainCode) return req.error(400, "Execution Order Main Code is required")
+
+    const tempData = tempDataService.getOrCreate(executionOrderMainCode)
+    tempData.version++
+
+    const postedInvoices = await SELECT.from(ServiceInvoiceMains).where({ executionOrderMainCode })
+    const postedAQ = postedInvoices.reduce((sum, inv) => sum + (inv.quantity || 0), 0)
+    const postedTotal = postedInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0)
+
+    let allowedQuantity = totalQuantity || 0
+    if (overFulfillmentPercentage) allowedQuantity += (totalQuantity * overFulfillmentPercentage / 100)
+    if (unlimitedOverFulfillment) allowedQuantity = Number.MAX_VALUE
+
+    const currentQuantity = quantity ?? tempData.quantities[tempData.currentQuantityIndex] ?? 0
+    const totalRequested = postedAQ + currentQuantity
+    if (totalRequested > allowedQuantity) return req.error(400, "Quantity exceeds allowed limit")
+
+    // update tempData
+    tempData.quantities.push(currentQuantity)
+    tempData.currentQuantityIndex = tempData.quantities.length - 1
+    tempData.amountPerUnit = amountPerUnit || tempData.amountPerUnit || 0
+    tempData.actualQuantity = postedAQ + currentQuantity
+    tempData.total = tempData.actualQuantity * tempData.amountPerUnit
+    tempData.totalHeader = postedTotal + tempData.total
+    tempData.remainingQuantity = Math.max((totalQuantity || 0) - tempData.actualQuantity, 0)
+    tempData.actualPercentage = totalQuantity ? Math.min((tempData.actualQuantity / totalQuantity) * 100, 100) : 0
+
+    tempDataService.update(executionOrderMainCode, tempData)
+    return tempData
+  })
+
+  // === Calculate Quantities (no accumulation)
+  this.on('calculateQuantitiesWithoutAccumulation', async (req) => {
+    const { executionOrderMainCode, quantity, totalQuantity, amountPerUnit } = req.data
+    if (!executionOrderMainCode) return req.error(400, "Execution Order Main Code is required")
+
+    const tempData = tempDataService.getOrCreate(executionOrderMainCode)
+    tempData.version++
+
+    tempData.quantities.push(quantity)
+    tempData.currentQuantityIndex = tempData.quantities.length - 1
+    tempData.amountPerUnit = amountPerUnit || tempData.amountPerUnit || 0
+    tempData.remainingQuantity = Math.max(totalQuantity - quantity, 0)
+    tempData.actualQuantity = quantity
+    tempData.actualPercentage = totalQuantity ? (quantity / totalQuantity) * 100 : 0
+    tempData.total = quantity * tempData.amountPerUnit
+    tempData.totalHeader = tempData.total
+
+    tempDataService.update(executionOrderMainCode, tempData)
+    return tempData
+  })
+
+  // === Save or Update ServiceInvoices
+  this.on('saveOrUpdateServiceInvoices', async (req) => {
+    const { serviceInvoiceCommands, debitMemoRequest, debitMemoRequestItem, pricingProcedureStep, pricingProcedureCounter, customerNumber } = req.data
+    const tx = cds.transaction(req)
+    let saved = []
+
+    // delete existing if same debitMemoRequest + item
+    if (debitMemoRequest && debitMemoRequestItem) {
+      await tx.run(DELETE.from(ServiceInvoiceMains).where({ referenceId: debitMemoRequest, debitMemoRequestItem }))
+    }
+
+    for (const cmd of serviceInvoiceCommands) {
+      const code = cmd.executionOrderMainCode
+      let tempData = tempDataService.get(code) || tempDataService.getOrCreate(code)
+
+      const quantity = tempData.quantities[tempData.currentQuantityIndex] || cmd.quantity || 0
+      const amountPerUnit = tempData.amountPerUnit || cmd.amountPerUnit || 0
+
+      const entry = {
+        ...cmd,
+        referenceId: debitMemoRequest,
+        debitMemoRequestItem,
+        quantity,
+        amountPerUnit,
+        total: quantity * amountPerUnit,
+        totalHeader: tempData.totalHeader || (quantity * amountPerUnit)
+      }
+
+      const inserted = await tx.run(INSERT.into(ServiceInvoiceMains).entries(entry))
+      saved.push(inserted[0] ?? entry)
+      tempDataService.remove(code) // clear after save
+    }
+
+    // call pricing API
+    const totalHeaderSum = saved.reduce((sum, i) => sum + (i.total || 0), 0)
+    await callDebitMemoPricingAPI(debitMemoRequest, debitMemoRequestItem, pricingProcedureStep, pricingProcedureCounter, totalHeaderSum)
+
+    return saved
+  })
+
+  // === Find by LineNumber
+  this.on('findByLineNumberServiceInvoice', async (req) => {
+    return SELECT.from(ServiceInvoiceMains).where({ lineNumber: req.data.lineNumber })
+  })
+})
+
+// === External Pricing API ===
+async function callDebitMemoPricingAPI(
+  debitMemoRequest,
+  debitMemoRequestItem,
+  pricingProcedureStep,
+  pricingProcedureCounter,
+  totalHeader
+) {
+  const body = {
+    ConditionType: 'PPR0',
+    ConditionRateValue: String(totalHeader),
+  };
+
+  // fetch token
+  const tokenResp = await axios.get(
+    `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_DEBIT_MEMO_REQUEST_SRV/A_DebitMemoReqItemPrcgElmnt(DebitMemoRequest='${debitMemoRequest}',DebitMemoRequestItem='${debitMemoRequestItem}',PricingProcedureStep='${pricingProcedureStep}',PricingProcedureCounter='${pricingProcedureCounter}')`,
+    {
+      headers: {
+        'x-csrf-token': 'Fetch',
+        Authorization: authHeader,
+        Accept: 'application/json',
+      },
+    }
+  );
+
+  const csrfToken = tokenResp.headers['x-csrf-token'];
+  const cookies = tokenResp.headers['set-cookie'];
+  if (!csrfToken) throw new Error('Failed to fetch CSRF token');
+
+  // patch
+  await axios.patch(
+    `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_DEBIT_MEMO_REQUEST_SRV/A_DebitMemoReqItemPrcgElmnt(DebitMemoRequest='${debitMemoRequest}',DebitMemoRequestItem='${debitMemoRequestItem}',PricingProcedureStep='${pricingProcedureStep}',PricingProcedureCounter='${pricingProcedureCounter}')`,
+    body,
+    {
+      headers: {
+        Authorization: authHeader,
+        'x-csrf-token': csrfToken,
+        'If-Match': '*',
+        'Content-Type': 'application/json',
+        Cookie: cookies.join('; '),
+      },
+    }
+  );
+}
+
+
+

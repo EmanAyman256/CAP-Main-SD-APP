@@ -26,6 +26,7 @@ sap.ui.define([
                 UOM: [],
                 Total: 0,
                 SubTotal: 0,
+                IsFormulaBasedQuantity: false,
                 ServiceNumbers: [],
                 SelectedServiceNumber: "",
                 SelectedSubServiceNumber: "",
@@ -34,6 +35,8 @@ sap.ui.define([
                 SelectedSubDescriptionText: "",
                 SubDescriptionEditable: true,
                 SelectedFormula: null,
+                totalWithProfit: 0,
+                amountPerUnitWithProfit: 0,
                 SelectedSubFormula: null,
                 HasSelectedFormula: false,
                 HasSelectedSubFormula: false,
@@ -147,15 +150,21 @@ sap.ui.define([
             // Get values
             var sQuantity = oView.byId("mainQuantityInput").getValue();
             var sAmount = oView.byId("mainAmountPerUnitInput").getValue();
-
+            var sProfitMargin = oView.byId("mainProfitMarginInput").getValue()
             var iQuantity = parseFloat(sQuantity) || 0;
             var iAmount = parseFloat(sAmount) || 0;
-
+            var iProfitMargin = parseFloat(sProfitMargin) || 0;
             // Calculate total
             var iTotal = iQuantity * iAmount;
+            var totalWithProfit = (iTotal / iProfitMargin) * 100;
+            var amountPerUnitWithProfit = (iAmount / iProfitMargin) * 100;
+
 
             // Update model
             oModel.setProperty("/Total", iTotal);
+            oModel.setProperty("/totalWithProfit", totalWithProfit);
+            oModel.setProperty("/amountPerUnitWithProfit", amountPerUnitWithProfit);
+
         },
         onServiceNumberChange: function (oEvent) {
             var oSelect = oEvent.getSource();
@@ -730,6 +739,9 @@ sap.ui.define([
         },
         onAddSubItem: function () {
             var oModel = this.getView().getModel();
+             var oUOMSelect = oView.byId("subUOMInput");
+            var oFormulaSelect = oView.byId("subFormulaSelect");
+            var oCurrencySelect = oView.byId("subCurrencyInput");
             var oSubItem = {
                 //invoiceSubItemCode: Date.now(),
                 serviceNumberCode: this.byId("subServiceNoInput").getSelectedItem().getText(),
@@ -737,6 +749,7 @@ sap.ui.define([
                 quantity: this.byId("subQuantityInput").getValue(),
                 unitOfMeasurementCode: this.byId("subUOMInput").getSelectedItem().getText(),
                 formulaCode: this.byId("subFormulaSelect").getSelectedItem().getText(),
+                
                 // parameters: oModel.getProperty("/SelectedSubFormulaParams") || {},
                 amountPerUnit: this.byId("subAmountPerUnitInput").getValue(),
                 currencyCode: this.byId("subCurrencyInput").getSelectedItem().getText(),
@@ -836,7 +849,9 @@ sap.ui.define([
             let newww = oModel.getProperty("/MainItems");
             // const aMainItems = oModel.getProperty("/MainItems");
             console.log(newww);
-
+            var oUOMSelect = oView.byId("mainUOMSelect");
+            var oFormulaSelect = oView.byId("formulaSelect");
+            var oCurrencySelect = oView.byId("mainCurrencySelect");
             // const invoiceMainItemCommands = [{
             //     serviceNumberCode: oModel.getProperty("/SelectedServiceNumber") || "", // Fixed: Added /
             //     description: oView.byId("mainDescriptionInput").getValue() || "",
@@ -863,11 +878,20 @@ sap.ui.define([
 
                 serviceNumberCode: oModel.getProperty("/SelectedServiceNumberDescription") || "", // Fixed: Added /
                 description: oView.byId("mainDescriptionInput").getValue() || "",
+                unitOfMeasurementCode: oUOMSelect && oUOMSelect.getSelectedItem()
+                    ? oUOMSelect.getSelectedItem().getText()
+                    : "",
                 quantity: parseFloat(oView.byId("mainQuantityInput").getValue()) || 0, // Parse to number
-                unitOfMeasurementCode: oView.byId("mainUOMSelect").getSelectedItem().getText() || "", // Fixed ID
-                formulaCode: oView.byId("formulaSelect").getSelectedItem().getText() || "", // Fixed ID
+                // unitOfMeasurementCode: oView.byId("mainUOMSelect").getSelectedItem().getText() || " ", // Fixed ID
+                formulaCode: oFormulaSelect && oFormulaSelect.getSelectedItem()
+                    ? oFormulaSelect.getSelectedItem().getText()
+                    : "",
+                // formulaCode: oView.byId("formulaSelect").getSelectedItem().getText() || "", // Fixed ID
+                currencyCode: oCurrencySelect && oCurrencySelect.getSelectedItem()
+                    ? oCurrencySelect.getSelectedItem().getText()
+                    : "",
                 amountPerUnit: parseFloat(oView.byId("mainAmountPerUnitInput").getValue()) || 0,
-                currencyCode: oView.byId("mainCurrencySelect").getSelectedItem().getText() || "", // Fixed ID
+                //currencyCode: oView.byId("mainCurrencySelect").getSelectedItem().getText() || "", // Fixed ID
                 total: parseFloat(oView.byId("mainTotalInput").getValue()) || 0,
                 profitMargin: parseFloat(oView.byId("mainProfitMarginInput").getValue()) || 0,
                 amountPerUnitWithProfit: parseFloat(oView.byId("mainAmountPerUnitWithProfitInput").getValue()) || 0,

@@ -2,43 +2,107 @@
     displayBlock="true"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns:r="sap.ui.table.rowmodes"
+    xmlns:m="sap.m"
     xmlns="sap.m">
    <Page id="_IDGenPage" title="{i18n>Execution Order}">
-    <Panel id="_IDGenPanel" backgroundDesign="Solid">
-    <VBox id="_IDGenVBox2" >
-           <!-- <HBox id="_IDGenHBox" justifyContent="SpaceBetween" alignItems="Center">
-                <Text id="_IDGenText28" text="Document: 20000010 " />
-                <HBox id="_IDGenHBox1">
-                    <Button id="_IDGenButton2" text="Save Document" icon="sap-icon://save" type="Transparent" press=".onSaveDocument"/>
-                    <Button id="_IDGenButton3" text="Print" icon="sap-icon://print" type="Transparent" press=".onPrint"/>
-                    <Button id="_IDGenButton4" text="Export" icon="sap-icon://download" type="Transparent" press=".onExport"/>
-                    <Button id="_IDGenButton5" text="Import" icon="sap-icon://upload" type="Transparent" press=".onImport"/>
-                    <Button id="_IDGenButton6" text="Delete" icon="sap-icon://delete" type="Transparent" press=".onDelete"/>
-                </HBox>
-            </HBox>-->
-         <HBox id="_IDGenHBox"  class="sapUiSmallMargin" justifyContent="SpaceBetween" alignItems="Center">
-            <Label id="_IDGenLabel1" class="myLabel sapUiSmallMargin" design="Bold" />
-            <HBox id="_IDGenHBox1" >
-                <Button id="_IDGenButton2" class="sapUiSmallMargin" type= "Transparent" text="Save Document" icon="sap-icon://save" press="onSaveDocument"/>
-                <Button id="_IDGenButton3" class="sapUiSmallMargin" type= "Transparent" text="Print"  icon="sap-icon://print" press="onPrint"/>
-                <Button id="_IDGenButton4" class="sapUiSmallMargin" type= "Transparent" text="Export" icon="sap-icon://download" press="onExport"/>
-                <Button id="_IDGenButton5" class="sapUiSmallMargin" type= "Transparent" text="Import" icon="sap-icon://upload" press="onImport"/>
-            </HBox>
-        </HBox> 
-        <HBox id="_IDGenHBox2" class="sapUiSmallMargin" justifyContent="Center" alignItems="Center">
-            <VBox id="_IDGenVBox4" class="myRectangle" alignItems="Center" justifyContent="Center">
-                <Text id="_IDGenText" text="Total Value:" />
-            </VBox>
-            <VBox id="_IDGenVBox5" class="myRectangle" alignItems="Center" justifyContent="Center">
-                <Text id="_IDGenText1" />
-            </VBox>
-            <VBox id="_IDGenVBox6" class="myRectangle" alignItems="Center" justifyContent="Center">
-                <Text id="_IDGenText2" text="SAR"  />
-            </VBox>
-        </HBox>
-    </VBox>
-    </Panel>
+           <m:VBox
+            id="_IDGenVBox3"
+            class="sapUiMediumMargin"
+        >
+            <m:HBox
+                id="_IDGenHBox"
+                justifyContent="SpaceBetween"
+                alignItems="Center"
+            >
+                <m:Text
+                    id="_IDGenText1"
+                    text="{= 'Documnet Number:' +${/docNumber} + '::' + ${/itemNumber} }"
+                />
 
+                <m:HBox id="_IDGenHBox1">
+                    <m:Button
+                        id="_IDGenButton2"
+                        text="Save Document"
+                        icon="sap-icon://save"
+                        type="Transparent"
+                        press=".onSaveDocument"
+                    />
+                    <m:Button
+                        id="_IDGenButton3"
+                        text="Print"
+                        icon="sap-icon://print"
+                        type="Transparent"
+                        press=".onPrint"
+                    />
+                    <m:MenuButton
+                        id="_IDGenMenuButton1"
+                        text="Actions"
+                        buttonMode="Split"
+                        menu="{
+        path: '/',
+        factory: '.menuFactory'
+    }"
+                    >
+                        <m:menu>
+                            <m:Menu id="_IDGenMenu">
+                                <m:MenuItem
+                                    id="_IDGenMenuItem"
+                                    text="Export"
+                                    icon="sap-icon://download"
+                                    press=".onExport"
+                                />
+                                <m:MenuItem
+                                    id="_IDGenMenuItem1"
+                                    text="Import"
+                                    icon="sap-icon://upload"
+                                    press=".onImport"
+                                />
+                            </m:Menu>
+                        </m:menu>
+                    </m:MenuButton>
+
+                </m:HBox>
+            </m:HBox>
+            <m:HBox
+                id="_IDGenHBox2"
+                justifyContent="Center"
+                alignItems="Center"
+            >
+                <m:VBox
+                    id="_IDGenVBox9"
+                    class="myRectangle"
+                    alignItems="Center"
+                    justifyContent="Center"
+                >
+                    <m:Text
+                        id="_IDGenText2"
+                        text="Total Value:"
+                    />
+                </m:VBox>
+                <m:VBox
+                    id="_IDGenVBox5"
+                    class="myRectangle"
+                    alignItems="Center"
+                    justifyContent="Center"
+                >
+                    <m:Text id="_IDGenText44" />
+                </m:VBox>
+                <m:VBox
+                    id="_IDGenVBox10"
+                    class="myRectangle"
+                    alignItems="Center"
+                    justifyContent="Center"
+                >
+                    <m:Text
+                        id="_IDGenText55"
+                        text="SAR"
+                    />
+                </m:VBox>
+            </m:HBox>
+        </m:VBox>
+
+   
+   
     <HBox id="_IDGenVBox7" justifyContent="SpaceBetween" class="sapUiSmallMargin">
         <SearchField id="_IDGenSearchField" liveChange ="onSearchItem"/>
         <Button id="_IDGenButton1" icon="sap-icon://delete" press="onDeleteItem"/>
