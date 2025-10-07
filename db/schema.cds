@@ -173,7 +173,7 @@ entity ExecutionOrderMain : managed {
 entity ServiceInvoiceMain : managed {
   key serviceInvoiceCode       : UUID;
 
-      executionOrderMainCode   : Integer;
+      executionOrderMainCode   : UUID;
       referenceSDDocument      : String;
       debitMemoRequestItem     : String;
       debitMemoRequestItemText : String;

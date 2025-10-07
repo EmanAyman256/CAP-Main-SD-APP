@@ -47,9 +47,7 @@ sap.ui.define([
 
             var oRouter = sap.ui.core.UIComponent.getRouterFor(this);
             oRouter.getRoute("tendering").attachPatternMatched(this._onRouteMatched, this);
-
-            // this._createSubItemDialog();
-
+           
             // Fetch Service Numbers
             fetch("/odata/v4/sales-cloud/ServiceNumbers")
                 .then(response => {
@@ -852,20 +850,6 @@ sap.ui.define([
             var oUOMSelect = oView.byId("mainUOMSelect");
             var oFormulaSelect = oView.byId("formulaSelect");
             var oCurrencySelect = oView.byId("mainCurrencySelect");
-            // const invoiceMainItemCommands = [{
-            //     serviceNumberCode: oModel.getProperty("/SelectedServiceNumber") || "", // Fixed: Added /
-            //     description: oView.byId("mainDescriptionInput").getValue() || "",
-            //     quantity: parseFloat(oView.byId("mainQuantityInput").getValue()) || 0, // Parse to number
-            //     unitOfMeasurementCode: oView.byId("mainUOMSelect").getSelectedKey() || "", // Fixed ID
-            //     formulaCode: oView.byId("formulaSelect").getSelectedKey() || "", // Fixed ID
-            //     amountPerUnit: parseFloat(oView.byId("mainAmountPerUnitInput").getValue()) || 0,
-            //     currencyCode: oView.byId("mainCurrencySelect").getSelectedKey() || "", // Fixed ID
-            //     total: parseFloat(oView.byId("mainTotalInput").getValue()) || 0,
-            //     profitMargin: parseFloat(oView.byId("mainProfitMarginInput").getValue()) || 0,
-            //     amountPerUnitWithProfit: parseFloat(oView.byId("mainAmountPerUnitWithProfitInput").getValue()) || 0,
-            //     totalWithProfit: parseFloat(oView.byId("mainTotalWithProfitInput").getValue()) || 0,
-            //     subItemList: []
-            // }]
             const oNewMain = {
                 salesQuotation: oModel.getProperty("/docNumber"),
                 salesQuotationItem: oModel.getProperty("/itemNumber"),

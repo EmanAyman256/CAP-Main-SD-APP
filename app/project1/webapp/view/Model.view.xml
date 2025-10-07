@@ -55,7 +55,7 @@
                         <Text id="_IDGenText20" text="{currencyCode}" />
                          <Button id="_IDGenButton15" icon="sap-icon://share" press="onNavigateToModelServices" text="Services" />
                         <HBox id="_IDGenHBox2">
-                            <Button id="_IDGenButton" icon="sap-icon://edit" press="onEdit" />
+                            <Button id="_IDGenButton4" icon="sap-icon://edit" press="onEdit" />
                             <Button id="_IDGenButton13" icon="sap-icon://delete" press="onDelete" />
                         </HBox>
                     </cells>

@@ -2,6 +2,39 @@ const cds = require('@sap/cds');
 const { string } = require('@sap/cds/lib/core/classes');
 const axios = require('axios');
 const { Buffer } = require('buffer');
+const tempDataService = {
+  store: new Map(),
+
+  getOrCreate(code) {
+    if (!this.store.has(code)) {
+      this.store.set(code, {
+        quantities: [],
+        currentQuantityIndex: 0,
+        amountPerUnit: 0,
+        actualQuantity: 0,
+        total: 0,
+        totalHeader: 0,
+        remainingQuantity: 0,
+        actualPercentage: 0,
+        version: 0
+      });
+    }
+    return this.store.get(code);
+  },
+
+  get(code) {
+    return this.store.get(code);
+  },
+
+  update(code, data) {
+    this.store.set(code, data);
+  },
+
+  remove(code) {
+    this.store.delete(code);
+  }
+};
+
 // const { v4: uuidv4 } = require('uuid'); // for unique ids if needed
 
 module.exports = cds.service.impl(async function () {
@@ -2266,72 +2299,101 @@ this.on('saveOrUpdateExecutionOrders', async (req) => {
     pricingProcedureStep,
     pricingProcedureCounter,
     customerNumber
-  } = req.data
+  } = req.data;
 
-  const tx = cds.transaction(req)
-  let savedOrders = []
+  const tx = cds.transaction(req);
+  let savedOrders = [];
 
   try {
-    // Step 1: Delete only matching records
+    // === Step 1: Delete existing records for same SalesOrder + Item ===
     if (salesOrder && salesOrderItem) {
       await tx.run(
         DELETE.from(ExecutionOrderMains).where({ referenceId: salesOrder, salesOrderItem })
-      )
+      );
     }
 
-    // Step 2: Fetch S/4 sales orders for ReferenceSDDocument enrichment
-    let salesOrderResults = []
+    // === Step 2: Fetch S/4 Sales Orders for ReferenceSDDocument enrichment ===
+    let salesOrderResults = [];
     try {
-      const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder?$top=200`
-      const res = await axios.get(url, { headers: { Authorization: authHeader, Accept: 'application/json' } })
-      salesOrderResults = res?.data?.d?.results || []
+      const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder?$top=200`;
+      const res = await axios.get(url, {
+        headers: { Authorization: authHeader, Accept: 'application/json' }
+      });
+      salesOrderResults = res?.data?.d?.results || [];
     } catch (e) {
-      console.warn('Could not load SalesOrders from S/4:', e.message)
+      console.warn('⚠️ Could not load SalesOrders from S/4:', e.message);
     }
 
-    // Step 2b: Insert each execution order
+    // === Step 3: Insert each execution order ===
     for (const command of executionOrders) {
-      const order = { ...command }
-      order.referenceId = salesOrder
-      order.salesOrderItem = salesOrderItem
+      const order = { ...command };
 
+      // Add references
+      order.referenceId = salesOrder;
+      order.salesOrderItem = salesOrderItem;
+
+      // Fetch ReferenceSDDocument
       if (salesOrder && salesOrderResults.length) {
-        const match = salesOrderResults.find(o => o.SalesOrder === salesOrder)
-        if (match) order.referenceSDDocument = match.ReferenceSDDocument
+        const match = salesOrderResults.find(o => o.SalesOrder === salesOrder);
+        if (match) order.referenceSDDocument = match.ReferenceSDDocument;
       }
 
-      const inserted = await tx.run(INSERT.into(ExecutionOrderMains).entries(order))
-      const saved = inserted[0] ?? order
-      savedOrders.push(saved)
+      // 🔹 Calculate per-record total and totalHeader
+      const totalQty = Number(order.totalQuantity || 0);
+      const amtPerUnit = Number(order.amountPerUnit || 0);
+      order.total = totalQty * amtPerUnit;
+      order.totalHeader = order.total;
+
+      // Insert into DB
+      const inserted = await tx.run(INSERT.into(ExecutionOrderMains).entries(order));
+      const saved = inserted[0] ?? order;
+
+      // Update totalHeader (ensures DB reflects correct sum)
+      await tx.run(
+        UPDATE(ExecutionOrderMains)
+          .set({ totalHeader: order.total })
+          .where({ executionOrderMainCode: saved.executionOrderMainCode })
+      );
+
+      saved.totalHeader = order.total;
+      savedOrders.push(saved);
     }
 
-    // Step 3: Calculate totalHeader and update
-    const totalHeader = savedOrders.reduce((sum, item) => sum + (Number(item.total) || 0), 0)
+    // === Step 4: Aggregate totalHeader for Pricing API ===
+    const totalHeaderSum = savedOrders.reduce(
+      (sum, item) => sum + (Number(item.totalHeader) || 0),
+      0
+    );
+
+    // === Step 5: Update each record with the aggregated totalHeader ===
     for (const saved of savedOrders) {
       await tx.run(
-        UPDATE(ExecutionOrderMains).set({ totalHeader }).where({ executionOrderMainCode: saved.executionOrderMainCode })
-      )
-      saved.totalHeader = totalHeader
+        UPDATE(ExecutionOrderMains)
+          .set({ totalHeader: totalHeaderSum })
+          .where({ executionOrderMainCode: saved.executionOrderMainCode })
+      );
+      saved.totalHeader = totalHeaderSum;
     }
 
-    // Step 4: Call Pricing API
+    // === Step 6: Call Pricing API ===
     try {
       await callSalesOrderPricingAPI(
         salesOrder,
         salesOrderItem,
         pricingProcedureStep,
         pricingProcedureCounter,
-        totalHeader
-      )
+        totalHeaderSum
+      );
     } catch (apiErr) {
-      req.warn(`Pricing API call failed: ${apiErr.message}`)
+      req.warn(`⚠️ Pricing API call failed: ${apiErr.message}`);
     }
 
-    return savedOrders
+    return savedOrders;
   } catch (err) {
-    req.error(500, `Error in saveOrUpdateExecutionOrders: ${err.message}`)
+    req.error(500, `Error in saveOrUpdateExecutionOrders: ${err.message}`);
   }
 })
+
 
 async function callSalesOrderPricingAPI(
   salesOrder,
@@ -2485,98 +2547,243 @@ this.on('findByLineNumber', async (req) => {
 
   // === Calculate Quantities (with accumulation)
   this.on('calculateQuantities', async (req) => {
-    const { executionOrderMainCode, quantity, totalQuantity, amountPerUnit, overFulfillmentPercentage, unlimitedOverFulfillment } = req.data
-    if (!executionOrderMainCode) return req.error(400, "Execution Order Main Code is required")
+  const {
+    executionOrderMainCode,
+    quantity,
+    totalQuantity,
+    amountPerUnit,
+    overFulfillmentPercentage,
+    unlimitedOverFulfillment
+  } = req.data;
 
-    const tempData = tempDataService.getOrCreate(executionOrderMainCode)
-    tempData.version++
+  if (!executionOrderMainCode) return req.error(400, 'Execution Order Main Code is required');
 
-    const postedInvoices = await SELECT.from(ServiceInvoiceMains).where({ executionOrderMainCode })
-    const postedAQ = postedInvoices.reduce((sum, inv) => sum + (inv.quantity || 0), 0)
-    const postedTotal = postedInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0)
+  const tempData = tempDataService.getOrCreate(executionOrderMainCode);
+  tempData.version++;
 
-    let allowedQuantity = totalQuantity || 0
-    if (overFulfillmentPercentage) allowedQuantity += (totalQuantity * overFulfillmentPercentage / 100)
-    if (unlimitedOverFulfillment) allowedQuantity = Number.MAX_VALUE
+  const postedInvoices = await SELECT.from(ServiceInvoiceMains).where({ executionOrderMainCode });
+  const postedAQ = postedInvoices.reduce((sum, inv) => sum + (inv.quantity || 0), 0);
+  const postedTotal = postedInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
 
-    const currentQuantity = quantity ?? tempData.quantities[tempData.currentQuantityIndex] ?? 0
-    const totalRequested = postedAQ + currentQuantity
-    if (totalRequested > allowedQuantity) return req.error(400, "Quantity exceeds allowed limit")
+  let allowedQuantity = totalQuantity || 0;
+  if (overFulfillmentPercentage) allowedQuantity += (totalQuantity * overFulfillmentPercentage / 100);
+  if (unlimitedOverFulfillment) allowedQuantity = Number.MAX_VALUE;
 
-    // update tempData
-    tempData.quantities.push(currentQuantity)
-    tempData.currentQuantityIndex = tempData.quantities.length - 1
-    tempData.amountPerUnit = amountPerUnit || tempData.amountPerUnit || 0
-    tempData.actualQuantity = postedAQ + currentQuantity
-    tempData.total = tempData.actualQuantity * tempData.amountPerUnit
-    tempData.totalHeader = postedTotal + tempData.total
-    tempData.remainingQuantity = Math.max((totalQuantity || 0) - tempData.actualQuantity, 0)
-    tempData.actualPercentage = totalQuantity ? Math.min((tempData.actualQuantity / totalQuantity) * 100, 100) : 0
+  const currentQuantity = quantity ?? tempData.quantities[tempData.currentQuantityIndex] ?? 0;
+  const totalRequested = postedAQ + currentQuantity;
 
-    tempDataService.update(executionOrderMainCode, tempData)
-    return tempData
-  })
+  if (totalRequested > allowedQuantity) return req.error(400, 'Quantity exceeds allowed limit');
 
-  // === Calculate Quantities (no accumulation)
-  this.on('calculateQuantitiesWithoutAccumulation', async (req) => {
+  // Update temp data
+  tempData.quantities.push(currentQuantity);
+  tempData.currentQuantityIndex = tempData.quantities.length - 1;
+  tempData.amountPerUnit = amountPerUnit || tempData.amountPerUnit || 0;
+  tempData.actualQuantity = postedAQ + currentQuantity;
+  tempData.total = tempData.actualQuantity * tempData.amountPerUnit;
+  tempData.totalHeader = postedTotal + tempData.total;
+  tempData.remainingQuantity = Math.max((totalQuantity || 0) - tempData.actualQuantity, 0);
+  tempData.actualPercentage = totalQuantity ? Math.min((tempData.actualQuantity / totalQuantity) * 100, 100) : 0;
+
+  tempDataService.update(executionOrderMainCode, tempData);
+  return tempData;
+})
+
+
+// === Calculate Quantities Without Accumulation ===
+this.on('calculateQuantitiesWithoutAccumulation', async (req) => {
+  try {
     const { executionOrderMainCode, quantity, totalQuantity, amountPerUnit } = req.data
+
     if (!executionOrderMainCode) return req.error(400, "Execution Order Main Code is required")
 
-    const tempData = tempDataService.getOrCreate(executionOrderMainCode)
-    tempData.version++
+    // Ensure we can handle UUID keys
+    const code = typeof executionOrderMainCode === 'string'
+      ? executionOrderMainCode
+      : String(executionOrderMainCode)
 
-    tempData.quantities.push(quantity)
+    const tempData = tempDataService.getOrCreate(code)
+    tempData.version = (tempData.version || 0) + 1
+
+    // --- Core logic ---
+    const q = Number(quantity) || 0
+    const aq = Number(amountPerUnit) || tempData.amountPerUnit || 0
+    const tq = Number(totalQuantity) || 0
+
+    tempData.quantities.push(q)
     tempData.currentQuantityIndex = tempData.quantities.length - 1
-    tempData.amountPerUnit = amountPerUnit || tempData.amountPerUnit || 0
-    tempData.remainingQuantity = Math.max(totalQuantity - quantity, 0)
-    tempData.actualQuantity = quantity
-    tempData.actualPercentage = totalQuantity ? (quantity / totalQuantity) * 100 : 0
-    tempData.total = quantity * tempData.amountPerUnit
+    tempData.amountPerUnit = aq
+    tempData.remainingQuantity = Math.max(tq - q, 0)
+    tempData.actualQuantity = q
+    tempData.actualPercentage = tq ? (q / tq) * 100 : 0
+    tempData.total = q * aq
     tempData.totalHeader = tempData.total
 
-    tempDataService.update(executionOrderMainCode, tempData)
-    return tempData
-  })
+    // --- Save updated temp data ---
+    tempDataService.update(code, tempData)
 
-  // === Save or Update ServiceInvoices
-  this.on('saveOrUpdateServiceInvoices', async (req) => {
-    const { serviceInvoiceCommands, debitMemoRequest, debitMemoRequestItem, pricingProcedureStep, pricingProcedureCounter, customerNumber } = req.data
-    const tx = cds.transaction(req)
-    let saved = []
-
-    // delete existing if same debitMemoRequest + item
-    if (debitMemoRequest && debitMemoRequestItem) {
-      await tx.run(DELETE.from(ServiceInvoiceMains).where({ referenceId: debitMemoRequest, debitMemoRequestItem }))
+    // Return response consistent with Java logic
+    return {
+      quantities: tempData.quantities,
+      currentQuantityIndex: tempData.currentQuantityIndex,
+      amountPerUnit: tempData.amountPerUnit,
+      remainingQuantity: tempData.remainingQuantity,
+      actualQuantity: tempData.actualQuantity,
+      actualPercentage: tempData.actualPercentage,
+      total: tempData.total,
+      totalHeader: tempData.totalHeader,
+      version: tempData.version
     }
 
+  } catch (err) {
+    console.error('❌ Error in calculateQuantitiesWithoutAccumulation:', err.message)
+    req.error(500, `Error in calculateQuantitiesWithoutAccumulation: ${err.message}`)
+  }
+})
+
+
+ // === SAVE OR UPDATE SERVICE INVOICES ===
+this.on('saveOrUpdateServiceInvoices', async (req) => {
+  const {
+    serviceInvoiceCommands,
+    debitMemoRequest,
+    debitMemoRequestItem,
+    pricingProcedureStep,
+    pricingProcedureCounter,
+    customerNumber
+  } = req.data;
+
+  const tx = cds.transaction(req);
+  let savedInvoices = [];
+
+  try {
+    if (!serviceInvoiceCommands || serviceInvoiceCommands.length === 0) {
+      req.error(400, 'No service invoice data provided');
+    }
+
+    // Step 1: Delete existing entries for same debitMemoRequest + item
+    if (debitMemoRequest && debitMemoRequestItem) {
+      await tx.run(
+        DELETE.from(ServiceInvoiceMains).where({ referenceId: debitMemoRequest, debitMemoRequestItem })
+      );
+    }
+
+    // Step 2: Fetch ReferenceSDDocument from S/4
+    let referenceSDDocument = null;
+    if (debitMemoRequest) {
+      try {
+        const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_DEBIT_MEMO_REQUEST_SRV/A_DebitMemoRequest?$top=100`;
+        const res = await axios.get(url, { headers: { Authorization: authHeader, Accept: 'application/json' } });
+        const results = res?.data?.d?.results || [];
+
+        const match = results.find(r => r.DebitMemoRequest === debitMemoRequest);
+        if (match) referenceSDDocument = match.ReferenceSDDocument;
+      } catch (e) {
+        console.warn('⚠️ Could not fetch ReferenceSDDocument:', e.message);
+      }
+    }
+
+    // Step 3: Process each service invoice command
     for (const cmd of serviceInvoiceCommands) {
-      const code = cmd.executionOrderMainCode
-      let tempData = tempDataService.get(code) || tempDataService.getOrCreate(code)
+      const code = cmd.executionOrderMainCode;
+      let tempData = tempDataService.get(code) || tempDataService.getOrCreate(code);
 
-      const quantity = tempData.quantities[tempData.currentQuantityIndex] || cmd.quantity || 0
-      const amountPerUnit = tempData.amountPerUnit || cmd.amountPerUnit || 0
+      // Initialize if new
+      if (!tempData.version) {
+        tempData.version = 1;
+        if (cmd.quantity) {
+          tempData.quantities.push(cmd.quantity);
+          tempData.currentQuantityIndex = 0;
+          tempData.amountPerUnit = cmd.amountPerUnit;
+        }
+      }
 
+      // --- Quantity resolution logic ---
+      let quantity = tempData.currentQuantity ?? null;
+      if (quantity == null || tempData.quantities.length === 0) {
+        if (tempData.quantities.length > 0) {
+          quantity = tempData.quantities[tempData.quantities.length - 1];
+        } else if (cmd.quantity) {
+          tempData.quantities.push(cmd.quantity);
+          tempData.currentQuantityIndex = 0;
+          quantity = cmd.quantity;
+        }
+      }
+      if (quantity == null) throw new Error(`Quantity missing for execution order ${code}`);
+
+      // --- Amount per unit ---
+      const amountPerUnit = tempData.amountPerUnit ?? cmd.amountPerUnit;
+      if (amountPerUnit == null) throw new Error(`Amount per unit missing for execution order ${code}`);
+
+      const total = quantity * amountPerUnit;
+
+      // --- Compose entry ---
       const entry = {
         ...cmd,
         referenceId: debitMemoRequest,
         debitMemoRequestItem,
+        referenceSDDocument,
         quantity,
         amountPerUnit,
-        total: quantity * amountPerUnit,
-        totalHeader: tempData.totalHeader || (quantity * amountPerUnit)
-      }
+        total,
+        actualQuantity: quantity,
+        remainingQuantity: tempData.remainingQuantity ?? 0,
+        actualPercentage: tempData.actualPercentage ?? 0,
+        totalHeader: tempData.totalHeader ?? total
+      };
 
-      const inserted = await tx.run(INSERT.into(ServiceInvoiceMains).entries(entry))
-      saved.push(inserted[0] ?? entry)
-      tempDataService.remove(code) // clear after save
+      // --- Save invoice ---
+      const inserted = await tx.run(INSERT.into(ServiceInvoiceMains).entries(entry));
+      savedInvoices.push(inserted[0] ?? entry);
+
+      // Clear temp data after saving
+      tempDataService.remove(code);
     }
 
-    // call pricing API
-    const totalHeaderSum = saved.reduce((sum, i) => sum + (i.total || 0), 0)
-    await callDebitMemoPricingAPI(debitMemoRequest, debitMemoRequestItem, pricingProcedureStep, pricingProcedureCounter, totalHeaderSum)
+    // Step 4: Update related ExecutionOrderMain totals
+    for (const cmd of serviceInvoiceCommands) {
+      const code = cmd.executionOrderMainCode;
 
-    return saved
-  })
+      const relatedInvoices = savedInvoices.filter(inv => inv.executionOrderMainCode === code);
+
+      const totalActualQuantity = relatedInvoices.reduce((sum, inv) => sum + (inv.actualQuantity || 0), 0);
+      const totalRemainingQuantity = relatedInvoices.reduce((sum, inv) => sum + (inv.remainingQuantity || 0), 0);
+      const avgPercentage =
+        relatedInvoices.length > 0
+          ? relatedInvoices.reduce((sum, inv) => sum + (inv.actualPercentage || 0), 0) / relatedInvoices.length
+          : 0;
+      const totalHeaderSum = relatedInvoices.reduce((sum, inv) => sum + (inv.totalHeader || 0), 0);
+
+      await tx.run(
+        UPDATE(ExecutionOrderMains)
+          .set({
+            actualQuantity: totalActualQuantity,
+            remainingQuantity: totalRemainingQuantity,
+            actualPercentage: avgPercentage,
+            totalHeader: totalHeaderSum
+          })
+          .where({ executionOrderMainCode: code })
+      );
+    }
+
+    // Step 5: Call Debit Memo Pricing API
+    const totalHeaderSum = savedInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
+    try {
+      await callDebitMemoPricingAPI(
+        debitMemoRequest,
+        debitMemoRequestItem,
+        pricingProcedureStep,
+        pricingProcedureCounter,
+        totalHeaderSum
+      );
+    } catch (apiErr) {
+      req.warn(`Failed to update debit memo pricing: ${apiErr.message}`);
+    }
+
+    return savedInvoices;
+  } catch (err) {
+    req.error(500, `Error in saveOrUpdateServiceInvoices: ${err.message}`);
+  }
+})
 
   // === Find by LineNumber
   this.on('findByLineNumberServiceInvoice', async (req) => {

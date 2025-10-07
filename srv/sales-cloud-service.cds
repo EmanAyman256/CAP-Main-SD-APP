@@ -1,4 +1,4 @@
-using {salesdb} from '../db/sales-cloud-schema';
+using {salesdb} from '../db/schema';
 
 @title               : 'Sales Cloud Service'
 @Core.LongDescription: 'This service exposes APIs for managing Sales Cloud objects such as Line Types, Formulas, Materials, and Currencies.'
@@ -378,9 +378,30 @@ action calculateTotalServiceInvoice(
   serviceInvoiceCode: UUID
 ) returns Decimal(15,3);
 
-action calculateQuantities(data: ServiceInvoiceMains) returns ServiceInvoiceMains;
+type CalculatedQuantitiesResponse : {
+  actualQuantity    : Decimal;
+  remainingQuantity : Decimal;
+  total             : Decimal;
+  actualPercentage  : Decimal;
+  totalHeader       : Decimal;
+}
 
-action calculateQuantitiesWithoutAccumulation(data: ServiceInvoiceMains) returns ServiceInvoiceMains;
+action calculateQuantities(
+    executionOrderMainCode      : UUID,
+    quantity                    : Decimal(15,3),
+    totalQuantity               : Decimal(15,3),
+    amountPerUnit               : Decimal(15,3),
+    overFulfillmentPercentage   : Decimal(15,3),
+    unlimitedOverFulfillment    : Boolean
+) returns CalculatedQuantitiesResponse;
+
+
+action calculateQuantitiesWithoutAccumulation(
+        executionOrderMainCode : UUID,
+        quantity               : Decimal,
+        totalQuantity          : Decimal,
+        amountPerUnit          : Decimal
+    ) returns CalculatedQuantitiesResponse;
 
 action saveOrUpdateServiceInvoices(
   serviceInvoiceCommands: array of ServiceInvoiceMainCommand,
@@ -394,7 +415,7 @@ action saveOrUpdateServiceInvoices(
 function findByLineNumberServiceInvoice(lineNumber: String) returns array of ServiceInvoiceMains;
 
 type ServiceInvoiceMainCommand {
-  executionOrderMainCode   : Integer;
+  executionOrderMainCode   : UUID;
   referenceSDDocument      : String;
   debitMemoRequestItem     : String;
   debitMemoRequestItemText : String;

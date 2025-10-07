@@ -101,21 +101,8 @@
             </m:HBox>
         </m:VBox>
 
-   
-   
-    <HBox id="_IDGenVBox7" justifyContent="SpaceBetween" class="sapUiSmallMargin">
-        <SearchField id="_IDGenSearchField" liveChange ="onSearchItem"/>
-        <Button id="_IDGenButton1" icon="sap-icon://delete" press="onDeleteItem"/>
-    </HBox>
     
-    <VBox id="_IDGenVBox8">
-         <Toolbar id="_IDGenToolbar2">
-        <Button id="_IDGenButton9" text="Add Main Item" press="onAddMianItem" type="Emphasized"/>
-        </Toolbar>
-    </VBox>
-
-    
-    <table:Table id="_IDGenTable" selectionMode= "MultiToggle"   rows="{/Items}" enableColumnReordering="false">
+    <table:Table id="executionTable" selectionMode= "MultiToggle"   rows="{/MainItems}" enableColumnReordering="false">
         
         <table:rowMode>
             <r:Auto id="_IDGenFixed" minRowCount="5" maxRowCount="10" rowContentHeight="44" />
@@ -133,105 +120,105 @@
             <table:Column id="_IDGenColumn2" width="120px">
                 <table:label><Text id="_IDGenText4" text="Main Item No."/></table:label>
                 <table:template>
-                    <Text id="_IDGenText30" text="{MainItemNo}" />
+                    <Text id="_IDGenText30" text="{executionOrderMainCode}" />
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn3" width="120px">
                 <table:label><Text id="_IDGenText5" text="Line.NR"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText31" text="{LineNR}"/>
+                    <Text id="_IDGenText31" text="{lineNumber}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn4" width="120px">
                 <table:label><Text id="_IDGenText32" text="Service No."/></table:label>
                 <table:template>
-                    <Text id="_IDGenText6" text="{ServiceNo}"/>
+                    <Text id="_IDGenText6" text="{serviceNumberCode}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn5" width="120px">
                 <table:label><Text id="_IDGenText33" text="Description"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText7" text="{Description}"/>
+                    <Text id="_IDGenText7" text="{description}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn6" width="120px">
                 <table:label><Text id="_IDGenText34" text="QTY"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText8" text="{QTY}"/>
+                    <Text id="_IDGenText8" text="{actualQuantity}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn7" width="120px">
                 <table:label><Text id="_IDGenText35" text="UOM"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText9" text="{UOM}"/>
+                    <Text id="_IDGenText9" text="{unitOfMeasurementCode}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn8" width="120px">
                 <table:label><Text id="_IDGenText36" text="Amount Per Unit"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText10" text="{AmountPerUnit}"/>
+                    <Text id="_IDGenText10" text="{amountPerUnit}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn9" width="120px">
                 <table:label><Text id="_IDGenText37" text="Currency"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText11" text="{Currency}"/>
+                    <Text id="_IDGenText11" text="{currencyCode}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn10" width="120px">
             <table:label><Text id="_IDGenText38" text="Total"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText12" text="{Total}"/>
+                    <Text id="_IDGenText12" text="{total}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn11" width="120px">
             <table:label><Text id="_IDGenText39" text="Actual QTY"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText13" text="{ActualQTY}"/>
+                    <Text id="_IDGenText13" text="{actualQuantity}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn12" width="120px">
             <table:label><Text id="_IDGenText40" text="Actual Percentage %"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText14" text="{ActualPercentage}"/>
+                    <Text id="_IDGenText14" text="{actualPercentage}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn13" width="120px">
                 <table:label><Text id="_IDGenText29" text="Over Fulfillment %"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText15" text="{OverFulfillment}"/>
+                    <Text id="_IDGenText15" text="{overFulfillmentPercent}"/>
                 </table:template>
             </table:Column>   
 
             <table:Column id="_IDGenColumn14" width="120px">
             <table:label><Text id="_IDGenText41" text="Unlimited Over Fulfillment %"/></table:label>
                 <table:template>
-                    <CheckBox id="_IDGenText16" text="{UnlimitedOverFulfillment}"/>
+                    <CheckBox id="_IDGenText16" text="{unlimitedOverFulfillment}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn15" width="120px">
                 <table:label><Text id="_IDGenText42" text="Manual Price Entery Allowd"/></table:label>    
                 <table:template>
-                    <CheckBox id="_IDGenText17" text="{ManualPriceEnteryAllowd}"/>
+                    <CheckBox id="_IDGenText17" text="{manualPriceEntryAllowed}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn16" width="120px">
                  <table:label><Text id="_IDGenText43" text="Material Grp"/></table:label> 
                 <table:template>
-                 <Text id="_IDGenText18" text="{MaterialGrp}"/>
+                 <Text id="_IDGenText18" text="{materialGroupCode}"/>
                 </table:template>
                
             </table:Column>
@@ -239,42 +226,42 @@
             <table:Column id="_IDGenColumn17" width="120px">
              <table:label><Text id="_IDGenText45" text="Service Type"/></table:label> 
                 <table:template>
-                <Text id="_IDGenText19" text="{ServiceType}"/>
+                <Text id="_IDGenText19" text="{serviceTypeCode}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn18" width="120px">
              <table:label><Text id="_IDGenText46" text="External Service Number"/></table:label> 
                 <table:template>
-                    <Text id="_IDGenText20" text="{ExternalServiceNumber}"/>
+                    <Text id="_IDGenText20" text="{externalServiceNumber}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn19" width="120px" >
                 <table:label><Text id="_IDGenText47" text="Service Text"/></table:label> 
                 <table:template>
-                     <Text id="_IDGenText21" text="{ServiceText}"/>
+                     <Text id="_IDGenText21" text="{serviceText}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn20" width="120px">
                 <table:label><Text id="_IDGenText48" text="Line Text"/></table:label> 
                 <table:template>
-                    <Text id="_IDGenText22" text="{LineText}"/>
+                    <Text id="_IDGenText22" text="{lineText}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn21" width="120px">
                 <table:label><Text id="_IDGenText49" text="Personnel.NR"/></table:label> 
                 <table:template>
-                    <Text id="_IDGenText23" text="{PersonnelNR}"/>
+                    <Text id="_IDGenText23" text="{personnelNumberCode}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn22" width="120px">
                 <table:label><Text id="_IDGenText50" text="Line Type"/></table:label> 
                 <table:template>
-                    <Text id="_IDGenText24" text="{LineType}"/>
+                    <Text id="_IDGenText24" text="{lineTypeCode}"/>
                 </table:template>
                 
             </table:Column>
@@ -282,7 +269,7 @@
             <table:Column id="_IDGenColumn23" width="120px">
                 <table:label><Text id="_IDGenText51" text="Bidders'line"/></table:label> 
                 <table:template>
-                    <CheckBox id="_IDGenText25" text="{Biddersline}"/>
+                    <CheckBox id="_IDGenText25" text="{biddersLine}"/>
                 </table:template>
                 
             </table:Column>
@@ -290,23 +277,29 @@
             <table:Column id="_IDGenColumn24" width="120px">
                 <table:label><Text id="_IDGenText52" text="Supplementary line"/></table:label> 
                 <table:template>
-                    <CheckBox id="_IDGenText26" text="{Supplementaryline}"/>
+                    <CheckBox id="_IDGenText26" text="{supplementaryLine}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn25" width="120px">
                 <table:label><Text id="_IDGenText53" text="Lot Cost One"/></table:label> 
                 <table:template>
-                    <CheckBox id="_IDGenText27" text="{LotCostOne}"/>
+                    <CheckBox id="_IDGenText27" text="{lotCostOne}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn26" width="120px">
-                 <table:label><Text id="_IDGenText54" text="Actios"/></table:label> 
-                <table:template>
-                <Button id="_IDGenButton6" icon="sap-icon://edit" press="onEditItem"/>
-                </table:template>
-            </table:Column>
+    <table:label>
+        <Text id="_IDGenText54" text="Actions" />
+    </table:label>
+    <table:template>
+        <HBox id="_IDGenHBox3" justifyContent="SpaceAround">
+            <Button id="_IDGenButton4" icon="sap-icon://edit" press="onEditItem" type="Emphasized" />
+            <Button id="_IDGenButton5" icon="sap-icon://delete" press="onDeleteItem" type="Reject" />
+        </HBox>
+    </table:template>
+</table:Column>
+
         </table:columns>
 
     </table:Table>
