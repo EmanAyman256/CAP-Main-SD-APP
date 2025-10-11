@@ -1,10 +1,14 @@
-<mvc:View xmlns:table="sap.ui.table" xmlns:layout="sap.ui.layout" controllerName="execution.controller.ExecutionOrder"
+<mvc:View 
+    xmlns:table="sap.ui.table" 
+    xmlns:layout="sap.ui.layout" 
+    controllerName="execution.controller.ExecutionOrder"
     displayBlock="true"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns:r="sap.ui.table.rowmodes"
     xmlns:m="sap.m"
     xmlns="sap.m">
    <Page id="_IDGenPage" title="{i18n>Execution Order}">
+   
            <m:VBox
             id="_IDGenVBox3"
             class="sapUiMediumMargin"
@@ -13,7 +17,8 @@
                 id="_IDGenHBox"
                 justifyContent="SpaceBetween"
                 alignItems="Center"
-            >
+            > 
+           
                 <m:Text
                     id="_IDGenText1"
                     text="{= 'Documnet Number:' +${/docNumber} + '::' + ${/itemNumber} }"
@@ -102,7 +107,11 @@
         </m:VBox>
 
     
-    <table:Table id="executionTable" selectionMode= "MultiToggle"   rows="{/MainItems}" enableColumnReordering="false">
+   
+   
+   
+   
+    <table:Table id="executionTable" selectionMode= "Single"   rows="{/MainItems}" enableColumnReordering="false">
         
         <table:rowMode>
             <r:Auto id="_IDGenFixed" minRowCount="5" maxRowCount="10" rowContentHeight="44" />

@@ -430,7 +430,7 @@ sap.ui.define([
                 oExecTable.getBinding("rows").refresh();
               }
 
-              console.log("✅ MainItems after copy:", oMainModel.getProperty("/MainItems"));
+              console.log(" MainItems after copy:", oMainModel.getProperty("/MainItems"));
               sap.m.MessageToast.show("Selected rows copied to Main Items table!");
               oDialog.close();
             }
@@ -753,21 +753,132 @@ sap.ui.define([
 
       oExcelDialog.open();
     },
-    onEditItem: function () {
+    onEditItem: function (oEvent) {
+      // Get the row context from the button's parent (the row)
+      var oButton = oEvent.getSource();
+      var oRow = oButton.getParent().getParent(); // HBox -> ColumnListItem (row template) -> actual row
+      var oContext = oRow.getBindingContext();
+
+      if (!oContext) {
+        sap.m.MessageToast.show("No item context found.");
+        return;
+      }
+
+      var oSelectedItem = oContext.getObject();
+      console.log("Editing item:", oSelectedItem); // Debug: remove after testing
+
       if (!this._EditItemDialog) {
         this._EditItemDialog = new sap.m.Dialog({
-          title: "Edit Item No : ",
+          title: "Edit Item",
+          contentWidth: "600px",
           content: new sap.m.VBox({
             items: [
-
-
+              new sap.m.Label({ text: "Service No" }),
+              new sap.m.Input(this.createId("editServiceNo")),
+              new sap.m.Label({ text: "Description" }),
+              new sap.m.Input(this.createId("editDescription")),
+              new sap.m.Label({ text: "Quantity" }),
+              new sap.m.Input(this.createId("editQTY")),
+              new sap.m.Label({ text: "UOM" }),
+              new sap.m.Input(this.createId("editUOM")),
+              new sap.m.Label({ text: "Amount Per Unit" }),
+              new sap.m.Input(this.createId("editAmountPerUnit")),
+              new sap.m.Label({ text: "Over Fulfillment %" }),
+              new sap.m.Input(this.createId("editOverFulf")),
+              new sap.m.Label({ text: "Unlimited Over Fulfillment" }),
+              new sap.m.CheckBox(this.createId("editUnlimitedOverFulf")),
+              new sap.m.Label({ text: "Manual Price Entry Allowed" }),
+              new sap.m.CheckBox(this.createId("editManualPrice")),
+              new sap.m.Label({ text: "Material Group" }),
+              new sap.m.Input(this.createId("editMaterialGrp")),
+              new sap.m.Label({ text: "Service Type" }),
+              new sap.m.Input(this.createId("editSrvType")),
+              new sap.m.Label({ text: "External Service Number" }),
+              new sap.m.Input(this.createId("editExtSrvNo")),
+              new sap.m.Label({ text: "Service Text" }),
+              new sap.m.Input(this.createId("editSrvText")),
+              new sap.m.Label({ text: "Line Text" }),
+              new sap.m.Input(this.createId("editLineText")),
+              new sap.m.Label({ text: "Personnel Number" }),
+              new sap.m.Input(this.createId("editPersoNr")),
+              new sap.m.Label({ text: "Line Type" }),
+              new sap.m.Input(this.createId("editLineType")),
+              new sap.m.Label({ text: "Bidders Line" }),
+              new sap.m.CheckBox(this.createId("editBiddersLine")),
+              new sap.m.Label({ text: "Supplementary Line" }),
+              new sap.m.CheckBox(this.createId("editSuppLine")),
+              new sap.m.Label({ text: "Lot Cost One" }),
+              new sap.m.CheckBox(this.createId("editLCO"))
             ]
+          }),
+          beginButton: new sap.m.Button({
+            text: "Save",
+            type: "Emphasized",
+            press: function () {
+              // Update model with new values
+              oSelectedItem.serviceNumberCode = this.byId("editServiceNo").getValue() || "";
+              oSelectedItem.description = this.byId("editDescription").getValue() || "";
+              oSelectedItem.actualQuantity = parseFloat(this.byId("editQTY").getValue()) || 0;
+              oSelectedItem.unitOfMeasurementCode = this.byId("editUOM").getValue() || "";
+              oSelectedItem.amountPerUnit = parseFloat(this.byId("editAmountPerUnit").getValue()) || 0;
+              oSelectedItem.overFulfillmentPercent = parseFloat(this.byId("editOverFulf").getValue()) || 0;
+              oSelectedItem.unlimitedOverFulfillment = this.byId("editUnlimitedOverFulf").getSelected();
+              oSelectedItem.manualPriceEntryAllowed = this.byId("editManualPrice").getSelected();
+              oSelectedItem.materialGroupCode = this.byId("editMaterialGrp").getValue() || "";
+              oSelectedItem.serviceTypeCode = this.byId("editSrvType").getValue() || "";
+              oSelectedItem.externalServiceNumber = this.byId("editExtSrvNo").getValue() || "";
+              oSelectedItem.serviceText = this.byId("editSrvText").getValue() || "";
+              oSelectedItem.lineText = this.byId("editLineText").getValue() || "";
+              oSelectedItem.personnelNumberCode = this.byId("editPersoNr").getValue() || "";
+              oSelectedItem.lineTypeCode = this.byId("editLineType").getValue() || "";
+              oSelectedItem.biddersLine = this.byId("editBiddersLine").getSelected();
+              oSelectedItem.supplementaryLine = this.byId("editSuppLine").getSelected();
+              oSelectedItem.lotCostOne = this.byId("editLCO").getSelected();
+              oSelectedItem.total = oSelectedItem.actualQuantity * oSelectedItem.amountPerUnit;
+
+              var oModel = this.getView().getModel();
+              oModel.refresh(true); // Refresh UI after mutation
+
+              sap.m.MessageToast.show("Item updated successfully!");
+              this._EditItemDialog.close();
+              this._EditItemDialog.destroy();
+              this._EditItemDialog = null;
+            }.bind(this)
+          }),
+          endButton: new sap.m.Button({
+            text: "Cancel",
+            press: function () {
+              this._EditItemDialog.close();
+              this._EditItemDialog.destroy();
+              this._EditItemDialog = null;
+            }.bind(this)
           })
-        })
+        });
+        this.getView().addDependent(this._EditItemDialog);
       }
+
+      // Prefill dialog fields
+      this.byId("editServiceNo").setValue(oSelectedItem.serviceNumberCode || "");
+      this.byId("editDescription").setValue(oSelectedItem.description || "");
+      this.byId("editQTY").setValue(oSelectedItem.actualQuantity || "");
+      this.byId("editUOM").setValue(oSelectedItem.unitOfMeasurementCode || "");
+      this.byId("editAmountPerUnit").setValue(oSelectedItem.amountPerUnit || "");
+      this.byId("editOverFulf").setValue(oSelectedItem.overFulfillmentPercent || "");
+      this.byId("editUnlimitedOverFulf").setSelected(!!oSelectedItem.unlimitedOverFulfillment);
+      this.byId("editManualPrice").setSelected(!!oSelectedItem.manualPriceEntryAllowed);
+      this.byId("editMaterialGrp").setValue(oSelectedItem.materialGroupCode || "");
+      this.byId("editSrvType").setValue(oSelectedItem.serviceTypeCode || "");
+      this.byId("editExtSrvNo").setValue(oSelectedItem.externalServiceNumber || "");
+      this.byId("editSrvText").setValue(oSelectedItem.serviceText || "");
+      this.byId("editLineText").setValue(oSelectedItem.lineText || "");
+      this.byId("editPersoNr").setValue(oSelectedItem.personnelNumberCode || "");
+      this.byId("editLineType").setValue(oSelectedItem.lineTypeCode || "");
+      this.byId("editBiddersLine").setSelected(!!oSelectedItem.biddersLine);
+      this.byId("editSuppLine").setSelected(!!oSelectedItem.supplementaryLine);
+      this.byId("editLCO").setSelected(!!oSelectedItem.lotCostOne);
+
       this._EditItemDialog.open();
     },
-
     onDeleteItem: function (oEvent) {
       var oBindingContext = oEvent.getSource().getBindingContext();
       if (oBindingContext) {

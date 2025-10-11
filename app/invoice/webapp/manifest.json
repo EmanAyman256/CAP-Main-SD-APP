@@ -17,7 +17,7 @@
     },
     "dataSources": {
       "mainService": {
-        "uri": "/salesordercloud/",
+        "uri": "/odata/v4/sales-cloud/",
         "type": "OData",
         "settings": {
           "annotations": [],
@@ -101,7 +101,7 @@
         },
         {
           "name": "invoice",
-          "pattern": "invoice",
+          "pattern": "invoice/{docNumber}/{itemNumber}",
           "target": "invoice"
         }
       ],
