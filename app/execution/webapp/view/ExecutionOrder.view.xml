@@ -235,7 +235,7 @@
             <table:Column id="_IDGenColumn17" width="120px">
              <table:label><Text id="_IDGenText45" text="Service Type"/></table:label> 
                 <table:template>
-                <Text id="_IDGenText19" text="{serviceTypeCode}"/>
+                <Text id="_IDGenText19" text="{description}"/>
                 </table:template>
             </table:Column>
 
