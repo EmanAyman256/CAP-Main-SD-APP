@@ -92,7 +92,7 @@
                     alignItems="Center"
                     justifyContent="Center"
                 >
-                    <m:Text id="_IDGenText13" />
+                    <m:Text id="_IDGenText13" text="{/totalValue}" />
                 </m:VBox>
                 <m:VBox
                     id="_IDGenVBox10"

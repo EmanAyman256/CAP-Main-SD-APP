@@ -10,7 +10,7 @@ controllerName="invoice.controller.invoice"
     xmlns="sap.m"
      xmlns:m="sap.m"
     >
-    <Page id="page2" title="{i18n>title}">
+    <Page id="page2" title="{i18n>Service Invoice}">
      
        <m:VBox
             id="_IDGenVBox3"
@@ -93,7 +93,7 @@ controllerName="invoice.controller.invoice"
                     alignItems="Center"
                     justifyContent="Center"
                 >
-                    <m:Text id="_IDGenText44" />
+                    <m:Text id="_IDGenText44" text="{/totalValue}"  class="sapUiSmallMargin" />
                 </m:VBox>
                 <m:VBox
                     id="_IDGenVBox10"
@@ -102,6 +102,7 @@ controllerName="invoice.controller.invoice"
                     justifyContent="Center"
                 >
                     <m:Text
+                     class="sapUiSmallMargin"
                         id="_IDGenText"
                         text="SAR"
                     />
@@ -135,21 +136,21 @@ controllerName="invoice.controller.invoice"
             <table:Column id="_IDGenColumn3" width="120px">
                 <table:label><Text id="_IDGenText5" text="Line.NR"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText31" text="{LineNR}"/>
+                    <Text id="_IDGenText31" text="{lineNumber}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn4" width="120px">
                 <table:label><Text id="_IDGenText32" text="Service No."/></table:label>
                 <table:template>
-                    <Text id="_IDGenText6" text="{ServiceNo}"/>
+                    <Text id="_IDGenText6" text="{serviceNumberCode}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn5" width="120px">
                 <table:label><Text id="_IDGenText33" text="Description"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText7" text="{Description}"/>
+                    <Text id="_IDGenText7" text="{description}"/>
                 </table:template>
             </table:Column>
 
@@ -158,69 +159,69 @@ controllerName="invoice.controller.invoice"
             <table:Column id="_IDGenColumn7" width="120px">
                 <table:label><Text id="_IDGenText35" text="UOM"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText9" text="{UOM}"/>
+                    <Text id="_IDGenText9" text="{unitOfMeasurementCode}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn8" width="120px">
                 <table:label><Text id="_IDGenText36" text="Amount Per Unit"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText10" text="{AmountPerUnit}"/>
+                    <Text id="_IDGenText10" text="{amountPerUnit}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn9" width="120px">
                 <table:label><Text id="_IDGenText37" text="Currency"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText11" text="{Currency}"/>
+                    <Text id="_IDGenText11" text="{currencyCode}"/>
                 </table:template>
             </table:Column>
 
               <table:Column id="_IDGenColumn6" width="120px">
                 <table:label><Text id="_IDGenText34" text="Current Amount"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText8" text="{QTY}"/>
+                    <Text id="_IDGenText8" text="{total}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn10" width="120px">
             <table:label><Text id="_IDGenText38" text="Total Quantity"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText12" text="{Total}"/>
+                    <Text id="_IDGenText12" text="{totalQuantity}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn11" width="120px">
             <table:label><Text id="_IDGenText39" text="Current Quantity"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText13" text="{ActualQTY}"/>
+                    <Text id="_IDGenText13" text="{quantity}"/>
                 </table:template>
             </table:Column>
             <table:Column id="_IDGenColumn27" width="120px">
             <table:label><Text id="_IDGenText55" text="Current Percentage"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText56" text="{ActualQTY}"/>
+                    <Text id="_IDGenText56" text="{currentPercentage}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn12" width="120px">
             <table:label><Text id="_IDGenText40" text="Remaining Quantity"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText14" text="{ActualPercentage}"/>
+                    <Text id="_IDGenText14" text="{remainingQuantity}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn13" width="120px">
                 <table:label><Text id="_IDGenText29" text="Actual Total Quantity"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText15" text="{OverFulfillment}"/>
+                    <Text id="_IDGenText15" text="{actualQuantity}"/>
                 </table:template>
             </table:Column>   
 
             <table:Column id="_IDGenColumn14" width="120px">
             <table:label><Text id="_IDGenText41" text="Actual Total Percentage %"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText16" text="{UnlimitedOverFulfillment}"/>
+                    <Text id="_IDGenText16" text="{actualPercentage}"/>
                 </table:template>
             </table:Column>
 
@@ -234,7 +235,7 @@ controllerName="invoice.controller.invoice"
             <table:Column id="_IDGenColumn16" width="120px">
                  <table:label><Text id="_IDGenText43" text="Material Grp"/></table:label> 
                 <table:template>
-                 <Text id="_IDGenText18" text="{MaterialGrp}"/>
+                 <Text id="_IDGenText18" text="{materialGroupCode}"/>
                 </table:template>
                
             </table:Column>
@@ -242,42 +243,42 @@ controllerName="invoice.controller.invoice"
             <table:Column id="_IDGenColumn17" width="120px">
              <table:label><Text id="_IDGenText45" text="Service Type"/></table:label> 
                 <table:template>
-                <Text id="_IDGenText19" text="{ServiceType}"/>
+                <Text id="_IDGenText19" text="{serviceTypeCode}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn18" width="120px">
              <table:label><Text id="_IDGenText46" text="External Service Number"/></table:label> 
                 <table:template>
-                    <Text id="_IDGenText20" text="{ExternalServiceNumber}"/>
+                    <Text id="_IDGenText20" text="{externalServiceNumber}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn19" width="120px" >
                 <table:label><Text id="_IDGenText47" text="Service Text"/></table:label> 
                 <table:template>
-                     <Text id="_IDGenText21" text="{ServiceText}"/>
+                     <Text id="_IDGenText21" text="{serviceText}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn20" width="120px">
                 <table:label><Text id="_IDGenText48" text="Line Text"/></table:label> 
                 <table:template>
-                    <Text id="_IDGenText22" text="{LineText}"/>
+                    <Text id="_IDGenText22" text="{lineText}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn21" width="120px">
                 <table:label><Text id="_IDGenText49" text="Personnel.NR"/></table:label> 
                 <table:template>
-                    <Text id="_IDGenText23" text="{PersonnelNR}"/>
+                    <Text id="_IDGenText23" text="{personnelNumberCode}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn22" width="120px">
                 <table:label><Text id="_IDGenText50" text="Line Type"/></table:label> 
                 <table:template>
-                    <Text id="_IDGenText24" text="{LineType}"/>
+                    <Text id="_IDGenText24" text="{lineTypeCode}"/>
                 </table:template>
                 
             </table:Column>
@@ -285,7 +286,7 @@ controllerName="invoice.controller.invoice"
             <table:Column id="_IDGenColumn23" width="120px">
                 <table:label><Text id="_IDGenText51" text="Bidders'line"/></table:label> 
                 <table:template>
-                    <Text id="_IDGenText25" text="{Biddersline}"/>
+                    <Text id="_IDGenText25" text="{biddersLine}"/>
                 </table:template>
                 
             </table:Column>
@@ -293,14 +294,14 @@ controllerName="invoice.controller.invoice"
             <table:Column id="_IDGenColumn24" width="120px">
                 <table:label><Text id="_IDGenText52" text="Supplementary line"/></table:label> 
                 <table:template>
-                    <Text id="_IDGenText26" text="{Supplementaryline}"/>
+                    <Text id="_IDGenText26" text="{supplementaryLine}"/>
                 </table:template>
             </table:Column>
 
             <table:Column id="_IDGenColumn25" width="120px">
                 <table:label><Text id="_IDGenText53" text="Lot Cost One"/></table:label> 
                 <table:template>
-                    <Text id="_IDGenText27" text="{LotCostOne}"/>
+                    <Text id="_IDGenText27" text="{lotCostOne}"/>
                 </table:template>
             </table:Column>
 

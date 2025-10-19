@@ -52,138 +52,138 @@ module.exports = cds.service.impl(async function () {
       ExecutionOrderMains, ServiceInvoiceMains
     } = this.entities;
 
-// this.on('saveOrUpdateMainItems', async (req) => {
-//     const {
-//       salesQuotation,
-//       salesQuotationItem,
-//       pricingProcedureStep,
-//       pricingProcedureCounter,
-//       customerNumber,
-//       invoiceMainItemCommands
-//     } = req.data;
+  // this.on('saveOrUpdateMainItems', async (req) => {
+  //     const {
+  //       salesQuotation,
+  //       salesQuotationItem,
+  //       pricingProcedureStep,
+  //       pricingProcedureCounter,
+  //       customerNumber,
+  //       invoiceMainItemCommands
+  //     } = req.data;
 
-//     const tx = cds.transaction(req);
-//     let savedItems = [];
+  //     const tx = cds.transaction(req);
+  //     let savedItems = [];
 
-//     try {
-//       // Step 1: delete existing items
-//       if (salesQuotation && salesQuotationItem) {
-//         await tx.run(
-//           DELETE.from(InvoiceMainItems)
-//             .where({ referenceId: salesQuotation, salesQuotationItem })
-//         );
-//       }
+  //     try {
+  //       // Step 1: delete existing items
+  //       if (salesQuotation && salesQuotationItem) {
+  //         await tx.run(
+  //           DELETE.from(InvoiceMainItems)
+  //             .where({ referenceId: salesQuotation, salesQuotationItem })
+  //         );
+  //       }
 
-//       // Step 2: enrich & insert main item (without subItems)
-//       const command = { ...invoiceMainItemCommands };
-//       command.referenceId = salesQuotation;
-//       command.salesQuotationItem = salesQuotationItem;
+  //       // Step 2: enrich & insert main item (without subItems)
+  //       const command = { ...invoiceMainItemCommands };
+  //       command.referenceId = salesQuotation;
+  //       command.salesQuotationItem = salesQuotationItem;
 
-//       const subItems = command.subItemList || [];
-//       delete command.subItemList;
+  //       const subItems = command.subItemList || [];
+  //       delete command.subItemList;
 
-//       // fetch quotation details
-//       const salesQuotationApiResponse = await axios.get(
-//         'https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$top=50',
-//         {
-//           headers: { 'Accept': 'application/json' }
-//         }
-//       );
+  //       // fetch quotation details
+  //       const salesQuotationApiResponse = await axios.get(
+  //         'https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$top=50',
+  //         {
+  //           headers: { 'Accept': 'application/json' }
+  //         }
+  //       );
 
-//       const salesQuotationResults = salesQuotationApiResponse?.data?.d?.results || [];
-//       for (const quotation of salesQuotationResults) {
-//         if (quotation.SalesQuotation === salesQuotation) {
-//           command.referenceSDDocument = quotation.ReferenceSDDocument;
-//           break;
-//         }
-//       }
+  //       const salesQuotationResults = salesQuotationApiResponse?.data?.d?.results || [];
+  //       for (const quotation of salesQuotationResults) {
+  //         if (quotation.SalesQuotation === salesQuotation) {
+  //           command.referenceSDDocument = quotation.ReferenceSDDocument;
+  //           break;
+  //         }
+  //       }
 
-//       // insert main item
-//       const insertedMain = await tx.run(INSERT.into(InvoiceMainItems).entries(command));
-//       const savedMain = insertedMain[0] ?? command;
+  //       // insert main item
+  //       const insertedMain = await tx.run(INSERT.into(InvoiceMainItems).entries(command));
+  //       const savedMain = insertedMain[0] ?? command;
 
-//       // Step 3: insert subItems
-//       for (const sub of subItems) {
-//         sub.invoiceMainItemCode = savedMain.invoiceMainItemCode;
-//         await tx.run(INSERT.into(InvoiceSubItems).entries(sub));
-//       }
+  //       // Step 3: insert subItems
+  //       for (const sub of subItems) {
+  //         sub.invoiceMainItemCode = savedMain.invoiceMainItemCode;
+  //         await tx.run(INSERT.into(InvoiceSubItems).entries(sub));
+  //       }
 
-//       // Step 4: calculate & update totalHeader
-//       const totalHeader = (savedMain.totalWithProfit || 0) +
-//         subItems.reduce((sum, s) => sum + (s.total || 0), 0);
+  //       // Step 4: calculate & update totalHeader
+  //       const totalHeader = (savedMain.totalWithProfit || 0) +
+  //         subItems.reduce((sum, s) => sum + (s.total || 0), 0);
 
-//       await tx.run(
-//         UPDATE(InvoiceMainItems)
-//           .set({ totalHeader })
-//           .where({ invoiceMainItemCode: savedMain.invoiceMainItemCode })
-//       );
+  //       await tx.run(
+  //         UPDATE(InvoiceMainItems)
+  //           .set({ totalHeader })
+  //           .where({ invoiceMainItemCode: savedMain.invoiceMainItemCode })
+  //       );
 
-//       savedMain.totalHeader = totalHeader;
-//       savedItems.push(savedMain);
+  //       savedMain.totalHeader = totalHeader;
+  //       savedItems.push(savedMain);
 
-//       // 🔹 Step 5: Call external Invoice Pricing API
-//       try {
-//         await callInvoicePricingAPI(
-//           salesQuotation,
-//           salesQuotationItem,
-//           pricingProcedureStep,
-//           pricingProcedureCounter,
-//           totalHeader
-//         );
-//       } catch (apiErr) {
-//         req.warn(`Failed to update invoice pricing: ${apiErr.message}`);
-//       }
+  //       // 🔹 Step 5: Call external Invoice Pricing API
+  //       try {
+  //         await callInvoicePricingAPI(
+  //           salesQuotation,
+  //           salesQuotationItem,
+  //           pricingProcedureStep,
+  //           pricingProcedureCounter,
+  //           totalHeader
+  //         );
+  //       } catch (apiErr) {
+  //         req.warn(`Failed to update invoice pricing: ${apiErr.message}`);
+  //       }
 
-//       return savedItems;
-//     } catch (err) {
-//       req.error(500, `Error in saveOrUpdateMainItems: ${err.message}`);
-//     }
-//   });
+  //       return savedItems;
+  //     } catch (err) {
+  //       req.error(500, `Error in saveOrUpdateMainItems: ${err.message}`);
+  //     }
+  //   });
 
-//   async function callInvoicePricingAPI(salesQuotation, salesQuotationItem, pricingProcedureStep, pricingProcedureCounter, totalHeader) {
-//     // prepare request body
-//     const body = {
-//       ConditionType: "PPR0",
-//       ConditionRateValue: String(totalHeader)
-//     };
+  //   async function callInvoicePricingAPI(salesQuotation, salesQuotationItem, pricingProcedureStep, pricingProcedureCounter, totalHeader) {
+  //     // prepare request body
+  //     const body = {
+  //       ConditionType: "PPR0",
+  //       ConditionRateValue: String(totalHeader)
+  //     };
 
-//     // TODO: move credentials to destination / env vars
-//     const credentials = "BTP_USER1:#yiVfheJbFolFxgkEwCBFcWvYkPzrQDENEArAXn5";
-//     const encoded = Buffer.from(credentials, 'utf8').toString('base64');
+  //     // TODO: move credentials to destination / env vars
+  //     const credentials = "BTP_USER1:#yiVfheJbFolFxgkEwCBFcWvYkPzrQDENEArAXn5";
+  //     const encoded = Buffer.from(credentials, 'utf8').toString('base64');
 
-//     // fetch CSRF token
-//     const tokenResp = await axios.get(
-//       `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItem(SalesQuotation='${salesQuotation}',SalesQuotationItem='${salesQuotationItem}')/to_PricingElement?$top=50`,
-//       {
-//         headers: {
-//           'x-csrf-token': 'Fetch',
-//           'Authorization': `Basic ${encoded}`,
-//           'Accept': 'application/json'
-//         }
-//       }
-//     );
+  //     // fetch CSRF token
+  //     const tokenResp = await axios.get(
+  //       `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItem(SalesQuotation='${salesQuotation}',SalesQuotationItem='${salesQuotationItem}')/to_PricingElement?$top=50`,
+  //       {
+  //         headers: {
+  //           'x-csrf-token': 'Fetch',
+  //           'Authorization': `Basic ${encoded}`,
+  //           'Accept': 'application/json'
+  //         }
+  //       }
+  //     );
 
-//     const csrfToken = tokenResp.headers['x-csrf-token'];
-//     const cookies = tokenResp.headers['set-cookie'];
+  //     const csrfToken = tokenResp.headers['x-csrf-token'];
+  //     const cookies = tokenResp.headers['set-cookie'];
 
-//     if (!csrfToken) throw new Error("Failed to fetch CSRF token");
+  //     if (!csrfToken) throw new Error("Failed to fetch CSRF token");
 
-//     // patch request
-//     const patchURL = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItemPrcgElmnt(SalesQuotation='${salesQuotation}',SalesQuotationItem='${salesQuotationItem}',PricingProcedureStep='${pricingProcedureStep}',PricingProcedureCounter='${pricingProcedureCounter}')`;
+  //     // patch request
+  //     const patchURL = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItemPrcgElmnt(SalesQuotation='${salesQuotation}',SalesQuotationItem='${salesQuotationItem}',PricingProcedureStep='${pricingProcedureStep}',PricingProcedureCounter='${pricingProcedureCounter}')`;
 
-//     await axios.patch(patchURL, body, {
-//       headers: {
-//         'Authorization': `Basic ${encoded}`,
-//         'x-csrf-token': csrfToken,
-//         'If-Match': '*',
-//         'Content-Type': 'application/json',
-//         'Cookie': cookies.join('; ')
-//       }
-//     });
-//   }
+  //     await axios.patch(patchURL, body, {
+  //       headers: {
+  //         'Authorization': `Basic ${encoded}`,
+  //         'x-csrf-token': csrfToken,
+  //         'If-Match': '*',
+  //         'Content-Type': 'application/json',
+  //         'Cookie': cookies.join('; ')
+  //       }
+  //     });
+  //   }
 
 
-///////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////
   this.on('saveOrUpdateMainItems', async (req) => {
     const {
       salesQuotation,
@@ -325,201 +325,201 @@ module.exports = cds.service.impl(async function () {
     });
   }
   /////////////////////////////////////////////////////////////////////////
- this.on('getInvoiceMainItemByReferenceIdAndItemNumber', async (req) => {
-  const { referenceId, salesQuotationItem } = req.data;
+  this.on('getInvoiceMainItemByReferenceIdAndItemNumber', async (req) => {
+    const { referenceId, salesQuotationItem } = req.data;
 
-  // Fetch matching items from DB
-  const db = cds.transaction(req);
-  // let items = await db.run(
-  //   SELECT.from(InvoiceMainItems).columns(
-  //     '*',
-  //     { subItemList: ['*'] }   
-  //   ).where({
-  //     referenceId: referenceId,
-  //     salesQuotationItem: salesQuotationItem
-  //   })
-  // );
- const items = await cds.read(InvoiceMainItems, i => {
-    i('*', i.subItemList('*'))   // shorthand expand syntax
-  }).where({ referenceId, salesQuotationItem });
-  if (!items.length) {
-    return []; // or throw req.error(404, 'No matching items found');
-  }
-
-  // Call external S4 API for SalesQuotationItemText
-  const response = await axios.get(
-    `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?SalesQuotation=${referenceId}`,
-    { headers: { Accept: 'application/json' } }
-  );
-
-  // Extract array safely
-  const results = response.data?.d?.results || [];
-
-  // Find matching item
-  const matchingNode = results.find(
-    (node) => node.SalesQuotationItem === salesQuotationItem
-  );
-
-  if (matchingNode) {
-    items = items.map((item) => {
-      item.salesQuotationItemText = matchingNode.SalesQuotationItemText;
-      return item;
-    });
-
-    // Optionally update DB
-    for (const item of items) {
-      await db.run(
-        UPDATE(InvoiceMainItems, item.ID).set({
-          salesQuotationItemText: item.salesQuotationItemText
-        })
-      );
+    // Fetch matching items from DB
+    const db = cds.transaction(req);
+    // let items = await db.run(
+    //   SELECT.from(InvoiceMainItems).columns(
+    //     '*',
+    //     { subItemList: ['*'] }   
+    //   ).where({
+    //     referenceId: referenceId,
+    //     salesQuotationItem: salesQuotationItem
+    //   })
+    // );
+    const items = await cds.read(InvoiceMainItems, i => {
+      i('*', i.subItemList('*'))   // shorthand expand syntax
+    }).where({ referenceId, salesQuotationItem });
+    if (!items.length) {
+      return []; // or throw req.error(404, 'No matching items found');
     }
-  }
 
-  return items;
-});
+    // Call external S4 API for SalesQuotationItemText
+    const response = await axios.get(
+      `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?SalesQuotation=${referenceId}`,
+      { headers: { Accept: 'application/json' } }
+    );
+
+    // Extract array safely
+    const results = response.data?.d?.results || [];
+
+    // Find matching item
+    const matchingNode = results.find(
+      (node) => node.SalesQuotationItem === salesQuotationItem
+    );
+
+    if (matchingNode) {
+      items = items.map((item) => {
+        item.salesQuotationItemText = matchingNode.SalesQuotationItemText;
+        return item;
+      });
+
+      // Optionally update DB
+      for (const item of items) {
+        await db.run(
+          UPDATE(InvoiceMainItems, item.ID).set({
+            salesQuotationItemText: item.salesQuotationItemText
+          })
+        );
+      }
+    }
+
+    return items;
+  });
 
 
- async function deleteByReferenceIdAndSalesQuotationItem(referenceId, salesQuotationItem) {
+  async function deleteByReferenceIdAndSalesQuotationItem(referenceId, salesQuotationItem) {
     return await DELETE.from(InvoiceMainItems).where({ referenceId, salesQuotationItem });
   }
-//   this.on('saveOrUpdateMainItems', async (req) => {
-//   const {
-//     salesQuotation,
-//     salesQuotationItem,
-//     pricingProcedureStep,
-//     pricingProcedureCounter,
-//     customerNumber,
-//     invoiceMainItemCommands
-//   } = req.data;
+  //   this.on('saveOrUpdateMainItems', async (req) => {
+  //   const {
+  //     salesQuotation,
+  //     salesQuotationItem,
+  //     pricingProcedureStep,
+  //     pricingProcedureCounter,
+  //     customerNumber,
+  //     invoiceMainItemCommands
+  //   } = req.data;
 
-//   const tx = cds.transaction(req);
-//   let savedItems = [];
+  //   const tx = cds.transaction(req);
+  //   let savedItems = [];
 
-//   try {
-//     // Step 1: delete existing items
-//     if (salesQuotation && salesQuotationItem) {
-//       await deleteByReferenceIdAndSalesQuotationItem(salesQuotation, salesQuotationItem);
-//     }
+  //   try {
+  //     // Step 1: delete existing items
+  //     if (salesQuotation && salesQuotationItem) {
+  //       await deleteByReferenceIdAndSalesQuotationItem(salesQuotation, salesQuotationItem);
+  //     }
 
-//     // Step 2: enrich & insert main item (without subItems)
-//     const command = { ...invoiceMainItemCommands };
-//     command.referenceId = salesQuotation;
-//     command.salesQuotationItem = salesQuotationItem;
+  //     // Step 2: enrich & insert main item (without subItems)
+  //     const command = { ...invoiceMainItemCommands };
+  //     command.referenceId = salesQuotation;
+  //     command.salesQuotationItem = salesQuotationItem;
 
-//     // detach subItems so we don’t insert them here
-//     const subItems = command.subItemList || [];
-//     delete command.subItemList;
+  //     // detach subItems so we don’t insert them here
+  //     const subItems = command.subItemList || [];
+  //     delete command.subItemList;
 
-//     // fetch quotation details
-//     const salesQuotationApiResponse = await axios.get(
-//       'https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$inlinecount=allpages&$'
-//     );
-//     const salesQuotationResults = salesQuotationApiResponse?.data?.d?.results || [];
-//     for (const quotation of salesQuotationResults) {
-//       if (quotation.SalesQuotation === salesQuotation) {
-//         command.referenceSDDocument = quotation.ReferenceSDDocument;
-//         break;
-//       }
-//     }
+  //     // fetch quotation details
+  //     const salesQuotationApiResponse = await axios.get(
+  //       'https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$inlinecount=allpages&$'
+  //     );
+  //     const salesQuotationResults = salesQuotationApiResponse?.data?.d?.results || [];
+  //     for (const quotation of salesQuotationResults) {
+  //       if (quotation.SalesQuotation === salesQuotation) {
+  //         command.referenceSDDocument = quotation.ReferenceSDDocument;
+  //         break;
+  //       }
+  //     }
 
-//     // insert main item
-//     const insertedMain = await tx.run(INSERT.into(InvoiceMainItems).entries(command));
-//     const savedMain = insertedMain[0] ?? command;
+  //     // insert main item
+  //     const insertedMain = await tx.run(INSERT.into(InvoiceMainItems).entries(command));
+  //     const savedMain = insertedMain[0] ?? command;
 
-//     // Step 3: insert subItems with the new main item id
-//     for (const sub of subItems) {
-//       sub.invoiceMainItemCode = savedMain.invoiceMainItemCode; // link to parent
-//       await tx.run(INSERT.into(InvoiceSubItems).entries(sub));
-//     }
+  //     // Step 3: insert subItems with the new main item id
+  //     for (const sub of subItems) {
+  //       sub.invoiceMainItemCode = savedMain.invoiceMainItemCode; // link to parent
+  //       await tx.run(INSERT.into(InvoiceSubItems).entries(sub));
+  //     }
 
-//     // Step 4: calculate & update totalHeader
-//     const totalHeader = (savedMain.totalWithProfit || 0) +
-//       subItems.reduce((sum, s) => sum + (s.total || 0), 0);
+  //     // Step 4: calculate & update totalHeader
+  //     const totalHeader = (savedMain.totalWithProfit || 0) +
+  //       subItems.reduce((sum, s) => sum + (s.total || 0), 0);
 
-//     await tx.run(
-//       UPDATE(InvoiceMainItems)
-//         .set({ totalHeader })
-//         .where({ invoiceMainItemCode: savedMain.invoiceMainItemCode })
-//     );
+  //     await tx.run(
+  //       UPDATE(InvoiceMainItems)
+  //         .set({ totalHeader })
+  //         .where({ invoiceMainItemCode: savedMain.invoiceMainItemCode })
+  //     );
 
-//     savedMain.totalHeader = totalHeader;
-//     savedItems.push(savedMain);
+  //     savedMain.totalHeader = totalHeader;
+  //     savedItems.push(savedMain);
 
-//     return savedItems;
-//   } catch (err) {
-//     req.error(500, `Error in saveOrUpdateMainItems: ${err.message}`);
-//   }
-// });
+  //     return savedItems;
+  //   } catch (err) {
+  //     req.error(500, `Error in saveOrUpdateMainItems: ${err.message}`);
+  //   }
+  // });
 
 
-//   this.on('saveOrUpdateMainItems', async (req) => {
-//     console.log("ssssssssssssssssss");
-    
-//     const {
-//       salesQuotation,
-//       salesQuotationItem,
-//       pricingProcedureStep,
-//       pricingProcedureCounter,
-//       customerNumber,
-//       invoiceMainItemCommands
-//     } = req.data;
+  //   this.on('saveOrUpdateMainItems', async (req) => {
+  //     console.log("ssssssssssssssssss");
 
-//     const tx = cds.transaction(req);
-//     let savedItems = [];
+  //     const {
+  //       salesQuotation,
+  //       salesQuotationItem,
+  //       pricingProcedureStep,
+  //       pricingProcedureCounter,
+  //       customerNumber,
+  //       invoiceMainItemCommands
+  //     } = req.data;
 
-//     try {
-//       // Step 1: delete existing items if params provided
-//       if (salesQuotation && salesQuotationItem) {
-//         console.log("fsdfas");
-        
-//         await deleteByReferenceIdAndSalesQuotationItem(salesQuotation, salesQuotationItem);
-//         console.log("nnnnn");
-        
-//       }
-// console.log("here");
+  //     const tx = cds.transaction(req);
+  //     let savedItems = [];
 
-//       // Step 2: enrich & insert new item (single command)
-//       const command = invoiceMainItemCommands;
-//       command.referenceId = salesQuotation;
-//       command.salesQuotationItem = salesQuotationItem;
+  //     try {
+  //       // Step 1: delete existing items if params provided
+  //       if (salesQuotation && salesQuotationItem) {
+  //         console.log("fsdfas");
 
-//       // fetch quotation details
-//       const salesQuotationApiResponse = await axios.get('https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$inlinecount=allpages&$');
-//       const salesQuotationResults = salesQuotationApiResponse?.data?.d?.results || [];
+  //         await deleteByReferenceIdAndSalesQuotationItem(salesQuotation, salesQuotationItem);
+  //         console.log("nnnnn");
 
-//       for (const quotation of salesQuotationResults) {
-//         if (quotation.SalesQuotation === salesQuotation) {
-//           command.referenceSDDocument = quotation.ReferenceSDDocument;
-//           break;
-//         }
-//       }
+  //       }
+  // console.log("here");
 
-//       const inserted = await tx.run(INSERT.into(InvoiceMainItems).entries(command));
-//       const savedItem = inserted[0] ?? command;
-//       savedItems.push(savedItem);
+  //       // Step 2: enrich & insert new item (single command)
+  //       const command = invoiceMainItemCommands;
+  //       command.referenceId = salesQuotation;
+  //       command.salesQuotationItem = salesQuotationItem;
 
-//       // Step 3: calculate totalHeader
-//       const totalHeader = savedItems.reduce((sum, item) => sum + (item.totalWithProfit || 0), 0);
+  //       // fetch quotation details
+  //       const salesQuotationApiResponse = await axios.get('https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$inlinecount=allpages&$');
+  //       const salesQuotationResults = salesQuotationApiResponse?.data?.d?.results || [];
 
-//       // Step 4: update totalHeader
-//       await tx.run(
-//         UPDATE(InvoiceMainItems).set({ totalHeader }).where({ invoiceMainItemCode: savedItem.invoiceMainItemCode })
-//       );
-// console.log("aaaaaaaaaaaa");
+  //       for (const quotation of salesQuotationResults) {
+  //         if (quotation.SalesQuotation === salesQuotation) {
+  //           command.referenceSDDocument = quotation.ReferenceSDDocument;
+  //           break;
+  //         }
+  //       }
 
-//       // Step 5: call pricing API
-//       await this.run(INSERT.into('InvoiceMainItems').entries(
-//       savedItems
-//     ));
+  //       const inserted = await tx.run(INSERT.into(InvoiceMainItems).entries(command));
+  //       const savedItem = inserted[0] ?? command;
+  //       savedItems.push(savedItem);
 
-//     return { message: 'Saved successfully' };
+  //       // Step 3: calculate totalHeader
+  //       const totalHeader = savedItems.reduce((sum, item) => sum + (item.totalWithProfit || 0), 0);
 
-//       return savedItems;
-//     } catch (err) {
-//       req.error(500, `Error in saveOrUpdateMainItems: ${err.message}`);
-//     }
-//   });
+  //       // Step 4: update totalHeader
+  //       await tx.run(
+  //         UPDATE(InvoiceMainItems).set({ totalHeader }).where({ invoiceMainItemCode: savedItem.invoiceMainItemCode })
+  //       );
+  // console.log("aaaaaaaaaaaa");
+
+  //       // Step 5: call pricing API
+  //       await this.run(INSERT.into('InvoiceMainItems').entries(
+  //       savedItems
+  //     ));
+
+  //     return { message: 'Saved successfully' };
+
+  //       return savedItems;
+  //     } catch (err) {
+  //       req.error(500, `Error in saveOrUpdateMainItems: ${err.message}`);
+  //     }
+  //   });
 
   /*-------------------------- First App -------------------------------------*/
 
@@ -2230,266 +2230,273 @@ module.exports = cds.service.impl(async function () {
     }
   })
 
- // -------------------------------- Third App - Execution order main ------------------------------ //
-//GET all
-this.on('READ', ExecutionOrderMains, async (req) => {
-  if (req.data.executionOrderMainCode) {
-    return SELECT.one.from(ExecutionOrderMains).where({ executionOrderMainCode: req.data.executionOrderMainCode })
-  }
-  return SELECT.from(ExecutionOrderMains)
-})
-
-//DELETE
-this.on('DELETE', ExecutionOrderMains, async (req) => {
-  const { executionOrderMainCode } = req.data
-  return DELETE.from(ExecutionOrderMains).where({ executionOrderMainCode })
-})
-
-//UPDATE
-this.on('UPDATE', ExecutionOrderMains, async (req) => {
-  const { executionOrderMainCode, ...rest } = req.data
-  return UPDATE(ExecutionOrderMains).set(rest).where({ executionOrderMainCode })
-})
-
-//Action: getExecutionOrderMainById
-this.on('getExecutionOrderMainById', async (req) => {
-  const { executionOrderMainCode } = req.data
-  return SELECT.one.from(ExecutionOrderMains).where({ executionOrderMainCode })
-})
-
-//Action: fetchExecutionOrderMainByDebitMemo
-this.on('fetchExecutionOrderMainByDebitMemo', async (req) => {
-  const { debitMemoRequest, debitMemoRequestItem } = req.data
-
-  try {
-    const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_DEBIT_MEMO_REQUEST_SRV/A_DebitMemoRequest?$top=200`
-    const res = await axios.get(url, {
-      headers: { Authorization: authHeader, Accept: 'application/json' }
-    })
-    const results = res?.data?.d?.results || []
-
-    const matched = results.find(r => r.DebitMemoRequest === debitMemoRequest)
-    if (!matched) req.error(404, `DebitMemoRequest ${debitMemoRequest} not found in S/4`)
-
-    const referenceSDDocument = matched.ReferenceSDDocument
-    if (!referenceSDDocument) req.error(404, `No ReferenceSDDocument for ${debitMemoRequest}`)
-
-    let executionOrders = await SELECT.from(ExecutionOrderMains).where({ referenceId: referenceSDDocument })
-    if (!executionOrders.length) req.error(404, `No ExecutionOrders with ReferenceSDDocument ${referenceSDDocument}`)
-
-    if (debitMemoRequestItem) {
-      executionOrders = executionOrders.filter(o => o.salesOrderItem === debitMemoRequestItem)
-      if (!executionOrders.length) {
-        req.error(404, `No ExecutionOrders with ReferenceSDDocument ${referenceSDDocument} and item ${debitMemoRequestItem}`)
-      }
+  // -------------------------------- Third App - Execution order main ------------------------------ //
+  //GET all
+  this.on('READ', ExecutionOrderMains, async (req) => {
+    if (req.data.executionOrderMainCode) {
+      return SELECT.one.from(ExecutionOrderMains).where({ executionOrderMainCode: req.data.executionOrderMainCode })
     }
+    return SELECT.from(ExecutionOrderMains)
+  })
 
-    return executionOrders
-  } catch (err) {
-    req.error(500, `Failed to fetch debit memo execution orders: ${err.message}`)
-  }
-})
+  //DELETE
+  this.on('DELETE', ExecutionOrderMains, async (req) => {
+    const { executionOrderMainCode } = req.data
+    return DELETE.from(ExecutionOrderMains).where({ executionOrderMainCode })
+  })
 
-//Action: saveOrUpdateExecutionOrders
-this.on('saveOrUpdateExecutionOrders', async (req) => {
-  const {
-    executionOrders,
+  //UPDATE
+  this.on('UPDATE', ExecutionOrderMains, async (req) => {
+    const { executionOrderMainCode, ...rest } = req.data
+    return UPDATE(ExecutionOrderMains).set(rest).where({ executionOrderMainCode })
+  })
+
+  //Action: getExecutionOrderMainById
+  this.on('getExecutionOrderMainById', async (req) => {
+    const { executionOrderMainCode } = req.data
+    return SELECT.one.from(ExecutionOrderMains).where({ executionOrderMainCode })
+  })
+
+  //Action: fetchExecutionOrderMainByDebitMemo
+  this.on('fetchExecutionOrderMainByDebitMemo', async (req) => {
+    const { debitMemoRequest, debitMemoRequestItem } = req.data;
+
+    try {
+      // Step 1: Fetch Debit Memo data from S/4
+      const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_DEBIT_MEMO_REQUEST_SRV/A_DebitMemoRequest?$top=200`;
+      const res = await axios.get(url, {
+        headers: { Authorization: authHeader, Accept: 'application/json' }
+      });
+      const results = res?.data?.d?.results || [];
+
+      const matched = results.find(r => r.DebitMemoRequest === debitMemoRequest);
+      if (!matched) return req.error(404, `DebitMemoRequest ${debitMemoRequest} not found in S/4`);
+
+      const referenceSDDocument = matched.ReferenceSDDocument;
+      if (!referenceSDDocument) return req.error(404, `No ReferenceSDDocument for ${debitMemoRequest}`);
+
+      // Step 2: Fetch execution orders
+      let executionOrders = await SELECT.from(ExecutionOrderMains)
+        .where({ referenceId: referenceSDDocument });
+
+      if (!executionOrders.length)
+        return req.error(404, `No ExecutionOrders with ReferenceSDDocument ${referenceSDDocument}`);
+
+      // Step 3: Optional filtering
+      if (debitMemoRequestItem) {
+        executionOrders = executionOrders.filter(o => o.salesOrderItem === debitMemoRequestItem);
+        if (!executionOrders.length)
+          return req.error(404, `No ExecutionOrders with ReferenceSDDocument ${referenceSDDocument} and item ${debitMemoRequestItem}`);
+      }
+
+      return executionOrders;
+
+    } catch (err) {
+      req.error(500, `Failed to fetch debit memo execution orders: ${err.message}`);
+    }
+  })
+
+
+  //Action: saveOrUpdateExecutionOrders
+  this.on('saveOrUpdateExecutionOrders', async (req) => {
+    const {
+      executionOrders,
+      salesOrder,
+      salesOrderItem,
+      pricingProcedureStep,
+      pricingProcedureCounter,
+      customerNumber
+    } = req.data;
+
+    const tx = cds.transaction(req);
+    let savedOrders = [];
+
+    try {
+      // === Step 1: Delete existing records for same SalesOrder + Item ===
+      if (salesOrder && salesOrderItem) {
+        await tx.run(
+          DELETE.from(ExecutionOrderMains).where({ referenceId: salesOrder, salesOrderItem })
+        );
+      }
+
+      // === Step 2: Fetch S/4 Sales Orders for ReferenceSDDocument enrichment ===
+      let salesOrderResults = [];
+      try {
+        const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder?$top=200`;
+        const res = await axios.get(url, {
+          headers: { Authorization: authHeader, Accept: 'application/json' }
+        });
+        salesOrderResults = res?.data?.d?.results || [];
+      } catch (e) {
+        console.warn('⚠️ Could not load SalesOrders from S/4:', e.message);
+      }
+
+      // === Step 3: Insert each execution order ===
+      for (const command of executionOrders) {
+        const order = { ...command };
+
+        // Add references
+        order.referenceId = salesOrder;
+        order.salesOrderItem = salesOrderItem;
+
+        // Fetch ReferenceSDDocument
+        if (salesOrder && salesOrderResults.length) {
+          const match = salesOrderResults.find(o => o.SalesOrder === salesOrder);
+          if (match) order.referenceSDDocument = match.ReferenceSDDocument;
+        }
+
+        // 🔹 Calculate per-record total and totalHeader
+        const totalQty = Number(order.totalQuantity || 0);
+        const amtPerUnit = Number(order.amountPerUnit || 0);
+        order.total = totalQty * amtPerUnit;
+        order.totalHeader = order.total;
+
+        // Insert into DB
+        const inserted = await tx.run(INSERT.into(ExecutionOrderMains).entries(order));
+        const saved = inserted[0] ?? order;
+
+        // Update totalHeader (ensures DB reflects correct sum)
+        await tx.run(
+          UPDATE(ExecutionOrderMains)
+            .set({ totalHeader: order.total })
+            .where({ executionOrderMainCode: saved.executionOrderMainCode })
+        );
+
+        saved.totalHeader = order.total;
+        savedOrders.push(saved);
+      }
+
+      // === Step 4: Aggregate totalHeader for Pricing API ===
+      const totalHeaderSum = savedOrders.reduce(
+        (sum, item) => sum + (Number(item.totalHeader) || 0),
+        0
+      );
+
+      // === Step 5: Update each record with the aggregated totalHeader ===
+      for (const saved of savedOrders) {
+        await tx.run(
+          UPDATE(ExecutionOrderMains)
+            .set({ totalHeader: totalHeaderSum })
+            .where({ executionOrderMainCode: saved.executionOrderMainCode })
+        );
+        saved.totalHeader = totalHeaderSum;
+      }
+
+      // === Step 6: Call Pricing API ===
+      try {
+        await callSalesOrderPricingAPI(
+          salesOrder,
+          salesOrderItem,
+          pricingProcedureStep,
+          pricingProcedureCounter,
+          totalHeaderSum
+        );
+      } catch (apiErr) {
+        req.warn(`⚠️ Pricing API call failed: ${apiErr.message}`);
+      }
+
+      return savedOrders;
+    } catch (err) {
+      req.error(500, `Error in saveOrUpdateExecutionOrders: ${err.message}`);
+    }
+  })
+
+
+  async function callSalesOrderPricingAPI(
     salesOrder,
     salesOrderItem,
     pricingProcedureStep,
     pricingProcedureCounter,
-    customerNumber
-  } = req.data;
-
-  const tx = cds.transaction(req);
-  let savedOrders = [];
-
-  try {
-    // === Step 1: Delete existing records for same SalesOrder + Item ===
-    if (salesOrder && salesOrderItem) {
-      await tx.run(
-        DELETE.from(ExecutionOrderMains).where({ referenceId: salesOrder, salesOrderItem })
-      );
+    totalHeader
+  ) {
+    const body = {
+      ConditionType: 'PPR0',
+      ConditionRateValue: String(totalHeader)
     }
 
-    // === Step 2: Fetch S/4 Sales Orders for ReferenceSDDocument enrichment ===
-    let salesOrderResults = [];
-    try {
-      const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder?$top=200`;
-      const res = await axios.get(url, {
-        headers: { Authorization: authHeader, Accept: 'application/json' }
-      });
-      salesOrderResults = res?.data?.d?.results || [];
-    } catch (e) {
-      console.warn('⚠️ Could not load SalesOrders from S/4:', e.message);
-    }
-
-    // === Step 3: Insert each execution order ===
-    for (const command of executionOrders) {
-      const order = { ...command };
-
-      // Add references
-      order.referenceId = salesOrder;
-      order.salesOrderItem = salesOrderItem;
-
-      // Fetch ReferenceSDDocument
-      if (salesOrder && salesOrderResults.length) {
-        const match = salesOrderResults.find(o => o.SalesOrder === salesOrder);
-        if (match) order.referenceSDDocument = match.ReferenceSDDocument;
-      }
-
-      // 🔹 Calculate per-record total and totalHeader
-      const totalQty = Number(order.totalQuantity || 0);
-      const amtPerUnit = Number(order.amountPerUnit || 0);
-      order.total = totalQty * amtPerUnit;
-      order.totalHeader = order.total;
-
-      // Insert into DB
-      const inserted = await tx.run(INSERT.into(ExecutionOrderMains).entries(order));
-      const saved = inserted[0] ?? order;
-
-      // Update totalHeader (ensures DB reflects correct sum)
-      await tx.run(
-        UPDATE(ExecutionOrderMains)
-          .set({ totalHeader: order.total })
-          .where({ executionOrderMainCode: saved.executionOrderMainCode })
-      );
-
-      saved.totalHeader = order.total;
-      savedOrders.push(saved);
-    }
-
-    // === Step 4: Aggregate totalHeader for Pricing API ===
-    const totalHeaderSum = savedOrders.reduce(
-      (sum, item) => sum + (Number(item.totalHeader) || 0),
-      0
-    );
-
-    // === Step 5: Update each record with the aggregated totalHeader ===
-    for (const saved of savedOrders) {
-      await tx.run(
-        UPDATE(ExecutionOrderMains)
-          .set({ totalHeader: totalHeaderSum })
-          .where({ executionOrderMainCode: saved.executionOrderMainCode })
-      );
-      saved.totalHeader = totalHeaderSum;
-    }
-
-    // === Step 6: Call Pricing API ===
-    try {
-      await callSalesOrderPricingAPI(
-        salesOrder,
-        salesOrderItem,
-        pricingProcedureStep,
-        pricingProcedureCounter,
-        totalHeaderSum
-      );
-    } catch (apiErr) {
-      req.warn(`⚠️ Pricing API call failed: ${apiErr.message}`);
-    }
-
-    return savedOrders;
-  } catch (err) {
-    req.error(500, `Error in saveOrUpdateExecutionOrders: ${err.message}`);
-  }
-})
-
-
-async function callSalesOrderPricingAPI(
-  salesOrder,
-  salesOrderItem,
-  pricingProcedureStep,
-  pricingProcedureCounter,
-  totalHeader
-) {
-  const body = {
-    ConditionType: 'PPR0',
-    ConditionRateValue: String(totalHeader)
-  }
-
-  // Step 1: Fetch CSRF token
-  const tokenResp = await axios.get(
-    `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrderItem(SalesOrder='${salesOrder}',SalesOrderItem='${salesOrderItem}')/to_PricingElement?$top=50`,
-    {
-      headers: {
-        'x-csrf-token': 'Fetch',
-        Authorization: authHeader,
-        Accept: 'application/json'
-      }
-    }
-  )
-  const csrfToken = tokenResp.headers['x-csrf-token']
-  const cookies = tokenResp.headers['set-cookie']
-  if (!csrfToken) throw new Error('Failed to fetch CSRF token')
-
-  // Step 2: PATCH request
-  const patchURL = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrderItemPrcgElmnt(SalesOrder='${salesOrder}',SalesOrderItem='${salesOrderItem}',PricingProcedureStep='${pricingProcedureStep}',PricingProcedureCounter='${pricingProcedureCounter}')`
-
-  await axios.patch(patchURL, body, {
-    headers: {
-      Authorization: authHeader,
-      'x-csrf-token': csrfToken,
-      'If-Match': '*',
-      'Content-Type': 'application/json',
-      Cookie: cookies.join('; ')
-    }
-  })
-}
-
-//Action: findBySalesOrderAndItem
-this.on('findBySalesOrderAndItem', async (req) => {
-  const { salesOrder, salesOrderItem } = req.data
-  const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder('${salesOrder}')/to_Item('${salesOrderItem}')`
-  const res = await axios.get(url, { headers: { Authorization: authHeader, Accept: 'application/json' } })
-  return JSON.stringify(res.data)
-})
-
-//Action: findItemsBySalesOrder
-this.on('findItemsBySalesOrder', async (req) => {
-  const { salesOrder } = req.data
-  const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder('${salesOrder}')/to_Item?$top=200`
-  const res = await axios.get(url, { headers: { Authorization: authHeader, Accept: 'application/json' } })
-  return JSON.stringify(res.data)
-})
-
-//Action: getExecutionOrderMainByReferenceId
-this.on('getExecutionOrderMainByReferenceId', async (req) => {
-  const { referenceId, salesOrderItem } = req.data
-  let items = await SELECT.from(ExecutionOrderMains).where(
-    salesOrderItem ? { referenceId, salesOrderItem } : { referenceId }
-  )
-  if (!items.length) return []
-
-  try {
-    const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder('${referenceId}')/to_Item?$top=200`
-    const res = await axios.get(url, { headers: { Authorization: authHeader, Accept: 'application/json' } })
-    const results = res?.data?.d?.results || []
-
-    if (salesOrderItem) {
-      const match = results.find(r => r.SalesOrderItem === salesOrderItem)
-      if (match) {
-        const text = match.SalesOrderItemText
-        items = items.map(it => ({ ...it, salesOrderItemText: text }))
-        const tx = cds.transaction(req)
-        for (const it of items) {
-          await tx.run(UPDATE(ExecutionOrderMains).set({ salesOrderItemText: text }).where({ executionOrderMainCode: it.executionOrderMainCode }))
+    // Step 1: Fetch CSRF token
+    const tokenResp = await axios.get(
+      `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrderItem(SalesOrder='${salesOrder}',SalesOrderItem='${salesOrderItem}')/to_PricingElement?$top=50`,
+      {
+        headers: {
+          'x-csrf-token': 'Fetch',
+          Authorization: authHeader,
+          Accept: 'application/json'
         }
       }
-    }
-  } catch (e) {
-    console.warn('Could not enrich SalesOrderItemText:', e.message)
+    )
+    const csrfToken = tokenResp.headers['x-csrf-token']
+    const cookies = tokenResp.headers['set-cookie']
+    if (!csrfToken) throw new Error('Failed to fetch CSRF token')
+
+    // Step 2: PATCH request
+    const patchURL = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrderItemPrcgElmnt(SalesOrder='${salesOrder}',SalesOrderItem='${salesOrderItem}',PricingProcedureStep='${pricingProcedureStep}',PricingProcedureCounter='${pricingProcedureCounter}')`
+
+    await axios.patch(patchURL, body, {
+      headers: {
+        Authorization: authHeader,
+        'x-csrf-token': csrfToken,
+        'If-Match': '*',
+        'Content-Type': 'application/json',
+        Cookie: cookies.join('; ')
+      }
+    })
   }
 
-  return items
-})
+  //Action: findBySalesOrderAndItem
+  this.on('findBySalesOrderAndItem', async (req) => {
+    const { salesOrder, salesOrderItem } = req.data
+    const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder('${salesOrder}')/to_Item('${salesOrderItem}')`
+    const res = await axios.get(url, { headers: { Authorization: authHeader, Accept: 'application/json' } })
+    return JSON.stringify(res.data)
+  })
 
-//Action: findByLineNumber
-this.on('findByLineNumber', async (req) => {
-  const { lineNumber } = req.data
-  return SELECT.from(ExecutionOrderMains).where({ lineNumber })
-})
+  //Action: findItemsBySalesOrder
+  this.on('findItemsBySalesOrder', async (req) => {
+    const { salesOrder } = req.data
+    const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder('${salesOrder}')/to_Item?$top=200`
+    const res = await axios.get(url, { headers: { Authorization: authHeader, Accept: 'application/json' } })
+    return JSON.stringify(res.data)
+  })
 
-// -------------------------------- Fourth App - Service Invoice main ------------------------------ //
+  //Action: getExecutionOrderMainByReferenceId
+  this.on('getExecutionOrderMainByReferenceId', async (req) => {
+    const { referenceId, salesOrderItem } = req.data
+    let items = await SELECT.from(ExecutionOrderMains).where(
+      salesOrderItem ? { referenceId, salesOrderItem } : { referenceId }
+    )
+    if (!items.length) return []
+
+    try {
+      const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder('${referenceId}')/to_Item?$top=200`
+      const res = await axios.get(url, { headers: { Authorization: authHeader, Accept: 'application/json' } })
+      const results = res?.data?.d?.results || []
+
+      if (salesOrderItem) {
+        const match = results.find(r => r.SalesOrderItem === salesOrderItem)
+        if (match) {
+          const text = match.SalesOrderItemText
+          items = items.map(it => ({ ...it, salesOrderItemText: text }))
+          const tx = cds.transaction(req)
+          for (const it of items) {
+            await tx.run(UPDATE(ExecutionOrderMains).set({ salesOrderItemText: text }).where({ executionOrderMainCode: it.executionOrderMainCode }))
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Could not enrich SalesOrderItemText:', e.message)
+    }
+
+    return items
+  })
+
+  //Action: findByLineNumber
+  this.on('findByLineNumber', async (req) => {
+    const { lineNumber } = req.data
+    return SELECT.from(ExecutionOrderMains).where({ lineNumber })
+  })
+
+  // -------------------------------- Fourth App - Service Invoice main ------------------------------ //
 
   // === Get all
   this.on('getAllServiceInvoices', async () => {
@@ -2547,243 +2554,243 @@ this.on('findByLineNumber', async (req) => {
 
   // === Calculate Quantities (with accumulation)
   this.on('calculateQuantities', async (req) => {
-  const {
-    executionOrderMainCode,
-    quantity,
-    totalQuantity,
-    amountPerUnit,
-    overFulfillmentPercentage,
-    unlimitedOverFulfillment
-  } = req.data;
+    const {
+      executionOrderMainCode,
+      quantity,
+      totalQuantity,
+      amountPerUnit,
+      overFulfillmentPercentage,
+      unlimitedOverFulfillment
+    } = req.data;
 
-  if (!executionOrderMainCode) return req.error(400, 'Execution Order Main Code is required');
+    if (!executionOrderMainCode) return req.error(400, 'Execution Order Main Code is required');
 
-  const tempData = tempDataService.getOrCreate(executionOrderMainCode);
-  tempData.version++;
+    const tempData = tempDataService.getOrCreate(executionOrderMainCode);
+    tempData.version++;
 
-  const postedInvoices = await SELECT.from(ServiceInvoiceMains).where({ executionOrderMainCode });
-  const postedAQ = postedInvoices.reduce((sum, inv) => sum + (inv.quantity || 0), 0);
-  const postedTotal = postedInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
+    const postedInvoices = await SELECT.from(ServiceInvoiceMains).where({ executionOrderMainCode });
+    const postedAQ = postedInvoices.reduce((sum, inv) => sum + (inv.quantity || 0), 0);
+    const postedTotal = postedInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
 
-  let allowedQuantity = totalQuantity || 0;
-  if (overFulfillmentPercentage) allowedQuantity += (totalQuantity * overFulfillmentPercentage / 100);
-  if (unlimitedOverFulfillment) allowedQuantity = Number.MAX_VALUE;
+    let allowedQuantity = totalQuantity || 0;
+    if (overFulfillmentPercentage) allowedQuantity += (totalQuantity * overFulfillmentPercentage / 100);
+    if (unlimitedOverFulfillment) allowedQuantity = Number.MAX_VALUE;
 
-  const currentQuantity = quantity ?? tempData.quantities[tempData.currentQuantityIndex] ?? 0;
-  const totalRequested = postedAQ + currentQuantity;
+    const currentQuantity = quantity ?? tempData.quantities[tempData.currentQuantityIndex] ?? 0;
+    const totalRequested = postedAQ + currentQuantity;
 
-  if (totalRequested > allowedQuantity) return req.error(400, 'Quantity exceeds allowed limit');
+    if (totalRequested > allowedQuantity) return req.error(400, 'Quantity exceeds allowed limit');
 
-  // Update temp data
-  tempData.quantities.push(currentQuantity);
-  tempData.currentQuantityIndex = tempData.quantities.length - 1;
-  tempData.amountPerUnit = amountPerUnit || tempData.amountPerUnit || 0;
-  tempData.actualQuantity = postedAQ + currentQuantity;
-  tempData.total = tempData.actualQuantity * tempData.amountPerUnit;
-  tempData.totalHeader = postedTotal + tempData.total;
-  tempData.remainingQuantity = Math.max((totalQuantity || 0) - tempData.actualQuantity, 0);
-  tempData.actualPercentage = totalQuantity ? Math.min((tempData.actualQuantity / totalQuantity) * 100, 100) : 0;
+    // Update temp data
+    tempData.quantities.push(currentQuantity);
+    tempData.currentQuantityIndex = tempData.quantities.length - 1;
+    tempData.amountPerUnit = amountPerUnit || tempData.amountPerUnit || 0;
+    tempData.actualQuantity = postedAQ + currentQuantity;
+    tempData.total = tempData.actualQuantity * tempData.amountPerUnit;
+    tempData.totalHeader = postedTotal + tempData.total;
+    tempData.remainingQuantity = Math.max((totalQuantity || 0) - tempData.actualQuantity, 0);
+    tempData.actualPercentage = totalQuantity ? Math.min((tempData.actualQuantity / totalQuantity) * 100, 100) : 0;
 
-  tempDataService.update(executionOrderMainCode, tempData);
-  return tempData;
-})
-
-
-// === Calculate Quantities Without Accumulation ===
-this.on('calculateQuantitiesWithoutAccumulation', async (req) => {
-  try {
-    const { executionOrderMainCode, quantity, totalQuantity, amountPerUnit } = req.data
-
-    if (!executionOrderMainCode) return req.error(400, "Execution Order Main Code is required")
-
-    // Ensure we can handle UUID keys
-    const code = typeof executionOrderMainCode === 'string'
-      ? executionOrderMainCode
-      : String(executionOrderMainCode)
-
-    const tempData = tempDataService.getOrCreate(code)
-    tempData.version = (tempData.version || 0) + 1
-
-    // --- Core logic ---
-    const q = Number(quantity) || 0
-    const aq = Number(amountPerUnit) || tempData.amountPerUnit || 0
-    const tq = Number(totalQuantity) || 0
-
-    tempData.quantities.push(q)
-    tempData.currentQuantityIndex = tempData.quantities.length - 1
-    tempData.amountPerUnit = aq
-    tempData.remainingQuantity = Math.max(tq - q, 0)
-    tempData.actualQuantity = q
-    tempData.actualPercentage = tq ? (q / tq) * 100 : 0
-    tempData.total = q * aq
-    tempData.totalHeader = tempData.total
-
-    // --- Save updated temp data ---
-    tempDataService.update(code, tempData)
-
-    // Return response consistent with Java logic
-    return {
-      quantities: tempData.quantities,
-      currentQuantityIndex: tempData.currentQuantityIndex,
-      amountPerUnit: tempData.amountPerUnit,
-      remainingQuantity: tempData.remainingQuantity,
-      actualQuantity: tempData.actualQuantity,
-      actualPercentage: tempData.actualPercentage,
-      total: tempData.total,
-      totalHeader: tempData.totalHeader,
-      version: tempData.version
-    }
-
-  } catch (err) {
-    console.error('❌ Error in calculateQuantitiesWithoutAccumulation:', err.message)
-    req.error(500, `Error in calculateQuantitiesWithoutAccumulation: ${err.message}`)
-  }
-})
+    tempDataService.update(executionOrderMainCode, tempData);
+    return tempData;
+  })
 
 
- // === SAVE OR UPDATE SERVICE INVOICES ===
-this.on('saveOrUpdateServiceInvoices', async (req) => {
-  const {
-    serviceInvoiceCommands,
-    debitMemoRequest,
-    debitMemoRequestItem,
-    pricingProcedureStep,
-    pricingProcedureCounter,
-    customerNumber
-  } = req.data;
-
-  const tx = cds.transaction(req);
-  let savedInvoices = [];
-
-  try {
-    if (!serviceInvoiceCommands || serviceInvoiceCommands.length === 0) {
-      req.error(400, 'No service invoice data provided');
-    }
-
-    // Step 1: Delete existing entries for same debitMemoRequest + item
-    if (debitMemoRequest && debitMemoRequestItem) {
-      await tx.run(
-        DELETE.from(ServiceInvoiceMains).where({ referenceId: debitMemoRequest, debitMemoRequestItem })
-      );
-    }
-
-    // Step 2: Fetch ReferenceSDDocument from S/4
-    let referenceSDDocument = null;
-    if (debitMemoRequest) {
-      try {
-        const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_DEBIT_MEMO_REQUEST_SRV/A_DebitMemoRequest?$top=100`;
-        const res = await axios.get(url, { headers: { Authorization: authHeader, Accept: 'application/json' } });
-        const results = res?.data?.d?.results || [];
-
-        const match = results.find(r => r.DebitMemoRequest === debitMemoRequest);
-        if (match) referenceSDDocument = match.ReferenceSDDocument;
-      } catch (e) {
-        console.warn('⚠️ Could not fetch ReferenceSDDocument:', e.message);
-      }
-    }
-
-    // Step 3: Process each service invoice command
-    for (const cmd of serviceInvoiceCommands) {
-      const code = cmd.executionOrderMainCode;
-      let tempData = tempDataService.get(code) || tempDataService.getOrCreate(code);
-
-      // Initialize if new
-      if (!tempData.version) {
-        tempData.version = 1;
-        if (cmd.quantity) {
-          tempData.quantities.push(cmd.quantity);
-          tempData.currentQuantityIndex = 0;
-          tempData.amountPerUnit = cmd.amountPerUnit;
-        }
-      }
-
-      // --- Quantity resolution logic ---
-      let quantity = tempData.currentQuantity ?? null;
-      if (quantity == null || tempData.quantities.length === 0) {
-        if (tempData.quantities.length > 0) {
-          quantity = tempData.quantities[tempData.quantities.length - 1];
-        } else if (cmd.quantity) {
-          tempData.quantities.push(cmd.quantity);
-          tempData.currentQuantityIndex = 0;
-          quantity = cmd.quantity;
-        }
-      }
-      if (quantity == null) throw new Error(`Quantity missing for execution order ${code}`);
-
-      // --- Amount per unit ---
-      const amountPerUnit = tempData.amountPerUnit ?? cmd.amountPerUnit;
-      if (amountPerUnit == null) throw new Error(`Amount per unit missing for execution order ${code}`);
-
-      const total = quantity * amountPerUnit;
-
-      // --- Compose entry ---
-      const entry = {
-        ...cmd,
-        referenceId: debitMemoRequest,
-        debitMemoRequestItem,
-        referenceSDDocument,
-        quantity,
-        amountPerUnit,
-        total,
-        actualQuantity: quantity,
-        remainingQuantity: tempData.remainingQuantity ?? 0,
-        actualPercentage: tempData.actualPercentage ?? 0,
-        totalHeader: tempData.totalHeader ?? total
-      };
-
-      // --- Save invoice ---
-      const inserted = await tx.run(INSERT.into(ServiceInvoiceMains).entries(entry));
-      savedInvoices.push(inserted[0] ?? entry);
-
-      // Clear temp data after saving
-      tempDataService.remove(code);
-    }
-
-    // Step 4: Update related ExecutionOrderMain totals
-    for (const cmd of serviceInvoiceCommands) {
-      const code = cmd.executionOrderMainCode;
-
-      const relatedInvoices = savedInvoices.filter(inv => inv.executionOrderMainCode === code);
-
-      const totalActualQuantity = relatedInvoices.reduce((sum, inv) => sum + (inv.actualQuantity || 0), 0);
-      const totalRemainingQuantity = relatedInvoices.reduce((sum, inv) => sum + (inv.remainingQuantity || 0), 0);
-      const avgPercentage =
-        relatedInvoices.length > 0
-          ? relatedInvoices.reduce((sum, inv) => sum + (inv.actualPercentage || 0), 0) / relatedInvoices.length
-          : 0;
-      const totalHeaderSum = relatedInvoices.reduce((sum, inv) => sum + (inv.totalHeader || 0), 0);
-
-      await tx.run(
-        UPDATE(ExecutionOrderMains)
-          .set({
-            actualQuantity: totalActualQuantity,
-            remainingQuantity: totalRemainingQuantity,
-            actualPercentage: avgPercentage,
-            totalHeader: totalHeaderSum
-          })
-          .where({ executionOrderMainCode: code })
-      );
-    }
-
-    // Step 5: Call Debit Memo Pricing API
-    const totalHeaderSum = savedInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
+  // === Calculate Quantities Without Accumulation ===
+  this.on('calculateQuantitiesWithoutAccumulation', async (req) => {
     try {
-      await callDebitMemoPricingAPI(
-        debitMemoRequest,
-        debitMemoRequestItem,
-        pricingProcedureStep,
-        pricingProcedureCounter,
-        totalHeaderSum
-      );
-    } catch (apiErr) {
-      req.warn(`Failed to update debit memo pricing: ${apiErr.message}`);
-    }
+      const { executionOrderMainCode, quantity, totalQuantity, amountPerUnit } = req.data
 
-    return savedInvoices;
-  } catch (err) {
-    req.error(500, `Error in saveOrUpdateServiceInvoices: ${err.message}`);
-  }
-})
+      if (!executionOrderMainCode) return req.error(400, "Execution Order Main Code is required")
+
+      // Ensure we can handle UUID keys
+      const code = typeof executionOrderMainCode === 'string'
+        ? executionOrderMainCode
+        : String(executionOrderMainCode)
+
+      const tempData = tempDataService.getOrCreate(code)
+      tempData.version = (tempData.version || 0) + 1
+
+      // --- Core logic ---
+      const q = Number(quantity) || 0
+      const aq = Number(amountPerUnit) || tempData.amountPerUnit || 0
+      const tq = Number(totalQuantity) || 0
+
+      tempData.quantities.push(q)
+      tempData.currentQuantityIndex = tempData.quantities.length - 1
+      tempData.amountPerUnit = aq
+      tempData.remainingQuantity = Math.max(tq - q, 0)
+      tempData.actualQuantity = q
+      tempData.actualPercentage = tq ? (q / tq) * 100 : 0
+      tempData.total = q * aq
+      tempData.totalHeader = tempData.total
+
+      // --- Save updated temp data ---
+      tempDataService.update(code, tempData)
+
+      // Return response consistent with Java logic
+      return {
+        quantities: tempData.quantities,
+        currentQuantityIndex: tempData.currentQuantityIndex,
+        amountPerUnit: tempData.amountPerUnit,
+        remainingQuantity: tempData.remainingQuantity,
+        actualQuantity: tempData.actualQuantity,
+        actualPercentage: tempData.actualPercentage,
+        total: tempData.total,
+        totalHeader: tempData.totalHeader,
+        version: tempData.version
+      }
+
+    } catch (err) {
+      console.error('❌ Error in calculateQuantitiesWithoutAccumulation:', err.message)
+      req.error(500, `Error in calculateQuantitiesWithoutAccumulation: ${err.message}`)
+    }
+  })
+
+
+  // === SAVE OR UPDATE SERVICE INVOICES ===
+  this.on('saveOrUpdateServiceInvoices', async (req) => {
+    const {
+      serviceInvoiceCommands,
+      debitMemoRequest,
+      debitMemoRequestItem,
+      pricingProcedureStep,
+      pricingProcedureCounter,
+      customerNumber
+    } = req.data;
+
+    const tx = cds.transaction(req);
+    let savedInvoices = [];
+
+    try {
+      if (!serviceInvoiceCommands || serviceInvoiceCommands.length === 0) {
+        req.error(400, 'No service invoice data provided');
+      }
+
+      // Step 1: Delete existing entries for same debitMemoRequest + item
+      if (debitMemoRequest && debitMemoRequestItem) {
+        await tx.run(
+          DELETE.from(ServiceInvoiceMains).where({ referenceId: debitMemoRequest, debitMemoRequestItem })
+        );
+      }
+
+      // Step 2: Fetch ReferenceSDDocument from S/4
+      let referenceSDDocument = null;
+      if (debitMemoRequest) {
+        try {
+          const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_DEBIT_MEMO_REQUEST_SRV/A_DebitMemoRequest?$top=100`;
+          const res = await axios.get(url, { headers: { Authorization: authHeader, Accept: 'application/json' } });
+          const results = res?.data?.d?.results || [];
+
+          const match = results.find(r => r.DebitMemoRequest === debitMemoRequest);
+          if (match) referenceSDDocument = match.ReferenceSDDocument;
+        } catch (e) {
+          console.warn('⚠️ Could not fetch ReferenceSDDocument:', e.message);
+        }
+      }
+
+      // Step 3: Process each service invoice command
+      for (const cmd of serviceInvoiceCommands) {
+        const code = cmd.executionOrderMainCode;
+        let tempData = tempDataService.get(code) || tempDataService.getOrCreate(code);
+
+        // Initialize if new
+        if (!tempData.version) {
+          tempData.version = 1;
+          if (cmd.quantity) {
+            tempData.quantities.push(cmd.quantity);
+            tempData.currentQuantityIndex = 0;
+            tempData.amountPerUnit = cmd.amountPerUnit;
+          }
+        }
+
+        // --- Quantity resolution logic ---
+        let quantity = tempData.currentQuantity ?? null;
+        if (quantity == null || tempData.quantities.length === 0) {
+          if (tempData.quantities.length > 0) {
+            quantity = tempData.quantities[tempData.quantities.length - 1];
+          } else if (cmd.quantity) {
+            tempData.quantities.push(cmd.quantity);
+            tempData.currentQuantityIndex = 0;
+            quantity = cmd.quantity;
+          }
+        }
+        if (quantity == null) throw new Error(`Quantity missing for execution order ${code}`);
+
+        // --- Amount per unit ---
+        const amountPerUnit = tempData.amountPerUnit ?? cmd.amountPerUnit;
+        if (amountPerUnit == null) throw new Error(`Amount per unit missing for execution order ${code}`);
+
+        const total = quantity * amountPerUnit;
+
+        // --- Compose entry ---
+        const entry = {
+          ...cmd,
+          referenceId: debitMemoRequest,
+          debitMemoRequestItem,
+          referenceSDDocument,
+          quantity,
+          amountPerUnit,
+          total,
+          actualQuantity: quantity,
+          remainingQuantity: tempData.remainingQuantity ?? 0,
+          actualPercentage: tempData.actualPercentage ?? 0,
+          totalHeader: tempData.totalHeader ?? total
+        };
+
+        // --- Save invoice ---
+        const inserted = await tx.run(INSERT.into(ServiceInvoiceMains).entries(entry));
+        savedInvoices.push(inserted[0] ?? entry);
+
+        // Clear temp data after saving
+        tempDataService.remove(code);
+      }
+
+      // Step 4: Update related ExecutionOrderMain totals
+      for (const cmd of serviceInvoiceCommands) {
+        const code = cmd.executionOrderMainCode;
+
+        const relatedInvoices = savedInvoices.filter(inv => inv.executionOrderMainCode === code);
+
+        const totalActualQuantity = relatedInvoices.reduce((sum, inv) => sum + (inv.actualQuantity || 0), 0);
+        const totalRemainingQuantity = relatedInvoices.reduce((sum, inv) => sum + (inv.remainingQuantity || 0), 0);
+        const avgPercentage =
+          relatedInvoices.length > 0
+            ? relatedInvoices.reduce((sum, inv) => sum + (inv.actualPercentage || 0), 0) / relatedInvoices.length
+            : 0;
+        const totalHeaderSum = relatedInvoices.reduce((sum, inv) => sum + (inv.totalHeader || 0), 0);
+
+        await tx.run(
+          UPDATE(ExecutionOrderMains)
+            .set({
+              actualQuantity: totalActualQuantity,
+              remainingQuantity: totalRemainingQuantity,
+              actualPercentage: avgPercentage,
+              totalHeader: totalHeaderSum
+            })
+            .where({ executionOrderMainCode: code })
+        );
+      }
+
+      // Step 5: Call Debit Memo Pricing API
+      const totalHeaderSum = savedInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
+      try {
+        await callDebitMemoPricingAPI(
+          debitMemoRequest,
+          debitMemoRequestItem,
+          pricingProcedureStep,
+          pricingProcedureCounter,
+          totalHeaderSum
+        );
+      } catch (apiErr) {
+        req.warn(`Failed to update debit memo pricing: ${apiErr.message}`);
+      }
+
+      return savedInvoices;
+    } catch (err) {
+      req.error(500, `Error in saveOrUpdateServiceInvoices: ${err.message}`);
+    }
+  })
 
   // === Find by LineNumber
   this.on('findByLineNumberServiceInvoice', async (req) => {

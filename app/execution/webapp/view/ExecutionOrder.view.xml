@@ -44,9 +44,9 @@
                         text="Actions"
                         buttonMode="Split"
                         menu="{
-        path: '/',
-        factory: '.menuFactory'
-    }"
+                          path: '/',
+                           factory: '.menuFactory'
+                        }"
                     >
                         <m:menu>
                             <m:Menu id="_IDGenMenu">
@@ -90,7 +90,7 @@
                     alignItems="Center"
                     justifyContent="Center"
                 >
-                    <m:Text id="_IDGenText44" />
+                    <m:Text id="_IDGenText44" text="{/totalValue}" />
                 </m:VBox>
                 <m:VBox
                     id="_IDGenVBox10"
@@ -157,7 +157,7 @@
             <table:Column id="_IDGenColumn6" width="120px">
                 <table:label><Text id="_IDGenText34" text="QTY"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText8" text="{actualQuantity}"/>
+                    <Text id="_IDGenText8" text="{totalQuantity}"/>
                 </table:template>
             </table:Column>
 

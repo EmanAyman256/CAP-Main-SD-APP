@@ -40,7 +40,8 @@
         "kind": "hana",
         "vcap": {
           "label": "hana",
-          "plan": "hdi-shared"
+          "plan": "hdi-shared",
+          "name": "hdi-shared"
         }
       }
     }

@@ -12,8 +12,10 @@ sap.ui.define([
   "sap/ui/export/Spreadsheet",
   "sap/ui/model/Filter",
   "sap/ui/model/FilterOperator",
-  "sap/ui/unified/FileUploader"
-], (Controller, MessageToast) => {
+  "sap/ui/unified/FileUploader",
+  "sap/ui/layout/form/SimpleForm",
+  "sap/ui/layout/form/ResponsiveGridLayout"
+], (Controller, MessageToast, SimpleForm, ResponsiveGridLayout) => {
   "use strict";
 
   return Controller.extend("invoice.controller.invoice", {
@@ -24,6 +26,7 @@ sap.ui.define([
 
       //Set Dummy Data
       var oModel = new sap.ui.model.json.JSONModel({
+        totalValue: 0,
         docNumber: "",
         itemNumber: "",
         MainItems: [],
@@ -44,21 +47,35 @@ sap.ui.define([
       console.log("Params:", docNumber, itemNumber);
       oModel.setProperty("/docNumber", docNumber);
       oModel.setProperty("/itemNumber", itemNumber);
-
+      var oBody = {
+        referenceId: docNumber,
+        debitMemoRequestItem: itemNumber
+      }
       // OData request URL
-      var sUrl = `/odata/v4/sales-cloud/findByDebitMemoRequestAndItem?debitMemoRequest='${docNumber}'&debitMemoRequestItem='${itemNumber}'`;
-
+      // var sUrl = `/odata/v4/sales-cloud/findByDebitMemoRequestAndItem?debitMemoRequest='${docNumber}'&debitMemoRequestItem='${itemNumber}'`;
+      var sUrl = "/odata/v4/sales-cloud/getServiceInvoiceByReferenceId"
       // Fetch the data
       fetch(sUrl, {
-        method: "GET",
+        method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
+        body: JSON.stringify(oBody)
       })
         .then(response => response.json())
         .then(data => {
           console.log(data.value);
+          const mainItems = Array.isArray(data.value) ? data.value : [];
+          // Calculate the total sum
+          const totalValue = mainItems.reduce(
+            (sum, record) => sum + Number(record.total || 0),
+            0
+          );
+          //totalWithProfit
+
+          console.log("Total Value:", totalValue);
           oModel.setProperty("/MainItems", data.value);
+          oModel.setProperty("/totalValue", totalValue);
 
           oView.byId("debitmemoTable").setModel(oModel);
         })
@@ -113,7 +130,7 @@ sap.ui.define([
 
     openOrdersDialog: function () {
       var that = this;
-       var oView = this.getView();
+      var oView = this.getView();
       var oModel = oView.getModel();
       var docNumber = oModel.getProperty("/docNumber");
       var itemNumber = oModel.getProperty("/itemNumber");
@@ -145,7 +162,7 @@ sap.ui.define([
 
                 // Map fields properly to match your table’s bindings
                 aMainItems.push({
-                  executionOrderMainCode: oData.invoiceMainItemCode,
+                  executionOrderMainCode: oData.executionOrderMainCode, // ✅ correct field
                   lineNumber: "", // if you want to auto-generate, use aMainItems.length + 1
                   serviceNumberCode: oData.serviceNumberCode,
                   description: oData.description,
@@ -198,7 +215,7 @@ sap.ui.define([
 
       // Fetch orders data
       $.ajax({
-        url: `/odata/v4/sales-cloud/fetchExecutionOrderMainByDebitMemoFunction?debitMemoRequest='${docNumber}'&debitMemoRequestItem='${itemNumber}'`,
+        url: `/odata/v4/sales-cloud/fetchExecutionOrderMainByDebitMemo?debitMemoRequest='${docNumber}'&debitMemoRequestItem='${itemNumber}'`,
         method: "GET",
         success: function (data) {
           var oModel = new sap.ui.model.json.JSONModel(data.value || data);
@@ -256,40 +273,43 @@ sap.ui.define([
 
       // Map MainItems to match API payload structure
       const serviceInvoiceCommands = MainItems.map(item => ({
-        //referenceSDDocument: item.referenceSDDocument || "",
-        //salesOrderItem: item.salesOrderItem || "",
-        //debitMemoRequestItem: item.debitMemoRequestItem || "",
-        //salesOrderItemText: item.salesOrderItemText || "",
-        executionOrderMainCode: item.executionOrderMainCode || 0,
-        referenceId: oModel.getProperty("/docNumber") || "",
-        serviceNumberCode: parseInt(item.serviceNumberCode) || 0,
-        description: item.description || "",
-        unitOfMeasurementCode: item.unitOfMeasurementCode || "",
-        currencyCode: item.currencyCode || "",
-        materialGroupCode: item.materialGroupCode || "",
-        personnelNumberCode: item.personnelNumberCode || "",
-        lineTypeCode: item.lineTypeCode || "",
-        serviceTypeCode: item.serviceTypeCode || "",
-        totalQuantity: item.totalQuantity || 0,
-        remainingQuantity: item.remainingQuantity || 0,
-        amountPerUnit: item.amountPerUnit || 0,
-        total: item.total || 0,
-        totalHeader: item.totalHeader || 0,
-        actualQuantity: item.actualQuantity || 0,
-        previousQuantity: item.previousQuantity || 0,
-        actualPercentage: item.actualPercentage || 0,
-        overFulfillmentPercent: item.overFulfillmentPercent || 0,
-        unlimitedOverFulfillment: item.unlimitedOverFulfillment !== undefined ? item.unlimitedOverFulfillment : true,
-        manualPriceEntryAllowed: item.manualPriceEntryAllowed !== undefined ? item.manualPriceEntryAllowed : true,
-        externalServiceNumber: item.externalServiceNumber || "",
-        serviceText: item.serviceText || "",
-        lineText: item.lineText || "",
-        lineNumber: item.lineNumber || "",
+        actualPercentage: String(item.actualPercentage || "0"),
+        actualQuantity: String(item.actualQuantity || "0"),
+        alternatives: null,
+        amountPerUnit: String(item.amountPerUnit || "0"),
         biddersLine: item.biddersLine !== undefined ? item.biddersLine : true,
-        supplementaryLine: item.supplementaryLine !== undefined ? item.supplementaryLine : true,
-        lotCostOne: item.lotCostOne !== undefined ? item.lotCostOne : true,
+        currencyCode: item.currencyCode || null,
+        currentPercentage: "0",
+        debitMemoRequestItem: item.debitMemoRequestItem || "10",
+        debitMemoRequestItemText: null,
+        description: item.description || null,
         doNotPrint: item.doNotPrint !== undefined ? item.doNotPrint : true,
-        deletionIndicator: item.deletionIndicator !== undefined ? item.deletionIndicator : true
+        executionOrderMainCode: item.executionOrderMainCode || null,
+        externalServiceNumber: item.externalServiceNumber || null,
+        lineNumber: item.lineNumber || null,
+        lineText: item.lineText || null,
+        lineTypeCode: item.lineTypeCode || null,
+        lotCostOne: item.lotCostOne !== undefined ? item.lotCostOne : true,
+        materialGroupCode: item.materialGroupCode || null,
+
+        overFulfillmentPercent: String(item.overFulfillmentPercent || "0"),
+        personnelNumberCode: item.personnelNumberCode || null,
+        quantity: String(item.totalQuantity || "0"),
+        referenceId: oModel.getProperty("/docNumber") || "70000000",
+        referenceSDDocument: item.referenceSDDocument || "2",
+        remainingQuantity: String(item.remainingQuantity || "0"),
+        //serviceInvoiceCode: item.serviceInvoiceCode || null,
+        serviceNumberCode: parseInt(item.serviceNumberCode) || 0,
+        //serviceNumber_serviceNumberCode: null,
+        serviceText: item.serviceText || null,
+        serviceTypeCode: item.serviceTypeCode || null,
+        supplementaryLine: item.supplementaryLine !== undefined ? item.supplementaryLine : true,
+        temporaryDeletion: null,
+        total: String(item.total || "0"),
+        totalHeader: String(item.totalHeader || "0"),
+        totalQuantity: String(item.totalQuantity || "0"),
+        unitOfMeasurementCode: item.unitOfMeasurementCode || null,
+        unlimitedOverFulfillment: item.unlimitedOverFulfillment !== undefined ? item.unlimitedOverFulfillment : true
       }));
       const body = {
         serviceInvoiceCommands: serviceInvoiceCommands,
@@ -316,7 +336,17 @@ sap.ui.define([
         })
         .then(savedItem => {
           console.log(savedItem);
-          oModel.setProperty("/MainItems", savedItem.value);
+          const oldItems = oModel.getProperty("/MainItems");
+          const newItems = savedItem.value.map((newItem, index) => {
+            const oldItem = oldItems[index];
+            return {
+              ...oldItem,
+              ...newItem,
+              executionOrderMainCode: oldItem.executionOrderMainCode || newItem.executionOrderMainCode || null
+            };
+          });
+          oModel.setProperty("/MainItems", newItems);
+          // oModel.setProperty("/MainItems", savedItem.value);
           sap.m.MessageToast.show("Document saved successfully!");
 
         })
@@ -401,5 +431,204 @@ sap.ui.define([
         this.byId("_IDGenText1").setText(total);
       }
     },
+    onEditItem: function (oEvent) {
+      const oButton = oEvent.getSource();
+      const oContext = oButton.getBindingContext();
+
+      if (!oContext) {
+        sap.m.MessageToast.show("No item context found.");
+        return;
+      }
+
+      const oData = oContext.getObject();
+      const oModel = this.getView().getModel();
+
+      // Save the path for later update
+      this._editPath = oContext.getPath();
+
+      // Clone the selected row’s data into a temporary model property
+      oModel.setProperty("/editRow", { ...oData });
+
+      // Create the dialog only once
+      if (!this._EditItemDialog) {
+        const oForm = new sap.ui.layout.form.SimpleForm({
+          layout: "ResponsiveGridLayout",
+          editable: true,
+          labelSpanXL: 4,
+          labelSpanL: 4,
+          labelSpanM: 4,
+          labelSpanS: 12,
+          content: [
+            new sap.m.Label({ text: "Service No." }),
+            new sap.m.Input({ value: "{/editRow/serviceNumberCode}", editable: false }),
+
+            new sap.m.Label({ text: "Description" }),
+            new sap.m.Input({ value: "{/editRow/description}", editable: false }),
+
+            new sap.m.Label({ text: "UOM" }),
+            new sap.m.Input({ value: "{/editRow/unitOfMeasurementCode}", editable: false }),
+
+            new sap.m.Label({ text: "Amount Per Unit" }),
+            new sap.m.Input({
+              value: "{/editRow/amountPerUnit}", editable: false,
+              type: "Number",
+              liveChange: this._onValueChange.bind(this)
+            }),
+
+            new sap.m.Label({ text: "Total Quantity" }),
+            new sap.m.Input({
+              value: "{/editRow/totalQuantity}", editable: false,
+              type: "Number",
+              liveChange: this._onValueChange.bind(this)
+            }),
+
+            new sap.m.Label({ text: "Current Quantity" }),
+            new sap.m.Input({
+              value: "{/editRow/currentQuantity}",
+              type: "Number",
+              valueLiveUpdate: true,  // Add this line
+              liveChange: this._onValueChange.bind(this)
+            }),
+
+            new sap.m.Label({ text: "Remaining Quantity" }),
+            new sap.m.Input({ value: "{/editRow/remainingQuantity}", editable: false }),
+
+            new sap.m.Label({ text: "Actual Total Quantity" }),
+            new sap.m.Input({ value: "{/editRow/actualQuantity}", editable: false }),
+
+            new sap.m.Label({ text: "Actual Total Percentage %" }),
+            new sap.m.Input({ value: "{/editRow/actualPercentage}", editable: false }),
+
+            new sap.m.Label({ text: "Current Percentage" }),
+            new sap.m.Input({ value: "{/editRow/currentPercentage}", editable: false }),
+
+            new sap.m.Label({ text: "Currency" }),
+            new sap.m.Input({ value: "{/editRow/currencyCode}", editable: false }),
+
+            new sap.m.Label({ text: "Material Group" }),
+            new sap.m.Input({ value: "{/editRow/materialGroupCode}", editable: false }),
+
+            new sap.m.Label({ text: "Service Type" }),
+            new sap.m.Input({ value: "{/editRow/serviceTypeCode}", editable: false }),
+
+            new sap.m.Label({ text: "External Service Number" }),
+            new sap.m.Input({ value: "{/editRow/externalServiceNumber}", editable: false }),
+
+            new sap.m.Label({ text: "Service Text" }),
+            new sap.m.Input({ value: "{/editRow/serviceText}", editable: false }),
+
+            new sap.m.Label({ text: "Line Text" }),
+            new sap.m.Input({ value: "{/editRow/lineText}", editable: false }),
+
+            new sap.m.Label({ text: "Personnel No." }),
+            new sap.m.Input({ value: "{/editRow/personnelNumberCode}", editable: false }),
+
+            new sap.m.Label({ text: "Line Type" }),
+            new sap.m.Input({ value: "{/editRow/lineTypeCode}", editable: false }),
+
+            new sap.m.Label({ text: "Bidders' Line" }),
+            new sap.m.CheckBox({ selected: "{/editRow/biddersLine}", editable: false }),
+
+            new sap.m.Label({ text: "Supplementary Line" }),
+            new sap.m.CheckBox({ selected: "{/editRow/supplementaryLine}", editable: false }),
+
+            new sap.m.Label({ text: "Lot Cost One" }),
+            new sap.m.CheckBox({ selected: "{/editRow/lotCostOne}", editable: false }),
+
+            new sap.m.Label({ text: "Current Amount" }),
+            new sap.m.Input({ value: "{/editRow/total}", editable: false })
+          ]
+        });
+
+        this._EditItemDialog = new sap.m.Dialog({
+          title: "Edit Debit Memo Item",
+          contentWidth: "700px",
+          resizable: true,
+          draggable: true,
+          content: [oForm],
+          beginButton: new sap.m.Button({
+            text: "Save",
+            type: "Emphasized",
+            press: this.onSaveEdit.bind(this)
+          }),
+          endButton: new sap.m.Button({
+            text: "Cancel",
+            press: function () {
+              this._EditItemDialog.close();
+              this._EditItemDialog.destroy();
+              this._EditItemDialog = null;
+            }.bind(this)
+          })
+        });
+
+        this.getView().addDependent(this._EditItemDialog);
+      }
+
+      this._EditItemDialog.open();
+    },
+    onSaveEdit: function () {
+      const oModel = this.getView().getModel();
+      const updatedData = oModel.getProperty("/editRow");
+
+      if (this._editPath) {
+        oModel.setProperty(this._editPath, updatedData);
+      }
+
+      this._EditItemDialog.close();
+      this._EditItemDialog.destroy();
+      this._EditItemDialog = null;
+
+      sap.m.MessageToast.show("Item updated successfully!");
+    },
+    _onValueChange: function () {
+      const oModel = this.getView().getModel();
+      const oEditRow = oModel.getProperty("/editRow");
+
+      // Prepare request payload
+      const payload = {
+        executionOrderMainCode: oEditRow.executionOrderMainCode,
+        quantity: (oEditRow.currentQuantity) || 0,
+        totalQuantity: (oEditRow.totalQuantity) || 0,
+        amountPerUnit: (oEditRow.amountPerUnit) || 0,
+        overFulfillmentPercentage: (oEditRow.overFulfillmentPercent) || 0,
+        unlimitedOverFulfillment: oEditRow.unlimitedOverFulfillment === true
+      };
+
+      console.log("Payload sent to /calculateQuantities:", payload);
+
+      fetch("/odata/v4/sales-cloud/calculateQuantities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+        .then(res => {
+          if (!res.ok) throw new Error("API request failed");
+          return res.json();
+        })
+        .then(result => {
+          console.log("Calculation API response:", result);
+
+          // Update the editable row data with calculated values
+          oEditRow.actualQuantity = parseInt(result.actualQuantity);
+          oEditRow.remainingQuantity = parseInt(result.remainingQuantity);
+          oEditRow.total = parseInt(result.total);
+          oEditRow.actualPercentage = parseInt(result.actualPercentage);
+          oEditRow.totalHeader = parseInt(result.totalHeader);
+
+          // Update the model
+          oModel.setProperty("/editRow", oEditRow);
+        })
+        .catch(err => {
+          console.error("Error calling calculateQuantities:", err);
+          sap.m.MessageToast.show("Failed to calculate quantities");
+        });
+    }
+
+
+
+
+
+
+
   });
 });

@@ -18,6 +18,7 @@ sap.ui.define([
         onInit: function () {
 
             var oModel = new sap.ui.model.json.JSONModel({
+                totalValue: 0,
                 docNumber: "",
                 itemNumber: "",
                 MainItems: [],
@@ -47,7 +48,7 @@ sap.ui.define([
 
             var oRouter = sap.ui.core.UIComponent.getRouterFor(this);
             oRouter.getRoute("tendering").attachPatternMatched(this._onRouteMatched, this);
-           
+
             // Fetch Service Numbers
             fetch("/odata/v4/sales-cloud/ServiceNumbers")
                 .then(response => {
@@ -130,8 +131,19 @@ sap.ui.define([
                 .then(response => response.json())
                 .then(data => {
                     console.log(data.value);
-                    oModel.setProperty("/MainItems", data.value);
 
+                    const mainItems = Array.isArray(data.value) ? data.value : [];
+                    // Calculate the total sum
+                    const totalValue = mainItems.reduce(
+                        (sum, record) => sum + Number(record.total || 0),
+                        0
+                    );
+                    //totalWithProfit
+
+                    console.log("Total Value:", totalValue);
+
+                    oModel.setProperty("/MainItems", data.value);
+                    oModel.setProperty("/totalValue", totalValue);
                     // if it's an array, do:
                     // oModel.setProperty("/MainItems", data.value);
                     oView.byId("treeTable").setModel(oModel);
@@ -144,19 +156,37 @@ sap.ui.define([
         onInputChange: function () {
             var oView = this.getView();
             var oModel = oView.getModel();
+            var oEditRow = oModel.getProperty("/editRow");
 
             // Get values
             var sQuantity = oView.byId("mainQuantityInput").getValue();
             var sAmount = oView.byId("mainAmountPerUnitInput").getValue();
             var sProfitMargin = oView.byId("mainProfitMarginInput").getValue()
+
+            var editQuantity = oView.byId("editMainQuantityInput").getValue();
+            var editAmount = oView.byId("editMainAmountPerUnitInput").getValue();
+            var editProfitMargin = oView.byId("editMainProfitMarginInput").getValue()
+
             var iQuantity = parseFloat(sQuantity) || 0;
             var iAmount = parseFloat(sAmount) || 0;
             var iProfitMargin = parseFloat(sProfitMargin) || 0;
+            var eQuantity = parseFloat(editQuantity) || 0;
+            var eAmount = parseFloat(editAmount) || 0;
+            var eProfitMargin = parseFloat(editProfitMargin) || 0;
             // Calculate total
+            var eTotal = eQuantity * eAmount;
+            var eTotalWithProfit = (eQuantity / eProfitMargin) * 100;
+            var eAmountPerUnitWithProfit = (eAmount / eProfitMargin) * 100;
             var iTotal = iQuantity * iAmount;
             var totalWithProfit = (iTotal / iProfitMargin) * 100;
             var amountPerUnitWithProfit = (iAmount / iProfitMargin) * 100;
 
+            oEditRow.total = eTotal.toFixed(2);
+            oEditRow.totalWithProfit = eTotalWithProfit.toFixed(2);
+            oEditRow.amountPerUnitWithProfit = eAmountPerUnitWithProfit.toFixed(2);
+
+            // Now update the model so bindings refresh
+            oModel.setProperty("/editRow", oEditRow);
 
             // Update model
             oModel.setProperty("/Total", iTotal);
@@ -190,28 +220,100 @@ sap.ui.define([
             }
         }
         ,
+        _calculateFormulaResult: function (oFormula, oParams) {
+            if (!oFormula || !oParams) return 0;
+
+            try {
+                // Use the formulaLogic property from the backend
+                let expression = oFormula.formulaLogic; // e.g. "22/7*r^2"
+                console.log("expression", expression);
+
+                // Replace parameter names with actual values entered by the user
+                oFormula.parameterIds.forEach(paramId => {
+                    const value = parseFloat(oParams[paramId]) || 0;
+                    expression = expression.replaceAll(paramId, value);
+                });
+
+                // Replace ^ with ** to make it valid JavaScript
+                expression = expression.replace(/\^/g, "**");
+
+                // Safely evaluate
+                const result = Function('"use strict";return (' + expression + ')')();
+
+                // Round to 2 decimals for display
+                console.log(parseFloat(result.toFixed(2)));
+
+                return parseFloat(result.toFixed(2));
+            } catch (err) {
+                console.error("Error evaluating formula:", err);
+                sap.m.MessageToast.show("Invalid formula or parameters.");
+                return 0;
+            }
+        },
+
         onFormulaSelected: function (oEvent) {
-            console.log("CHANGE EVENT FIRED! Source ID:", oEvent.getSource().getId()); // This will tell us everything
             var oSelect = oEvent.getSource();
-            var sSelectId = oSelect.getId();
-            var sItemType = sSelectId.includes("subFormula") ? "sub" : "main"; // Broader match for "subFormulaSelect"
             var sKey = oSelect.getSelectedKey();
-            console.log("Selected Key:", sKey); // Check if key is captured
             var oModel = this.getView().getModel();
             var aFormulas = oModel.getProperty("/Formulas") || [];
-            console.log("Available Formulas:", aFormulas.length); // If 0, data issue
             var oFormula = aFormulas.find(f => f.formulaCode === sKey);
 
-            if (sItemType === "sub") {
-                oModel.setProperty("/SelectedSubFormula", oFormula || null);
-                oModel.setProperty("/HasSelectedSubFormula", !!oFormula);
-                console.log("Updated sub model. HasSelectedSubFormula:", oModel.getProperty("/HasSelectedSubFormula"));
-            } else {
-                oModel.setProperty("/SelectedFormula", oFormula || null);
-                oModel.setProperty("/HasSelectedFormula", !!oFormula);
+            oModel.setProperty("/SelectedFormula", oFormula || null);
+            oModel.setProperty("/HasSelectedFormula", !!oFormula);
+
+            // If user cleared formula, enable manual input
+            var oQuantityInput = this.byId("mainQuantityInput");
+            if (!oFormula) {
+                oQuantityInput.setEditable(true);
+                oModel.setProperty("/IsFormulaBasedQuantity", false);
+                oQuantityInput.setValue(""); // optional: clear old value
             }
-            console.log("Selected formula for " + sItemType + ":", oFormula);
         },
+        onApplyProfitMargin: function () {
+            var oView = this.getView();
+            var oModel = oView.getModel();
+            var oTable = oView.byId("treeTable"); // your main table ID
+            var aSelectedIndices = oTable.getSelectedIndices();
+
+            if (aSelectedIndices.length === 0) {
+                sap.m.MessageToast.show("Please select a main item first.");
+                return;
+            }
+
+            var iIndex = aSelectedIndices[0];
+            var sPath = oTable.getContextByIndex(iIndex).getPath();
+            var oItem = oModel.getProperty(sPath);
+
+            // Get entered profit margin
+            var eProfitMargin = parseFloat(oView.byId("groupInput").getValue()) || 0;
+            var eQuantity = parseFloat(oItem.quantity) || 0;
+            var eAmount = parseFloat(oItem.amountPerUnit) || 0;
+            var eTotal = eQuantity * eAmount;
+            var eAmountPerUnitWithProfit = (eAmount / eProfitMargin) * 100;
+            var eTotalWithProfit = (eTotal / eProfitMargin) * 100;
+
+            if (eProfitMargin === 0) {
+                eAmountPerUnitWithProfit = 0
+                eTotalWithProfit = 0
+            }
+            else {
+                var eTotal = eQuantity * eAmount;
+                var eAmountPerUnitWithProfit = (eAmount / eProfitMargin) * 100;
+                var eTotalWithProfit = (eTotal / eProfitMargin) * 100;
+            }
+            // Calculate new totals
+            // Update the row
+            oItem.profitMargin = eProfitMargin;
+            oItem.total = eTotal.toFixed(2);
+            oItem.amountPerUnitWithProfit = eAmountPerUnitWithProfit.toFixed(2);
+            oItem.totalWithProfit = eTotalWithProfit.toFixed(2);
+
+            // Update model to refresh UI
+            oModel.setProperty(sPath, oItem);
+
+            sap.m.MessageToast.show("Profit margin applied to selected item.");
+        },
+
 
         onOpenFormulaDialog: function (oEvent) {
             var oButton = oEvent.getSource();
@@ -257,9 +359,22 @@ sap.ui.define([
         },
         onFormulaDialogOK: function () {
             var oModel = this.getView().getModel();
+            var oFormula = oModel.getProperty("/SelectedFormula");
             var oParams = oModel.getProperty("/FormulaParameters");
             oModel.setProperty("/SelectedFormulaParams", oParams);
             this.byId("formulaDialog").close();
+
+            // Calculate the formula result
+            var result = this._calculateFormulaResult(oFormula, oParams);
+            console.log("Formula Result:", result);
+
+            // Fill the Quantity input
+            var oQuantityInput = this.byId("mainQuantityInput");
+            oQuantityInput.setValue(result);
+            oQuantityInput.setEditable(false); // Lock manual entry when formula is applied
+
+            // Mark as formula-based quantity
+            oModel.setProperty("/IsFormulaBasedQuantity", true);
         },
         onSubFormulaDialogOK: function () {
             var oModel = this.getView().getModel();
@@ -404,6 +519,7 @@ sap.ui.define([
 
             this.byId("addSubDialog").open();
         },
+
         _calculateTotals: function (oItem) {
             // Parse safely with nullish coalescing (?? 0)
             var quantity = parseFloat(oItem.quantity) ?? 0;
@@ -432,25 +548,7 @@ sap.ui.define([
 
             console.log("Calc outputs:", { total: oItem.total, amountPerUnitWithProfit: oItem.amountPerUnitWithProfit, totalWithProfit: oItem.totalWithProfit });
         },
-        // for edit :
-        _calculateTotals: function (oItem) {
 
-            console.log(oItem);
-            var amountPerUnit = parseFloat(oItem.amountPerUnit) || 0;
-            var quantity = parseFloat(oItem.quantity) || 0;
-            //var amountPerUnit = parseFloat(oItem.amountPerUnit) || 0;
-            var profitMargin = parseFloat(oItem.profitMargin) || 0;
-            console.log(quantity, amountPerUnit, profitMargin);
-
-            // Calculate totals
-            oItem.total = quantity * amountPerUnit;
-            console.log(oItem.total);
-
-            // Profit calculations
-            var amountPerUnitWithProfit = amountPerUnit * (1 + profitMargin / 100);
-            oItem.amountPerUnitWithProfit = amountPerUnitWithProfit;
-            oItem.totalWithProfit = quantity * amountPerUnitWithProfit;
-        },
         _onValueChange: function (oEvent) {
             var oModel = this.getView().getModel();
             var oEditRow = oModel.getProperty("/editRow");
@@ -479,6 +577,7 @@ sap.ui.define([
             oEditRow.total = total.toFixed(2);
             oEditRow.amountPerUnitWithProfit = amountWithProfit.toFixed(2);
             oEditRow.totalWithProfit = totalWithProfit.toFixed(2);
+            this._calculateTotals(oEditRow);
 
             oModel.setProperty("/editRow", oEditRow);
         },
@@ -597,106 +696,129 @@ sap.ui.define([
             else {
                 // === Main Item ===
                 if (!this._oEditMainDialog) {
-                    var oForm = new sap.ui.layout.form.SimpleForm({
-                        layout: "ResponsiveGridLayout",
-                        editable: true,
-                        labelSpanXL: 4,
-                        labelSpanL: 4,
-                        labelSpanM: 4,
-                        labelSpanS: 12,
-                        adjustLabelSpan: false,
-                        emptySpanXL: 1,
-                        emptySpanL: 1,
-                        emptySpanM: 1,
-                        emptySpanS: 0,
-                        columnsXL: 1,
-                        columnsL: 1,
-                        columnsM: 1,
-                        content: [
-
-                            new sap.m.Label({ text: "Main Item No" }),
-                            new sap.m.Input({ value: "{/editRow/MainItemNo}", editable: false }),
-
-                            new sap.m.Label({ text: "Service No" }),
-                            new sap.m.Select({
-                                selectedKey: "{/editRow/serviceNumberCode}",
-                                items: {
-                                    path: "/ServiceNumbers",
-                                    template: new sap.ui.core.Item({
-                                        key: "{serviceNumberCode}",
-                                        text: "{description}"
-                                    })
-                                }
-                            }),
-
-                            new sap.m.Label({ text: "Description" }),
-                            new sap.m.Input({ value: "{/editRow/description}" }),
-
-                            new sap.m.Label({ text: "Quantity" }),
-                            new sap.m.Input({ value: "{/editRow/quantity}", type: "Number", liveChange: this._onValueChange.bind(this) }),
-
-                            new sap.m.Label({ text: "UOM" }),
-                            new sap.m.Select({
-                                selectedKey: "{/editRow/unitOfMeasurementCode}",
-                                items: {
-                                    path: "/UOM",
-                                    template: new sap.ui.core.Item({
-                                        key: "{unitOfMeasurementCode}",
-                                        text: "{description}"
-                                    })
-                                }
-                            }),
-
-                            new sap.m.Label({ text: "Formula" }),
-                            new sap.m.Select({
-                                selectedKey: "{/editRow/formulaCode}",
-                                items: {
-                                    path: "/Formulas",
-                                    template: new sap.ui.core.Item({
-                                        key: "{formulaCode}",
-                                        text: "{description}"
-                                    })
-                                }
-                            }),
-                            new sap.m.Label({ text: "Parameters" }),
-                            new sap.m.Input({ value: "{/editRow/Parameters}" }),
-
-                            new sap.m.Label({ text: "Amount Per Unit" }),
-                            new sap.m.Input({ value: "{/editRow/amountPerUnit}", type: "Number", liveChange: this._onValueChange.bind(this) }),
-
-                            new sap.m.Label({ text: "Currency" }),
-                            new sap.m.Select({
-                                selectedKey: "{/editRow/currencyCode}",
-                                items: {
-                                    path: "/Currency",
-                                    template: new sap.ui.core.Item({
-                                        key: "{currencyCode}",
-                                        text: "{description}"
-                                    })
-                                }
-                            }),
-
-                            new sap.m.Label({ text: "Total" }),
-                            new sap.m.Input({ value: "{/editRow/total}", editable: false }),
-
-                            new sap.m.Label({ text: "Profit Margin" }),
-                            new sap.m.Input({ value: "{/editRow/profitMargin}", type: "Number", liveChange: this._onValueChange.bind(this) }),
-
-                            new sap.m.Label({ text: "Amount/Unit with Profit" }),
-                            new sap.m.Input({ value: "{/editRow/amountPerUnitWithProfit}", editable: false }),
-
-                            new sap.m.Label({ text: "Total with Profit" }),
-                            new sap.m.Input({ value: "{/editRow/totalWithProfit}", editable: false })
-                        ]
-                    });
-
                     this._oEditMainDialog = new sap.m.Dialog({
                         title: "Edit Main Item",
                         contentWidth: "600px",
-                        contentHeight: "auto",
                         resizable: true,
                         draggable: true,
-                        content: [oForm],
+                        content: [
+                            new sap.ui.layout.form.SimpleForm({
+                                layout: "ResponsiveGridLayout",
+                                editable: true,
+                                labelSpanXL: 4,
+                                labelSpanL: 4,
+                                labelSpanM: 4,
+                                labelSpanS: 12,
+                                adjustLabelSpan: false,
+                                emptySpanXL: 1,
+                                emptySpanL: 1,
+                                emptySpanM: 1,
+                                emptySpanS: 0,
+                                columnsXL: 1,
+                                columnsL: 1,
+                                columnsM: 1,
+                                content: [
+                                    new sap.m.Label({ text: "Service No" }),
+                                    new sap.m.Select(this.createId("editMainServiceNo"), {
+                                        selectedKey: "{/editRow/serviceNumberCode}",
+                                        items: {
+                                            path: "/ServiceNumbers",
+                                            template: new sap.ui.core.Item({
+                                                key: "{serviceNumberCode}",
+                                                text: "{description}"
+                                            })
+                                        }
+                                    }),
+
+                                    new sap.m.Label({ text: "Description" }),
+                                    new sap.m.Input({ value: "{/editRow/description}" }),
+
+                                    new sap.m.Label({ text: "Quantity" }),
+                                    new sap.m.Input(this.createId("editMainQuantityInput"), {
+                                        value: "{/editRow/quantity}",
+                                        type: "Number",
+                                        editable: true,
+                                        liveChange: this.onInputChange.bind(this)
+                                    }),
+
+                                    new sap.m.Label({ text: "UOM" }),
+                                    new sap.m.Select(this.createId("editMainUOMSelect"), {
+                                        selectedKey: "{/editRow/unitOfMeasurementCode}",
+                                        items: {
+                                            path: "/UOM",
+                                            template: new sap.ui.core.Item({
+                                                key: "{unitOfMeasurementCode}",
+                                                text: "{description}"
+                                            })
+                                        }
+                                    }),
+
+                                    new sap.m.Label({ text: "Formula" }),
+                                    new sap.m.Select(this.createId("editFormulaSelect"), {
+                                        selectedKey: "{/editRow/formulaCode}",
+                                        change: this._onEditFormulaSelected.bind(this),
+                                        items: {
+                                            path: "/Formulas",
+                                            template: new sap.ui.core.Item({
+                                                key: "{formulaCode}",
+                                                text: "{description}"
+                                            })
+                                        }
+                                    }),
+                                    new sap.m.Button(this.createId("btnEditEnterParams"), {
+                                        text: "Enter Parameters",
+                                        enabled: "{= ${/editRow/formulaCode} ? true : false }",
+                                        press: this.onOpenEditFormulaDialog.bind(this)
+                                    }),
+
+                                    new sap.m.Label({ text: "Amount Per Unit" }),
+                                    new sap.m.Input(this.createId("editMainAmountPerUnitInput"), {
+                                        value: "{/editRow/amountPerUnit}",
+                                        type: "Number",
+                                        liveChange: this.onInputChange.bind(this)
+
+                                    }),
+
+                                    new sap.m.Label({ text: "Currency" }),
+                                    new sap.m.Select(this.createId("editMainCurrencySelect"), {
+                                        selectedKey: "{/editRow/currencyCode}",
+                                        items: {
+                                            path: "/Currency",
+                                            template: new sap.ui.core.Item({
+                                                key: "{currencyCode}",
+                                                text: "{description}"
+                                            })
+                                        }
+                                    }),
+
+                                    new sap.m.Label({ text: "Total" }),
+                                    new sap.m.Input(this.createId("editMainTotalInput"), {
+                                        value: "{/editRow/total}",
+                                        editable: false
+                                    }),
+
+                                    new sap.m.Label({ text: "Profit Margin" }),
+                                    new sap.m.Input(this.createId("editMainProfitMarginInput"), {
+                                        value: "{/editRow/profitMargin}",
+                                        type: "Number",
+                                        liveChange: this.onInputChange.bind(this)
+
+                                    }),
+
+                                    new sap.m.Label({ text: "Amount/Unit with Profit" }),
+                                    new sap.m.Input(this.createId("editMainAmountPerUnitWithProfitInput"), {
+                                        value: "{/editRow/amountPerUnitWithProfit}",
+                                        editable: false
+                                    }),
+
+                                    new sap.m.Label({ text: "Total with Profit" }),
+                                    new sap.m.Input(this.createId("editMainTotalWithProfitInput"), {
+                                        value: "{/editRow/totalWithProfit}",
+                                        editable: false
+                                    })
+                                ]
+                            })
+                        ],
                         beginButton: new sap.m.Button({
                             text: "Save",
                             press: this.onSaveEdit.bind(this)
@@ -711,10 +833,106 @@ sap.ui.define([
 
                     this.getView().addDependent(this._oEditMainDialog);
                 }
+
                 this._oEditMainDialog.open();
             }
 
+
         },
+        _onEditFormulaSelected: function (oFormula, oContext) {
+            const oModel = this.getView().getModel();
+            const oData = oContext.getObject();
+
+            // Example: open a dialog for entering parameters (like r = 5)
+            const sParam = oFormula.parameterDescriptions[0];
+            const oInput = new sap.m.Input({ placeholder: `Enter value for ${sParam}` });
+
+            const oDialog = new sap.m.Dialog({
+                title: "Enter Parameters",
+                content: [oInput],
+                beginButton: new sap.m.Button({
+                    text: "OK",
+                    press: () => {
+                        const val = parseFloat(oInput.getValue());
+                        if (isNaN(val)) {
+                            sap.m.MessageToast.show("Please enter a valid number");
+                            return;
+                        }
+
+                        // Example calculation using formula logic (replace this with real parser)
+                        const result = (22 / 7) * (val * val); // for 22/7*r^2
+                        oData.result = result;
+                        oModel.refresh(true);
+                        oDialog.close();
+                    }
+                }),
+                endButton: new sap.m.Button({
+                    text: "Cancel",
+                    press: () => oDialog.close()
+                })
+            });
+
+            oDialog.open();
+        },
+        onOpenEditFormulaDialog: function () {
+            const oModel = this.getView().getModel();
+            const sFormulaCode = oModel.getProperty("/editRow/formulaCode");
+
+            if (!sFormulaCode) {
+                sap.m.MessageToast.show("Please select a formula first.");
+                return;
+            }
+
+            const aFormulas = oModel.getProperty("/Formulas") || [];
+            const oFormula = aFormulas.find(f => f.formulaCode === sFormulaCode);
+
+            if (!oFormula) {
+                sap.m.MessageToast.show("Formula not found.");
+                return;
+            }
+
+            // Create a VBox with dynamic parameter inputs
+            const oVBox = new sap.m.VBox({ id: this.createId("editFormulaParamBox") });
+            oFormula.parameterDescriptions.forEach((desc, i) => {
+                const paramId = oFormula.parameterIds[i];
+                oVBox.addItem(new sap.m.Label({ text: desc }));
+                oVBox.addItem(new sap.m.Input(this.createId("editParam_" + paramId), {
+                    placeholder: `Enter ${desc}`
+                }));
+            });
+
+            // Create and open the dialog
+            const oDialog = new sap.m.Dialog({
+                title: "Enter Formula Parameters",
+                content: [oVBox],
+                beginButton: new sap.m.Button({
+                    text: "OK",
+                    type: "Emphasized",
+                    press: () => {
+                        const oParams = {};
+                        oFormula.parameterIds.forEach(paramId => {
+                            oParams[paramId] = this.byId("editParam_" + paramId).getValue();
+                        });
+
+                        const result = this._calculateFormulaResult(oFormula, oParams);
+
+                        // Update the quantity in the edit model
+                        oModel.setProperty("/editRow/quantity", result);
+
+                        sap.m.MessageToast.show("Quantity updated to " + result);
+                        oDialog.close();
+                    }
+                }),
+                endButton: new sap.m.Button({
+                    text: "Cancel",
+                    press: () => oDialog.close()
+                })
+            });
+
+            this.getView().addDependent(oDialog);
+            oDialog.open();
+        },
+
         onSaveEdit: function () {
             var oModel = this.getView().getModel();
             var oEdited = oModel.getProperty("/editRow");
@@ -737,7 +955,7 @@ sap.ui.define([
         },
         onAddSubItem: function () {
             var oModel = this.getView().getModel();
-             var oUOMSelect = oView.byId("subUOMInput");
+            var oUOMSelect = oView.byId("subUOMInput");
             var oFormulaSelect = oView.byId("subFormulaSelect");
             var oCurrencySelect = oView.byId("subCurrencyInput");
             var oSubItem = {
@@ -747,7 +965,7 @@ sap.ui.define([
                 quantity: this.byId("subQuantityInput").getValue(),
                 unitOfMeasurementCode: this.byId("subUOMInput").getSelectedItem().getText(),
                 formulaCode: this.byId("subFormulaSelect").getSelectedItem().getText(),
-                
+
                 // parameters: oModel.getProperty("/SelectedSubFormulaParams") || {},
                 amountPerUnit: this.byId("subAmountPerUnitInput").getValue(),
                 currencyCode: this.byId("subCurrencyInput").getSelectedItem().getText(),
@@ -800,44 +1018,6 @@ sap.ui.define([
                     }
                 }
             );
-        },
-
-        onCancelSubDialog: function () {
-            this.byId("addSubDialog").close();
-        },
-        onCollapseAll: function () {
-            const oTreeTable = this.byId("treeTable");
-            oTreeTable.collapseAll();
-        },
-
-        onCollapseSelection: function () {
-            const oTreeTable = this.byId("treeTable");
-            oTreeTable.collapse(oTreeTable.getSelectedIndices());
-        },
-
-        onExpandFirstLevel: function () {
-            const oTreeTable = this.byId("treeTable");
-            oTreeTable.expandToLevel(1);
-        },
-
-        onExpandSelection: function () {
-            const oTreeTable = this.byId("treeTable");
-            oTreeTable.expand(oTreeTable.getSelectedIndices());
-        },
-
-        onOpenMainDialog: function () {
-            this.byId("addMainDialog").open();
-        },
-
-        onOpenSubDialog: function () {
-            this.byId("addSubDialog").open();
-        },
-
-        onCloseDialog: function (oEvent) {
-            oEvent.getSource().getParent().close();
-        },
-        onCloseMainItemDialog: function () {
-            this.byId("addMainItemDialog").close();
         },
         onAddMainItem: function () {
 
@@ -951,6 +1131,44 @@ sap.ui.define([
                 // Clear filter if empty search
                 oBinding.filter([]);
             }
-        }
+        },
+        onCancelSubDialog: function () {
+            this.byId("addSubDialog").close();
+        },
+        onCollapseAll: function () {
+            const oTreeTable = this.byId("treeTable");
+            oTreeTable.collapseAll();
+        },
+
+        onCollapseSelection: function () {
+            const oTreeTable = this.byId("treeTable");
+            oTreeTable.collapse(oTreeTable.getSelectedIndices());
+        },
+
+        onExpandFirstLevel: function () {
+            const oTreeTable = this.byId("treeTable");
+            oTreeTable.expandToLevel(1);
+        },
+
+        onExpandSelection: function () {
+            const oTreeTable = this.byId("treeTable");
+            oTreeTable.expand(oTreeTable.getSelectedIndices());
+        },
+
+        onOpenMainDialog: function () {
+            this.byId("addMainDialog").open();
+        },
+
+        onOpenSubDialog: function () {
+            this.byId("addSubDialog").open();
+        },
+
+        onCloseDialog: function (oEvent) {
+            oEvent.getSource().getParent().close();
+        },
+        onCloseMainItemDialog: function () {
+            this.byId("addMainItemDialog").close();
+        },
+
     });
 });

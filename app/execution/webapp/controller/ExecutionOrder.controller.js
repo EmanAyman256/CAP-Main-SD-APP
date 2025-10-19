@@ -23,6 +23,7 @@ sap.ui.define([
       var oRouter = sap.ui.core.UIComponent.getRouterFor(this);
       oRouter.getRoute("ExecutionOrder").attachPatternMatched(this._onRouteMatched, this);
       var oModel = new sap.ui.model.json.JSONModel({
+        totalValue: 0,
         docNumber: "",
         itemNumber: "",
         MainItems: [],
@@ -56,7 +57,7 @@ sap.ui.define([
         });
       fetch("/odata/v4/sales-cloud/UnitOfMeasurements")
         .then(r => r.json())
-          .then(data => {
+        .then(data => {
           console.log("Fetched UnitOfMeasurements:", data.value);
 
           if (data && data.value) {
@@ -144,7 +145,17 @@ sap.ui.define([
         .then(response => response.json())
         .then(data => {
           console.log(data.value);
+          const mainItems = Array.isArray(data.value) ? data.value : [];
+          // Calculate the total sum
+          const totalValue = mainItems.reduce(
+            (sum, record) => sum + Number(record.total || 0),
+            0
+          );
+          //totalWithProfit
+
+          console.log("Total Value:", totalValue);
           oModel.setProperty("/MainItems", data.value);
+          oModel.setProperty("/totalValue", totalValue);
 
           // if it's an array, do:
           // oModel.setProperty("/MainItems", data.value);
@@ -713,7 +724,7 @@ sap.ui.define([
             new sap.m.Input({ value: "{/editRow/description}" }),
 
             new sap.m.Label({ text: "Quantity" }),
-            new sap.m.Input({ value: "{/editRow/actualQuantity}", type: "Number", liveChange: this._onValueChange.bind(this) }),
+            new sap.m.Input({ value: "{/editRow/totalQuantity}", type: "Number", liveChange: this._onValueChange.bind(this) }),
 
             new sap.m.Label({ text: "UOM" }),
             new sap.m.Select(this.createId("editUOM"), {
@@ -742,7 +753,7 @@ sap.ui.define([
             new sap.m.CheckBox({ selected: "{/editRow/manualPriceEntryAllowed}" }),
 
             new sap.m.Label({ text: "Material Group" }),
-             new sap.m.Select(this.createId("editMaterialGroup"), {
+            new sap.m.Select(this.createId("editMaterialGroup"), {
               selectedKey: "{/editRow/materialGroupCode}",
               forceSelection: false,
               items: {
@@ -792,7 +803,7 @@ sap.ui.define([
             new sap.m.CheckBox({ selected: "{/editRow/lotCostOne}" }),
 
             new sap.m.Label({ text: "Total" }),
-            new sap.m.Input({ value: "{/editRow/total}", editable: false })
+            new sap.m.Input({ value: "{/editRow/total}", liveChange: this._onValueChange.bind(this), editable: false })
           ]
         });
 
@@ -825,34 +836,59 @@ sap.ui.define([
 
     _onValueChange: function (oEvent) {
       var oModel = this.getView().getModel();
-      var qty = parseFloat(oModel.getProperty("/editRow/actualQuantity")) || 0;
-      var amount = parseFloat(oModel.getProperty("/editRow/amountPerUnit")) || 0;
-      oModel.setProperty("/editRow/total", qty * amount);
+      var oInput = oEvent.getSource();
+      var sValue = oEvent.getParameter("value");
+
+      // Get the binding path of the input value (this will be like "/editRow/actualQuantity")
+      var sBindingPath = oInput.getBinding("value") && oInput.getBinding("value").getPath();
+
+      if (!sBindingPath) {
+        return;
+      }
+
+      // Write the new value directly to the exact binding path
+      // (do NOT prepend "/editRow" again — sBindingPath already contains it)
+      oModel.setProperty(sBindingPath, sValue);
+
+      // Re-read updated editRow and recalc total
+      var oEditRow = oModel.getProperty("/editRow") || {};
+      var qty = parseFloat(oEditRow.totalQuantity) || 0;
+      var amount = parseFloat(oEditRow.amountPerUnit) || 0;
+      var total = qty * amount;
+
+      // Keep total numeric (use formatting on display if required)
+      oModel.setProperty("/editRow/total", total);
     },
+
 
     onSaveEdit: function () {
       var oModel = this.getView().getModel();
       var oEditRow = oModel.getProperty("/editRow");
-      // Ensure total is calculated
-      var qty = parseFloat(oEditRow.actualQuantity) || 0;
+
+      // Ensure numeric values
+      var qty = parseFloat(oEditRow.totalQuantity) || 0;
       var amount = parseFloat(oEditRow.amountPerUnit) || 0;
-      oEditRow.total = qty * amount;
-      console.log("Saving UOM:", oEditRow.unitOfMeasurementCode); // Debug: should log the new selected code
-      // Update the original row object in the model
-      oModel.setProperty(this._editPath, oEditRow);
-      console.log("Updated model UOM at path:", oModel.getProperty(this._editPath + "/unitOfMeasurementCode")); // Debug: confirm it stuck
-      // Explicitly refresh the table's row binding to force UI update
-      var oTable = this.byId("executionTable");
-      if (oTable && oTable.getBinding("rows")) {
-        oTable.getBinding("rows").refresh(true);
+
+      // ✅ Always recalculate total right before saving
+      var total = qty * amount;
+      oEditRow.total = total;
+
+      // ✅ Write the updated row back to its original path in the table
+      if (this._editPath) {
+        oModel.setProperty(this._editPath, oEditRow);
       }
-      // Optional: Full model refresh as fallback
+
+      // ✅ Refresh model to update table view
       oModel.refresh(true);
-      sap.m.MessageToast.show("Item updated successfully!");
+
+      // Close dialog
       this._EditItemDialog.close();
       this._EditItemDialog.destroy();
       this._EditItemDialog = null;
-    },
+
+      sap.m.MessageToast.show("Item updated successfully!");
+    }
+    ,
     onDeleteItem: function (oEvent) {
       var oBindingContext = oEvent.getSource().getBindingContext();
       if (oBindingContext) {
@@ -881,53 +917,40 @@ sap.ui.define([
       }
     },
     onSaveDocument: function () {
-      const oModel = this.getView().getModel(); // default model
+      const oModel = this.getView().getModel();
       const MainItems = oModel.getProperty("/MainItems") || [];
 
-      // Map MainItems to match API payload structure
+      // ✅ Ensure totals are calculated before sending
+      MainItems.forEach(item => {
+        const qty = parseFloat(item.totalQuantity) || 0;
+        const amount = parseFloat(item.amountPerUnit) || 0;
+        item.total = qty * amount;
+      });
+
       const executionOrders = MainItems.map(item => ({
-        //referenceSDDocument: item.referenceSDDocument || "",
-        //salesOrderItem: item.salesOrderItem || "",
-        //debitMemoRequestItem: item.debitMemoRequestItem || "",
-        //salesOrderItemText: item.salesOrderItemText || "",
         referenceId: oModel.getProperty("/docNumber") || "",
         serviceNumberCode: parseInt(item.serviceNumberCode) || 0,
         description: item.description || "",
         unitOfMeasurementCode: item.unitOfMeasurementCode || "",
         currencyCode: item.currencyCode || "",
-        materialGroupCode: item.materialGroupCode || "",
-        personnelNumberCode: item.personnelNumberCode || "",
-        lineTypeCode: item.lineTypeCode || "",
-        serviceTypeCode: item.serviceTypeCode || "",
         totalQuantity: item.totalQuantity || 0,
         remainingQuantity: item.remainingQuantity || 0,
         amountPerUnit: item.amountPerUnit || 0,
         total: item.total || 0,
-        totalHeader: item.totalHeader || 0,
         actualQuantity: item.actualQuantity || 0,
-        previousQuantity: item.previousQuantity || 0,
         actualPercentage: item.actualPercentage || 0,
         overFulfillmentPercent: item.overFulfillmentPercent || 0,
-        unlimitedOverFulfillment: item.unlimitedOverFulfillment !== undefined ? item.unlimitedOverFulfillment : true,
-        manualPriceEntryAllowed: item.manualPriceEntryAllowed !== undefined ? item.manualPriceEntryAllowed : true,
-        externalServiceNumber: item.externalServiceNumber || "",
-        serviceText: item.serviceText || "",
-        lineText: item.lineText || "",
-        lineNumber: item.lineNumber || "",
-        biddersLine: item.biddersLine !== undefined ? item.biddersLine : true,
-        supplementaryLine: item.supplementaryLine !== undefined ? item.supplementaryLine : true,
-        lotCostOne: item.lotCostOne !== undefined ? item.lotCostOne : true,
-        doNotPrint: item.doNotPrint !== undefined ? item.doNotPrint : true,
-        deletionIndicator: item.deletionIndicator !== undefined ? item.deletionIndicator : true
+        unlimitedOverFulfillment: item.unlimitedOverFulfillment ?? true,
+        manualPriceEntryAllowed: item.manualPriceEntryAllowed ?? true
       }));
+
       const body = {
-        executionOrders: executionOrders,
+        executionOrders,
         salesOrder: oModel.getProperty("/docNumber") || "",
         salesOrderItem: oModel.getProperty("/itemNumber") || "",
         pricingProcedureStep: 10,
         pricingProcedureCounter: 1,
         customerNumber: "120000"
-        // oModel.getProperty("/customerNumber") || "120000"
       };
 
       console.log("Payload sent to API:", body);
@@ -938,22 +961,20 @@ sap.ui.define([
         body: JSON.stringify(body)
       })
         .then(response => {
-          if (!response.ok) {
-            throw new Error("Failed to save: " + response.statusText);
-          }
+          if (!response.ok) throw new Error("Failed to save: " + response.statusText);
           return response.json();
         })
         .then(savedItem => {
           console.log(savedItem);
-          oModel.setProperty("/MainItems", savedItem.value);
+          // ✅ Don’t overwrite your current data with backend response unless needed
           sap.m.MessageToast.show("Document saved successfully!");
-
         })
         .catch(err => {
           console.error("Error saving document:", err);
           sap.m.MessageBox.error("Error: " + err.message);
         });
-    },
+    }
+    ,
 
     onAddMianItem: function () {
 

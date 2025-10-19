@@ -289,11 +289,9 @@ service SalesCloudService {
 
   action   getExecutionOrderMainById(executionOrderMainCode: Integer)                      returns ExecutionOrderMains;
 
-  action   fetchExecutionOrderMainByDebitMemo(debitMemoRequest: String,
+  function fetchExecutionOrderMainByDebitMemo(debitMemoRequest: String,
                                               debitMemoRequestItem: String)                returns array of ExecutionOrderMains;
 
-  function fetchExecutionOrderMainByDebitMemoFunction(debitMemoRequest: String,
-                                                      debitMemoRequestItem: String)        returns array of ExecutionOrderMains;
 
   function getExecutionOrderMainByReferenceId(referenceId: String,
                                               salesOrderItem: String)                      returns array of ExecutionOrderMains;
@@ -348,108 +346,94 @@ service SalesCloudService {
     deletionIndicator        : Boolean;
   }
 
-// -------------------------------- Fourth App - Service Invoice main ------------------------------ //
+  // -------------------------------- Fourth App - Service Invoice main ------------------------------ //
 
-action getAllServiceInvoices() returns array of ServiceInvoiceMains;
+  action   getAllServiceInvoices()                                                         returns array of ServiceInvoiceMains;
 
-action getServiceInvoiceById(serviceInvoiceCode: UUID) returns ServiceInvoiceMains;
+  action   getServiceInvoiceById(serviceInvoiceCode: UUID)                                 returns ServiceInvoiceMains;
 
-function findByDebitMemoRequestAndItem(
-  debitMemoRequest: String,
-  debitMemoRequestItem: String
-) returns String;
+  function findByDebitMemoRequestAndItem(debitMemoRequest: String,
+                                         debitMemoRequestItem: String)                     returns String;
 
-function findItemsByDebitMemoRequest(
-  debitMemoRequest: String
-) returns String;
+  function findItemsByDebitMemoRequest(debitMemoRequest: String)                           returns String;
 
-action getServiceInvoiceByReferenceId(
-  referenceId: String,
-  debitMemoRequestItem: String
-) returns array of ServiceInvoiceMains;
+  action   getServiceInvoiceByReferenceId(referenceId: String,
+                                          debitMemoRequestItem: String)                    returns array of ServiceInvoiceMains;
 
-action deleteServiceInvoice(serviceInvoiceCode: UUID) returns Boolean;
+  action   deleteServiceInvoice(serviceInvoiceCode: UUID)                                  returns Boolean;
 
-@readonly
-action calculateTotalHeaderServiceInvoice() returns Decimal(15,3);
+  @readonly
+  action   calculateTotalHeaderServiceInvoice()                                            returns Decimal(15, 3);
 
-@readonly
-action calculateTotalServiceInvoice(
-  serviceInvoiceCode: UUID
-) returns Decimal(15,3);
+  @readonly
+  action   calculateTotalServiceInvoice(serviceInvoiceCode: UUID)                          returns Decimal(15, 3);
 
-type CalculatedQuantitiesResponse : {
-  actualQuantity    : Decimal;
-  remainingQuantity : Decimal;
-  total             : Decimal;
-  actualPercentage  : Decimal;
-  totalHeader       : Decimal;
-}
+  type CalculatedQuantitiesResponse : {
+    actualQuantity    : Decimal;
+    remainingQuantity : Decimal;
+    total             : Decimal;
+    actualPercentage  : Decimal;
+    totalHeader       : Decimal;
+  }
 
-action calculateQuantities(
-    executionOrderMainCode      : UUID,
-    quantity                    : Decimal(15,3),
-    totalQuantity               : Decimal(15,3),
-    amountPerUnit               : Decimal(15,3),
-    overFulfillmentPercentage   : Decimal(15,3),
-    unlimitedOverFulfillment    : Boolean
-) returns CalculatedQuantitiesResponse;
+  action   calculateQuantities(executionOrderMainCode: UUID,
+                               quantity: Decimal(15, 3),
+                               totalQuantity: Decimal(15, 3),
+                               amountPerUnit: Decimal(15, 3),
+                               overFulfillmentPercentage: Decimal(15, 3),
+                               unlimitedOverFulfillment: Boolean)                          returns CalculatedQuantitiesResponse;
 
 
-action calculateQuantitiesWithoutAccumulation(
-        executionOrderMainCode : UUID,
-        quantity               : Decimal,
-        totalQuantity          : Decimal,
-        amountPerUnit          : Decimal
-    ) returns CalculatedQuantitiesResponse;
+  action   calculateQuantitiesWithoutAccumulation(executionOrderMainCode: UUID,
+                                                  quantity: Decimal,
+                                                  totalQuantity: Decimal,
+                                                  amountPerUnit: Decimal)                  returns CalculatedQuantitiesResponse;
 
-action saveOrUpdateServiceInvoices(
-  serviceInvoiceCommands: array of ServiceInvoiceMainCommand,
-  debitMemoRequest: String,
-  debitMemoRequestItem: String,
-  pricingProcedureStep: Integer,
-  pricingProcedureCounter: Integer,
-  customerNumber: String
-) returns array of ServiceInvoiceMainCommand;
+  action   saveOrUpdateServiceInvoices(serviceInvoiceCommands: array of ServiceInvoiceMainCommand,
+                                       debitMemoRequest: String,
+                                       debitMemoRequestItem: String,
+                                       pricingProcedureStep: Integer,
+                                       pricingProcedureCounter: Integer,
+                                       customerNumber: String)                             returns array of ServiceInvoiceMainCommand;
 
-function findByLineNumberServiceInvoice(lineNumber: String) returns array of ServiceInvoiceMains;
+  function findByLineNumberServiceInvoice(lineNumber: String)                              returns array of ServiceInvoiceMains;
 
-type ServiceInvoiceMainCommand {
-  executionOrderMainCode   : UUID;
-  referenceSDDocument      : String;
-  debitMemoRequestItem     : String;
-  debitMemoRequestItemText : String;
-  referenceId              : String;
-  serviceNumberCode        : Integer;
-  description              : String;
-  unitOfMeasurementCode    : String;
-  currencyCode             : String;
-  materialGroupCode        : String;
-  personnelNumberCode      : String;
-  lineTypeCode             : String;
-  serviceTypeCode          : String;
-  remainingQuantity        : Decimal(15,3);
-  quantity                 : Decimal(15,3);
-  currentPercentage        : Decimal(15,3);
-  totalQuantity            : Decimal(15,3);
-  amountPerUnit            : Decimal(15,3);
-  total                    : Decimal(15,3);
-  actualQuantity           : Decimal(15,3);
-  actualPercentage         : Decimal(15,3);
-  overFulfillmentPercent   : Decimal(15,3);
-  unlimitedOverFulfillment : Boolean;
-  externalServiceNumber    : String;
-  serviceText              : String;
-  lineText                 : String;
-  lineNumber               : String(225);
-  biddersLine              : Boolean;
-  supplementaryLine        : Boolean;
-  lotCostOne               : Boolean;
-  doNotPrint               : Boolean;
-  alternatives             : String;
-  totalHeader              : Decimal(15,3);
-  temporaryDeletion        : String(9);
-}
+  type ServiceInvoiceMainCommand {
+    executionOrderMainCode   : UUID;
+    referenceSDDocument      : String;
+    debitMemoRequestItem     : String;
+    debitMemoRequestItemText : String;
+    referenceId              : String;
+    serviceNumberCode        : Integer;
+    description              : String;
+    unitOfMeasurementCode    : String;
+    currencyCode             : String;
+    materialGroupCode        : String;
+    personnelNumberCode      : String;
+    lineTypeCode             : String;
+    serviceTypeCode          : String;
+    remainingQuantity        : Decimal(15, 3);
+    quantity                 : Decimal(15, 3);
+    currentPercentage        : Decimal(15, 3);
+    totalQuantity            : Decimal(15, 3);
+    amountPerUnit            : Decimal(15, 3);
+    total                    : Decimal(15, 3);
+    actualQuantity           : Decimal(15, 3);
+    actualPercentage         : Decimal(15, 3);
+    overFulfillmentPercent   : Decimal(15, 3);
+    unlimitedOverFulfillment : Boolean;
+    externalServiceNumber    : String;
+    serviceText              : String;
+    lineText                 : String;
+    lineNumber               : String(225);
+    biddersLine              : Boolean;
+    supplementaryLine        : Boolean;
+    lotCostOne               : Boolean;
+    doNotPrint               : Boolean;
+    alternatives             : String;
+    totalHeader              : Decimal(15, 3);
+    temporaryDeletion        : String(9);
+  }
 
 
 }
