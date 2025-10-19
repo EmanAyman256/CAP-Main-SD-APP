@@ -28,6 +28,7 @@ sap.ui.define([
       var oModel = new sap.ui.model.json.JSONModel({
         totalValue: 0,
         docNumber: "",
+        TotalQuantity:0,
         itemNumber: "",
         MainItems: [],
 
@@ -166,12 +167,17 @@ sap.ui.define([
                   lineNumber: "", // if you want to auto-generate, use aMainItems.length + 1
                   serviceNumberCode: oData.serviceNumberCode,
                   description: oData.description,
-                  actualQuantity: oData.quantity,
+                  actualQuantity: oData.actualQuantity,
                   unitOfMeasurementCode: oData.unitOfMeasurementCode,
                   amountPerUnit: oData.amountPerUnit,
                   currencyCode: oData.currencyCode,
-                  total: oData.quantity * oData.amountPerUnit
+                  total: oData.total ,
+                  totalQuantity:oData.totalQuantity
+                  //* oData.amountPerUnit
                 });
+                
+                
+                
               });
 
               oMainModel.setProperty("/MainItems", aMainItems);
@@ -226,7 +232,7 @@ sap.ui.define([
               new sap.m.Text({ text: "{serviceNumberCode}" }),
               new sap.m.Text({ text: "{description}" }),
               new sap.m.Text({ text: "{unitOfMeasurementCode}" }),
-              new sap.m.Text({ text: "{quantity}" }),
+              new sap.m.Text({ text: "{totalQuantity}" }),
               new sap.m.Text({ text: "{amountPerUnit}" }),
               new sap.m.Text({ text: "{currencyCode}" })
             ]
@@ -273,7 +279,7 @@ sap.ui.define([
 
       // Map MainItems to match API payload structure
       const serviceInvoiceCommands = MainItems.map(item => ({
-        actualPercentage: String(item.actualPercentage || "0"),
+        actualPercentage: parseInt(item.actualPercentage || "0"),
         actualQuantity: String(item.actualQuantity || "0"),
         alternatives: null,
         amountPerUnit: String(item.amountPerUnit || "0"),
@@ -307,7 +313,7 @@ sap.ui.define([
         temporaryDeletion: null,
         total: String(item.total || "0"),
         totalHeader: String(item.totalHeader || "0"),
-        totalQuantity: String(item.totalQuantity || "0"),
+        totalQuantity: String(item.quantity || "0"),
         unitOfMeasurementCode: item.unitOfMeasurementCode || null,
         unlimitedOverFulfillment: item.unlimitedOverFulfillment !== undefined ? item.unlimitedOverFulfillment : true
       }));
@@ -472,14 +478,14 @@ sap.ui.define([
             new sap.m.Input({
               value: "{/editRow/amountPerUnit}", editable: false,
               type: "Number",
-              liveChange: this._onValueChange.bind(this)
+              //liveChange: this._onValueChange.bind(this)
             }),
 
             new sap.m.Label({ text: "Total Quantity" }),
             new sap.m.Input({
-              value: "{/editRow/totalQuantity}", editable: false,
+              value: "{/editRow/total}", editable: false,
               type: "Number",
-              liveChange: this._onValueChange.bind(this)
+              //liveChange: this._onValueChange.bind(this)
             }),
 
             new sap.m.Label({ text: "Current Quantity" }),
@@ -487,7 +493,7 @@ sap.ui.define([
               value: "{/editRow/currentQuantity}",
               type: "Number",
               valueLiveUpdate: true,  // Add this line
-              liveChange: this._onValueChange.bind(this)
+              //liveChange: this._onValueChange.bind(this)
             }),
 
             new sap.m.Label({ text: "Remaining Quantity" }),
@@ -569,34 +575,20 @@ sap.ui.define([
     onSaveEdit: function () {
       const oModel = this.getView().getModel();
       const updatedData = oModel.getProperty("/editRow");
-
-      if (this._editPath) {
-        oModel.setProperty(this._editPath, updatedData);
-      }
-
-      this._EditItemDialog.close();
-      this._EditItemDialog.destroy();
-      this._EditItemDialog = null;
-
-      sap.m.MessageToast.show("Item updated successfully!");
-    },
-    _onValueChange: function () {
-      const oModel = this.getView().getModel();
       const oEditRow = oModel.getProperty("/editRow");
 
-      // Prepare request payload
-      const payload = {
+ const payload = {
         executionOrderMainCode: oEditRow.executionOrderMainCode,
         quantity: (oEditRow.currentQuantity) || 0,
-        totalQuantity: (oEditRow.totalQuantity) || 0,
+        totalQuantity: (oEditRow.total) || 0,
         amountPerUnit: (oEditRow.amountPerUnit) || 0,
-        overFulfillmentPercentage: (oEditRow.overFulfillmentPercent) || 0,
-        unlimitedOverFulfillment: oEditRow.unlimitedOverFulfillment === true
+        // overFulfillmentPercentage: (oEditRow.overFulfillmentPercent) || 0,
+        // unlimitedOverFulfillment: oEditRow.unlimitedOverFulfillment === true
       };
 
       console.log("Payload sent to /calculateQuantities:", payload);
 
-      fetch("/odata/v4/sales-cloud/calculateQuantities", {
+      fetch("/odata/v4/sales-cloud/calculateQuantitiesWithoutAccumulation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -609,10 +601,10 @@ sap.ui.define([
           console.log("Calculation API response:", result);
 
           // Update the editable row data with calculated values
-          oEditRow.actualQuantity = parseInt(result.actualQuantity);
+          oEditRow.actualQuantity = parseInt(result.total);
           oEditRow.remainingQuantity = parseInt(result.remainingQuantity);
-          oEditRow.total = parseInt(result.total);
-          oEditRow.actualPercentage = parseInt(result.actualPercentage);
+          // oEditRow.total = parseInt(result.total);
+          oEditRow.actualPercentage = parseFloat(result.actualPercentage);
           oEditRow.totalHeader = parseInt(result.totalHeader);
 
           // Update the model
@@ -622,6 +614,21 @@ sap.ui.define([
           console.error("Error calling calculateQuantities:", err);
           sap.m.MessageToast.show("Failed to calculate quantities");
         });
+      if (this._editPath) {
+        oModel.setProperty(this._editPath, updatedData);
+      }
+
+      this._EditItemDialog.close();
+      this._EditItemDialog.destroy();
+      this._EditItemDialog = null;
+
+      sap.m.MessageToast.show("Item updated successfully!");
+    },
+    _onValueChange: function () {
+      const oModel = this.getView().getModel();
+
+      // Prepare request payload
+     
     }
 
 

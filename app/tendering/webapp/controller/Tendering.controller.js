@@ -954,6 +954,7 @@ sap.ui.define([
             }
         },
         onAddSubItem: function () {
+            var oView = this.getView();
             var oModel = this.getView().getModel();
             var oUOMSelect = oView.byId("subUOMInput");
             var oFormulaSelect = oView.byId("subFormulaSelect");
