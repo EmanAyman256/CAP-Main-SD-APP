@@ -255,7 +255,17 @@ module.exports = cds.service.impl(async function () {
         );
 
         savedMain.totalHeader = totalHeader;
+        // 🔹 re-fetch subitems for this main item
+        const insertedSubItems = await tx.run(
+          SELECT.from(InvoiceSubItems).where({ invoiceMainItemCode: savedMain.invoiceMainItemCode })
+        );
+
+        // attach subitems
+        savedMain.subItemList = insertedSubItems || [];
+
+        // push to results
         savedItems.push(savedMain);
+
       }
 
       // Step 3: Call external pricing API (like in your Java code)
