@@ -206,9 +206,6 @@ sap.ui.define([
                 oModel.setProperty("/amountPerUnitWithProfit", amountPerUnitWithProfit.toFixed(2));
             }
         },
-
-
-
         onServiceNumberChange: function (oEvent) {
             var oSelect = oEvent.getSource();
             var oSelectedItem = oSelect.getSelectedItem();
@@ -329,8 +326,6 @@ sap.ui.define([
 
             sap.m.MessageToast.show("Profit margin applied to selected item.");
         },
-
-
         onOpenFormulaDialog: function (oEvent) {
             var oButton = oEvent.getSource();
             var sButtonId = oButton.getId();
@@ -466,8 +461,6 @@ sap.ui.define([
                 pricingProcedureCounter: "1",
                 customerNumber: "120000",
                 invoiceMainItemCommands: Items,
-
-
             }
             console.log(body);
 
@@ -477,12 +470,7 @@ sap.ui.define([
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify(body)
-
-
-
             })
-
-
                 .then(response => {
                     if (!response.ok) {
                         throw new Error("Failed to save: " + response.statusText);
@@ -490,21 +478,82 @@ sap.ui.define([
                     return response.json();
                 })
                 .then(savedItem => {
+                    console.log("Save response:", savedItem); // Debug: Check structure (should have .value as array)
 
-                    var aServiceTypes = oModel.getProperty("/MainItems") || [];
-                    aServiceTypes.push(savedItem);
-                    oModel.setProperty("/MainItems", aServiceTypes);
+                    // Replace MainItems with the saved/updated list from backend
+                    const updatedMainItems = Array.isArray(savedItem.value) ? savedItem.value : [];
+                    oModel.setProperty("/MainItems", updatedMainItems);
 
+                    // Recalculate totals if needed (e.g., sum of totals)
+                    const totalValue = updatedMainItems.reduce((sum, record) => sum + Number(record.total || 0), 0);
+                    oModel.setProperty("/totalValue", totalValue);
 
+                    // Force refresh to update treeTable
+                    oModel.refresh(true);
+
+                    sap.m.MessageToast.show("Document saved successfully!");
                 })
                 .catch(err => {
                     console.error("Error saving MainItem:", err);
                     sap.m.MessageBox.error("Error: " + err.message);
                 });
-
-
         },
+        // onSaveDocument: function () {
+        //     const oModel = this.getView().getModel(); // default model
+        //     let Items = oModel.getProperty("/MainItems") || [];
+        //     Items = Items.map(({ createdAt, modifiedAt, createdBy,
+        //         modifiedBy, invoiceMainItemCode, serviceNumber_serviceNumberCode,
+        //         salesQuotation, salesQuotationItem, currencyText, formulaText, unitOfMeasurementText
+        //         , pricingProcedureCounter, pricingProcedureStep, customerNumber,
+        //         ...rest }) => rest);
 
+        //     console.log("Mainitems Sent to Doc", Items);
+
+        //     let body = {
+        //         salesQuotation: oModel.getProperty("/docNumber"),
+        //         salesQuotationItem: oModel.getProperty("/itemNumber"),
+        //         pricingProcedureStep: "20",
+        //         pricingProcedureCounter: "1",
+        //         customerNumber: "120000",
+        //         invoiceMainItemCommands: Items,
+
+
+        //     }
+        //     console.log(body);
+
+        //     fetch("/odata/v4/sales-cloud/saveOrUpdateMainItems", {
+        //         method: "POST",
+        //         headers: {
+        //             "Content-Type": "application/json"
+        //         },
+        //         body: JSON.stringify(body)
+
+
+
+        //     })
+
+
+        //         .then(response => {
+        //             if (!response.ok) {
+        //                 throw new Error("Failed to save: " + response.statusText);
+        //             }
+        //             return response.json();
+        //         })
+        //         .then(savedItem => {
+
+        //             var aServiceTypes = oModel.getProperty("/MainItems") || [];
+        //             aServiceTypes.push(savedItem);
+        //             oModel.setProperty("/MainItems", aServiceTypes);
+
+
+        //         })
+        //         .catch(err => {
+        //             console.error("Error saving MainItem:", err);
+        //             sap.m.MessageBox.error("Error: " + err.message);
+        //         });
+
+
+        // },
         onOpenSubDialogForRow: function (oEvent) {
             const oContext = oEvent.getSource().getBindingContext();
             const oObject = oContext.getObject();
@@ -536,7 +585,6 @@ sap.ui.define([
 
             this.byId("addSubDialog").open();
         },
-
         _calculateTotals: function (oItem) {
             // Parse safely with nullish coalescing (?? 0)
             var quantity = parseFloat(oItem.quantity) ?? 0;
@@ -869,27 +917,28 @@ sap.ui.define([
             }
         },
         onSaveEdit: function () {
-            var oModel = this.getView().getModel();
-            var oEdited = oModel.getProperty("/editRow");
+            var oView = this.getView();  // ✅ Fixed: oView for UI controls (byId)
+            var oModel = oView.getModel();  // ✅ oModel for data (getProperty)
+            var oEdited = oModel.getProperty("/editRow");  // ✅ Uses oModel
 
             // 🧩 Detect whether we're editing a main or sub item
             var bIsSubItem = !!oEdited.invoiceSubItemCode;
 
             // 🧩 Get the correct selects based on dialog type
             var oCurrencySelect = bIsSubItem
-                ? oView.byId("editSubCurrency")
+                ? oView.byId("editSubCurrency")  // ✅ Now oView.byId
                 : oView.byId("editMainCurrencySelect");
 
             var oUOMSelect = bIsSubItem
-                ? oView.byId("editSubUOM")
+                ? oView.byId("editSubUOM")  // ✅ Now oView.byId
                 : oView.byId("editMainUOMSelect");
 
             var oFormulaSelect = bIsSubItem
-                ? oView.byId("editSubFormula")
+                ? oView.byId("editSubFormula")  // ✅ Now oView.byId
                 : oView.byId("editFormulaSelect");
 
             // ✅ Update both the key and text (for table display) - overwrite with text
-            var oSelectedCurrency = oCurrencySelect.getSelectedItem();
+            var oSelectedCurrency = oCurrencySelect && oCurrencySelect.getSelectedItem();
             if (oSelectedCurrency) {
                 oEdited.currencyCode = oSelectedCurrency.getText();
                 console.log("Edited Currency", oEdited.currencyCode);
@@ -897,7 +946,7 @@ sap.ui.define([
                 oEdited.currencyCode = "";
             }
 
-            var oSelectedUOM = oUOMSelect.getSelectedItem();
+            var oSelectedUOM = oUOMSelect && oUOMSelect.getSelectedItem();
             if (oSelectedUOM) {
                 oEdited.unitOfMeasurementCode = oSelectedUOM.getText();
                 console.log("Edited unitOfMeasurementCode", oEdited.unitOfMeasurementCode);
@@ -905,7 +954,7 @@ sap.ui.define([
                 oEdited.unitOfMeasurementCode = "";
             }
 
-            var oSelectedFormula = oFormulaSelect.getSelectedItem();
+            var oSelectedFormula = oFormulaSelect && oFormulaSelect.getSelectedItem();
             if (oSelectedFormula) {
                 oEdited.formulaCode = oSelectedFormula.getText();
                 console.log("Edited formulaCode", oEdited.formulaCode);
@@ -914,7 +963,7 @@ sap.ui.define([
             }
 
             // 🧩 Write back to original model path
-            oModel.setProperty(this._editPath, oEdited);
+            oModel.setProperty(this._editPath, oEdited);  // ✅ Uses oModel
             oModel.refresh(true);  // Force hard refresh to ensure table updates
 
             sap.m.MessageToast.show("The line was updated successfully");
@@ -922,9 +971,13 @@ sap.ui.define([
             // 🧩 Close whichever dialog is open
             if (this._oEditSubDialog && this._oEditSubDialog.isOpen()) {
                 this._oEditSubDialog.close();
+                this._oEditSubDialog.destroy();
+                this._oEditSubDialog = null;
             }
             if (this._oEditMainDialog && this._oEditMainDialog.isOpen()) {
                 this._oEditMainDialog.close();
+                this._oEditMainDialog.destroy();
+                this._oEditMainDialog = null;
             }
         },
 
