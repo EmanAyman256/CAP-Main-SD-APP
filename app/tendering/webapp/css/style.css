@@ -1,4 +1,8 @@
 /* Enter your custom styles here */
+.rowFlash {
+  background-color: #baf7ba !important;
+  transition: background-color 0.8s ease-in-out;
+}
 
 .myRectangle {
     border: 1px solid #d0d0d0;

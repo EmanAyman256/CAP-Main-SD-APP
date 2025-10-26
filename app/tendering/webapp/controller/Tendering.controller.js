@@ -447,22 +447,38 @@ sap.ui.define([
             const oModel = this.getView().getModel();
             let Items = oModel.getProperty("/MainItems") || [];
 
-            // ✅ Keep subItemList when preparing payload
+            // ✅ Prepare clean payload
             Items = Items.map(item => {
                 const {
-                    createdAt, modifiedAt, createdBy, modifiedBy,invoiceMainItemCode,
+                    createdAt, modifiedAt, createdBy, modifiedBy, invoiceMainItemCode,
                     serviceNumber_serviceNumberCode, currencyText, formulaText, unitOfMeasurementText,
                     salesQuotation, salesQuotationItem, pricingProcedureCounter, pricingProcedureStep,
                     customerNumber, ...rest
                 } = item;
 
+                // ✅ Clean subitems if exist
+                const cleanedSubItems = (item.subItemList || [])
+                    .filter(sub => sub && sub.serviceNumberCode) // remove empty/undefined
+                    .map(sub => {
+                        const {
+                            invoiceMainItemCode, createdAt, createdBy, modifiedAt, modifiedBy, invoiceSubItemCode,
+                            mainItem_invoiceMainItemCode, serviceNumber_serviceNumberCode, ...subRest
+                        } = sub;
+                        // Ensure relation is kept
+                        return {
+                            ...subRest,
+                            //invoiceMainItemCode: item.invoiceMainItemCode
+                        };
+                    });
+
                 return {
                     ...rest,
-                    subItemList: item.subItemList || [] // ✅ keep subitems
+                    //invoiceMainItemCode: item.invoiceMainItemCode,
+                    subItemList: cleanedSubItems
                 };
             });
 
-            // ✅ Prepare request body
+            // ✅ Build final body
             const body = {
                 salesQuotation: oModel.getProperty("/docNumber"),
                 salesQuotationItem: oModel.getProperty("/itemNumber"),
@@ -487,17 +503,16 @@ sap.ui.define([
                 .then(savedItem => {
                     console.log("💾 Save response:", savedItem);
 
-                    // ✅ Update model with saved data (including subitems)
+                    // ✅ Update model with saved data
                     const updatedMainItems = Array.isArray(savedItem.value) ? savedItem.value : [];
                     oModel.setProperty("/MainItems", updatedMainItems);
 
-                    // ✅ Recalculate total value for main items
+                    // ✅ Recalculate total
                     const totalValue = updatedMainItems.reduce(
                         (sum, record) => sum + Number(record.total || 0), 0
                     );
                     oModel.setProperty("/totalValue", totalValue);
 
-                    // ✅ Refresh UI
                     oModel.refresh(true);
                     sap.m.MessageToast.show("Document saved successfully!");
                 })
@@ -506,134 +521,6 @@ sap.ui.define([
                     sap.m.MessageBox.error("Error: " + err.message);
                 });
         },
-
-        // onSaveDocument: function () {
-        //     const oModel = this.getView().getModel(); // default model
-        //     let Items = oModel.getProperty("/MainItems") || [];
-        //     // Items = Items.map(({ createdAt, modifiedAt, createdBy,
-        //     //     modifiedBy, invoiceMainItemCode, serviceNumber_serviceNumberCode,
-        //     //     salesQuotation, salesQuotationItem, currencyText, formulaText, unitOfMeasurementText
-        //     //     , pricingProcedureCounter, pricingProcedureStep, customerNumber,
-        //     //     ...rest }) => rest);
-        //     Items = Items.map(item => {
-        //         const {
-        //             createdAt, modifiedAt, createdBy, modifiedBy,
-        //             invoiceMainItemCode, serviceNumber_serviceNumberCode,
-        //             salesQuotation, salesQuotationItem, currencyText,
-        //             formulaText, unitOfMeasurementText, pricingProcedureCounter,
-        //             pricingProcedureStep, customerNumber,
-        //             ...rest
-        //         } = item;
-
-        //         // ✅ Keep subItemList if it exists
-        //         return {
-        //             ...rest,
-        //             subItemList: item.subItemList || []
-        //         };
-        //     });
-
-        //     console.log("Mainitems Sent to Doc", Items);
-
-        //     let body = {
-        //         salesQuotation: oModel.getProperty("/docNumber"),
-        //         salesQuotationItem: oModel.getProperty("/itemNumber"),
-        //         pricingProcedureStep: "20",
-        //         pricingProcedureCounter: "1",
-        //         customerNumber: "120000",
-        //         invoiceMainItemCommands: Items,
-        //     }
-        //     console.log(body);
-
-        //     fetch("/odata/v4/sales-cloud/saveOrUpdateMainItems", {
-        //         method: "POST",
-        //         headers: {
-        //             "Content-Type": "application/json"
-        //         },
-        //         body: JSON.stringify(body)
-        //     })
-        //         .then(response => {
-        //             if (!response.ok) {
-        //                 throw new Error("Failed to save: " + response.statusText);
-        //             }
-        //             return response.json();
-        //         })
-        //         .then(savedItem => {
-        //             console.log("Save response:", savedItem); // Debug: Check structure (should have .value as array)
-
-        //             // Replace MainItems with the saved/updated list from backend
-        //             const updatedMainItems = Array.isArray(savedItem.value) ? savedItem.value : [];
-        //             oModel.setProperty("/MainItems", updatedMainItems);
-
-        //             // Recalculate totals if needed (e.g., sum of totals)
-        //             const totalValue = updatedMainItems.reduce((sum, record) => sum + Number(record.total || 0), 0);
-        //             oModel.setProperty("/totalValue", totalValue);
-
-        //             // Force refresh to update treeTable
-        //             oModel.refresh(true);
-
-        //             sap.m.MessageToast.show("Document saved successfully!");
-        //         })
-        //         .catch(err => {
-        //             console.error("Error saving MainItem:", err);
-        //             sap.m.MessageBox.error("Error: " + err.message);
-        //         });
-        // },
-        // onSaveDocument: function () {
-        //     const oModel = this.getView().getModel(); // default model
-        //     let Items = oModel.getProperty("/MainItems") || [];
-        //     Items = Items.map(({ createdAt, modifiedAt, createdBy,
-        //         modifiedBy, invoiceMainItemCode, serviceNumber_serviceNumberCode,
-        //         salesQuotation, salesQuotationItem, currencyText, formulaText, unitOfMeasurementText
-        //         , pricingProcedureCounter, pricingProcedureStep, customerNumber,
-        //         ...rest }) => rest);
-
-        //     console.log("Mainitems Sent to Doc", Items);
-
-        //     let body = {
-        //         salesQuotation: oModel.getProperty("/docNumber"),
-        //         salesQuotationItem: oModel.getProperty("/itemNumber"),
-        //         pricingProcedureStep: "20",
-        //         pricingProcedureCounter: "1",
-        //         customerNumber: "120000",
-        //         invoiceMainItemCommands: Items,
-
-
-        //     }
-        //     console.log(body);
-
-        //     fetch("/odata/v4/sales-cloud/saveOrUpdateMainItems", {
-        //         method: "POST",
-        //         headers: {
-        //             "Content-Type": "application/json"
-        //         },
-        //         body: JSON.stringify(body)
-
-
-
-        //     })
-
-
-        //         .then(response => {
-        //             if (!response.ok) {
-        //                 throw new Error("Failed to save: " + response.statusText);
-        //             }
-        //             return response.json();
-        //         })
-        //         .then(savedItem => {
-
-        //             var aServiceTypes = oModel.getProperty("/MainItems") || [];
-        //             aServiceTypes.push(savedItem);
-        //             oModel.setProperty("/MainItems", aServiceTypes);
-
-
-        //         })
-        //         .catch(err => {
-        //             console.error("Error saving MainItem:", err);
-        //             sap.m.MessageBox.error("Error: " + err.message);
-        //         });
-
-
-        // },
         onOpenSubDialogForRow: function (oEvent) {
             const oContext = oEvent.getSource().getBindingContext();
             const oObject = oContext.getObject();
@@ -665,67 +552,61 @@ sap.ui.define([
 
             this.byId("addSubDialog").open();
         },
-        _calculateTotals: function (oItem) {
-            // Parse safely with nullish coalescing (?? 0)
-            var quantity = parseFloat(oItem.quantity) ?? 0;
-            var amountPerUnit = parseFloat(oItem.amountPerUnit) ?? 0;
-            var profitMargin = parseFloat(oItem.profitMargin) ?? 0;
+        _calculateTotals: function (oItem, isSubItem = false) {
+            if (!oItem) return;
 
-            console.log("Calc inputs:", { quantity, amountPerUnit, profitMargin });
+            const quantity = parseFloat(oItem.quantity) || 0;
+            const amountPerUnit = parseFloat(oItem.amountPerUnit) || 0;
+            const profitMargin = parseFloat(oItem.profitMargin) || 0;
 
-            // Basic total (always quantity * amountPerUnit)
-            oItem.total = (quantity * amountPerUnit).toFixed(2);
-
-            // Compute amountPerUnitWithProfit (with fallback if null/0)
-            var amountPerUnitWithProfit = parseFloat(oItem.amountPerUnitWithProfit) ?? 0;
-            if (amountPerUnitWithProfit === null || amountPerUnitWithProfit === 0) {
-                amountPerUnitWithProfit = (amountPerUnit * (1 + profitMargin / 100)).toFixed(2);
+            if (isSubItem) {
+                // 🟢 For subitems: calculate only their own total
+                oItem.total = (quantity * amountPerUnit).toFixed(2);
+                return;
             }
-            oItem.amountPerUnitWithProfit = parseFloat(amountPerUnitWithProfit);  // Ensure number
 
-            // Your exact totalWithProfit logic (conditional fallback)
-            oItem.totalWithProfit = (amountPerUnitWithProfit != null && amountPerUnitWithProfit !== 0) ?
-                (quantity ?? 0) * amountPerUnitWithProfit :
-                (quantity ?? 0) * (amountPerUnit ?? 0) * ((profitMargin ?? 0) / 100) + (quantity ?? 0) * (amountPerUnit ?? 0);
+            // 🟢 For main items: calculate using profit margin
+            const total = quantity * amountPerUnit;
+            const amountWithProfit = amountPerUnit + (amountPerUnit * profitMargin / 100);
+            const totalWithProfit = quantity * amountWithProfit;
 
-            // Round to 2 decimals for display
-            oItem.totalWithProfit = parseFloat(oItem.totalWithProfit).toFixed(2);
-
-            console.log("Calc outputs:", { total: oItem.total, amountPerUnitWithProfit: oItem.amountPerUnitWithProfit, totalWithProfit: oItem.totalWithProfit });
-
+            oItem.total = total.toFixed(2);
+            oItem.amountPerUnitWithProfit = amountWithProfit.toFixed(2);
+            oItem.totalWithProfit = totalWithProfit.toFixed(2);
         },
+        _recalculateMainFromSubitems: function (oMainItem) {
+            if (!oMainItem || !Array.isArray(oMainItem.subItemList)) return;
 
-        _onValueChange: function (oEvent) {
-            var oModel = this.getView().getModel();
-            var oEditRow = oModel.getProperty("/editRow");
+            // 1️⃣ Sum all subitem totals
+            const totalSubItems = oMainItem.subItemList.reduce((sum, sub) => {
+                const subTotal = parseFloat(sub.total) || 0;
+                return sum + subTotal;
+            }, 0);
 
-            // Read all inputs directly by ID
-            var quantityInput = this.byId("quantity");
-            var amountInput = this.byId("amountPerUnit");
-            var profitInput = this.byId("profitMargin");
+            // 2️⃣ Update main amount per unit = total of all subitems
+            oMainItem.amountPerUnit = totalSubItems.toFixed(2);
 
-            // Parse numbers safely
-            var quantity = parseFloat(quantityInput.getValue()) || 0;
-            var amountPerUnit = parseFloat(amountInput.getValue()) || 0;
-            var profitMargin = parseFloat(profitInput.getValue()) || 0;
-            console.log(quantity, amountInput, profitInput);
+            // 3️⃣ Base calculations
+            const quantity = parseFloat(oMainItem.quantity) || 0;
+            const profitMargin = parseFloat(oMainItem.profitMargin) || 0;
 
+            const eAmount = totalSubItems;                 // base amount per unit
+            const eTotal = quantity * eAmount;             // base total
 
-            // Calculate totals
-            var total = quantity * amountPerUnit;
-            var amountWithProfit = amountPerUnit + (amountPerUnit * profitMargin / 100);
-            var totalWithProfit = quantity * amountWithProfit;
+            oMainItem.total = eTotal.toFixed(2);
 
-            // Update the model
-            oEditRow.quantity = quantity;
-            oEditRow.amountPerUnit = amountPerUnit;
-            oEditRow.profitMargin = profitMargin;
-            oEditRow.total = total.toFixed(2);
-            oEditRow.amountPerUnitWithProfit = amountWithProfit.toFixed(2);
-            oEditRow.totalWithProfit = totalWithProfit.toFixed(2);
-            this._calculateTotals(oEditRow);
+            // 4️⃣ Profit logic (your version)
+            if (profitMargin > 0) {
+                var eAmountPerUnitWithProfit = (eAmount * (profitMargin / 100) + eAmount);
+                var eTotalWithProfit = (eTotal * (profitMargin / 100) + eTotal);
 
-            oModel.setProperty("/editRow", oEditRow);
+                oMainItem.amountPerUnitWithProfit = eAmountPerUnitWithProfit.toFixed(2);
+                oMainItem.totalWithProfit = eTotalWithProfit.toFixed(2);
+            } else {
+                // No profit → clear those fields
+                oMainItem.amountPerUnitWithProfit = 0;
+                oMainItem.totalWithProfit = 0;
+            }
         },
         onEditRow: function (oEvent) {
             // Get the row context from the button's parent (the row)
@@ -805,6 +686,11 @@ sap.ui.define([
                                         text: "{description}"
                                     })
                                 }
+                            }),
+                            new sap.m.Button(this.createId("btnEditEnterParams"), {
+                                text: "Enter Parameters",
+                                enabled: "{= ${/editRow/formulaCode} ? true : false }",
+                                press: this.onOpenEditFormulaDialog.bind(this)
                             }),
 
                             new sap.m.Label({ text: "Amount Per Unit" }),
@@ -996,6 +882,46 @@ sap.ui.define([
                 this._oEditMainDialog.open();
             }
         },
+        _onValueChange: function (oEvent) {
+            const oModel = this.getView().getModel();
+            const oEditRow = oModel.getProperty("/editRow") || {};
+
+            // 🟢 Get field & value that changed
+            const newValue = parseFloat(oEvent.getParameter("value"));
+            const fieldId = oEvent.getSource().getBindingInfo("value").parts[0].path.split("/").pop();
+
+            // If not a number (empty, null, etc.), treat as 0
+            oEditRow[fieldId] = isNaN(newValue) ? " " : newValue;
+
+            // 🟢 Safely parse numbers (prevent NaN)
+            const quantity = parseFloat(oEditRow.quantity);
+            const amountPerUnit = parseFloat(oEditRow.amountPerUnit);
+            const profitMargin = parseFloat(oEditRow.profitMargin);
+
+            const safeQuantity = isNaN(quantity) ? 0 : quantity;
+            const safeAmountPerUnit = isNaN(amountPerUnit) ? 0 : amountPerUnit;
+            const safeProfitMargin = isNaN(profitMargin) ? 0 : profitMargin;
+
+            // 🟢 Check if it's a subitem
+            const isSubItem = !!oEditRow.invoiceSubItemCode;
+
+            if (isSubItem) {
+                // Subitems: only total
+                oEditRow.total = (safeQuantity * safeAmountPerUnit).toFixed(2);
+            } else {
+                // Main items: include profit
+                const total = safeQuantity * safeAmountPerUnit;
+                const amountWithProfit = safeAmountPerUnit + (safeAmountPerUnit * safeProfitMargin / 100);
+                const totalWithProfit = safeQuantity * amountWithProfit;
+
+                oEditRow.total = total.toFixed(2);
+                oEditRow.amountPerUnitWithProfit = amountWithProfit.toFixed(2);
+                oEditRow.totalWithProfit = totalWithProfit.toFixed(2);
+            }
+
+            // ✅ Update the model safely
+            oModel.setProperty("/editRow", oEditRow);
+        },
         onSaveEdit: function () {
             var oView = this.getView();
             var oModel = oView.getModel();
@@ -1023,6 +949,7 @@ sap.ui.define([
                 oEdited.currencyCode = "";
             }
 
+
             var oSelectedUOM = oUOMSelect && oUOMSelect.getSelectedItem();
             if (oSelectedUOM) {
                 oEdited.unitOfMeasurementCode = oSelectedUOM.getText();
@@ -1041,6 +968,20 @@ sap.ui.define([
 
             oModel.setProperty(this._editPath, oEdited);
             oModel.refresh(true);
+            if (bIsSubItem) {
+                // Parse path to find parent: e.g., "/MainItems/0/subItemList/1" → mainIndex = 0
+                const aPathParts = this._editPath.split('/');
+                const iMainIndex = parseInt(aPathParts[2]); // Index in /MainItems
+                const oMainItem = oModel.getProperty(`/MainItems/${iMainIndex}`);
+
+                if (oMainItem) {
+                    this._recalculateMainFromSubitems(oMainItem);
+                    oModel.setProperty(`/MainItems/${iMainIndex}`, oMainItem); // Update parent in model
+                }
+            }
+            const aMainItems = oModel.getProperty("/MainItems") || [];
+            const newTotalValue = aMainItems.reduce((sum, item) => sum + parseFloat(item.total || 0), 0);
+            oModel.setProperty("/totalValue", newTotalValue);
             sap.m.MessageToast.show("The line was updated successfully");
 
             if (this._oEditSubDialog && this._oEditSubDialog.isOpen()) {
@@ -1054,7 +995,6 @@ sap.ui.define([
                 this._oEditMainDialog = null;
             }
         },
-
         _onEditFormulaSelected: function (oFormula, oContext) {
             const oModel = this.getView().getModel();
             const oData = oContext.getObject();
@@ -1191,41 +1131,16 @@ sap.ui.define([
             this._selectedParent.subItemList.push(oSubItem);
 
             // Optional: Recalculate parent totals if subitems affect them
-            this._calculateTotals(this._selectedParent);
+            // this._calculateTotals(this._selectedParent);
+            this._recalculateMainFromSubitems(this._selectedParent);
+
 
             oModel.refresh(true);
             this.byId("addSubDialog").close();
 
             sap.m.MessageToast.show("Subitem added successfully!");
         },
-        // onAddSubItem: function () {
-        //     var oView = this.getView();
-        //     var oModel = this.getView().getModel();
-        //     var oUOMSelect = oView.byId("subUOMInput");
-        //     var oFormulaSelect = oView.byId("subFormulaSelect");
-        //     var oCurrencySelect = oView.byId("subCurrencyInput");
-        //     var oSubItem = {
-        //         //invoiceSubItemCode: Date.now(),
-        //         serviceNumberCode: this.byId("subServiceNoInput").getSelectedItem().getText(),
-        //         description: this.byId("subDescriptionInput").getValue(),
-        //         quantity: this.byId("subQuantityInput").getValue(),
-        //         unitOfMeasurementCode: this.byId("subUOMInput").getSelectedItem().getText(),
-        //         formulaCode: this.byId("subFormulaSelect").getSelectedItem().getText(),
 
-        //         // parameters: oModel.getProperty("/SelectedSubFormulaParams") || {},
-        //         amountPerUnit: this.byId("subAmountPerUnitInput").getValue(),
-        //         currencyCode: this.byId("subCurrencyInput").getSelectedItem().getText(),
-        //         total: this.byId("subTotalInput").getValue()
-        //     };
-
-        //     if (!this._selectedParent.subItemList) {
-        //         this._selectedParent.subItemList = [];
-        //     }
-        //     this._selectedParent.subItemList.push(oSubItem);
-
-        //     oModel.refresh(true);
-        //     this.byId("addSubDialog").close();
-        // },
         onDeleteRow: function (oEvent) {
             const oModel = this.getView().getModel();
             const oContext = oEvent.getSource().getBindingContext();
@@ -1331,102 +1246,7 @@ sap.ui.define([
             this.byId("addMainDialog").close();
             sap.m.MessageToast.show("Main item added successfully!");
         },
-        //Working Function
-        // onAddMainItem: function () {
 
-        //     const oView = this.getView();
-        //     // const oModel = oView.getModel();
-        //     const oModel = this.getView().getModel(); // default model
-        //     let newww = oModel.getProperty("/MainItems");
-        //     // const aMainItems = oModel.getProperty("/MainItems");
-        //     console.log(newww);
-        //     var oUOMSelect = oView.byId("mainUOMSelect");
-        //     var oFormulaSelect = oView.byId("formulaSelect");
-        //     var oCurrencySelect = oView.byId("mainCurrencySelect");
-        //     const oNewMain = {
-        //         salesQuotation: oModel.getProperty("/docNumber"),
-        //         salesQuotationItem: oModel.getProperty("/itemNumber"),
-        //         pricingProcedureStep: "1",
-        //         pricingProcedureCounter: "10",
-        //         customerNumber: "120000",
-        //         // invoiceMainItemCommands: invoiceMainItemCommands
-
-        //         invoiceMainItemCode: Date.now(),
-
-        //         serviceNumberCode: oModel.getProperty("/SelectedServiceNumberDescription") || "", // Fixed: Added /
-        //         description: oView.byId("mainDescriptionInput").getValue() || "",
-        //         unitOfMeasurementCode: oUOMSelect && oUOMSelect.getSelectedItem()
-        //             ? oUOMSelect.getSelectedItem().getKey()
-        //             : "",
-        //         quantity: parseFloat(oView.byId("mainQuantityInput").getValue()) || 0, // Parse to number
-        //         // unitOfMeasurementCode: oView.byId("mainUOMSelect").getSelectedItem().getText() || " ", // Fixed ID
-        //         formulaCode: oFormulaSelect && oFormulaSelect.getSelectedItem()
-        //             ? oFormulaSelect.getSelectedItem().getText()
-        //             : "",
-        //         // formulaCode: oView.byId("formulaSelect").getSelectedItem().getText() || "", // Fixed ID
-        //         currencyText: oCurrencySelect && oCurrencySelect.getSelectedItem()
-        //             ? oCurrencySelect.getSelectedItem().getText()
-        //             : "",
-        //         unitOfMeasurementText: oUOMSelect && oUOMSelect.getSelectedItem()
-        //             ? oUOMSelect.getSelectedItem().getText()
-        //             : "",
-        //         currencyCode: oCurrencySelect && oCurrencySelect.getSelectedItem()
-        //             ? oCurrencySelect.getSelectedItem().getKey()
-        //             : "",
-
-        //         amountPerUnit: parseFloat(oView.byId("mainAmountPerUnitInput").getValue()) || 0,
-        //         //currencyCode: oView.byId("mainCurrencySelect").getSelectedItem().getText() || "", // Fixed ID
-        //         total: parseFloat(oView.byId("mainTotalInput").getValue()) || 0,
-        //         profitMargin: parseFloat(oView.byId("mainProfitMarginInput").getValue()) || 0,
-        //         amountPerUnitWithProfit: parseFloat(oView.byId("mainAmountPerUnitWithProfitInput").getValue()) || 0,
-        //         totalWithProfit: parseFloat(oView.byId("mainTotalWithProfitInput").getValue()) || 0,
-        //         subItemList: []
-
-        //     };
-        //     console.log(oModel.getProperty("/MainItems"));
-
-        //     const aMainItems = oModel.getProperty("/MainItems");
-        //     console.log(aMainItems);
-        //     aMainItems.push(oNewMain);
-        //     var aRecords = oModel.getProperty("/MainItems") || [];
-        //     console.log(aRecords);
-
-        //     //aRecords.push(oNewMain);
-        //     oModel.setProperty("/MainItems", aRecords);
-        //     console.log(oModel.getProperty("/MainItems"));
-
-        //     //////////////////////////////////
-        //     // fetch("/odata/v4/sales-cloud/saveOrUpdateMainItems", {
-        //     //     method: "POST",
-        //     //     headers: {
-        //     //         "Content-Type": "application/json"
-        //     //     },
-        //     //     body: JSON.stringify(oNewMain)
-        //     // })
-        //     //     .then(response => {
-        //     //         if (!response.ok) {
-        //     //             throw new Error("Failed to save: " + response.statusText);
-        //     //         }
-        //     //         return response.json();
-        //     //     })
-        //     //     .then(savedItem => {
-        //     //         var aServiceTypes = oModel.getProperty("/MainItems") || [];
-        //     //         aServiceTypes.push(savedItem);
-        //     //         oModel.setProperty("/MainItems", aServiceTypes);
-
-        //     //         // Reset form
-        //     //         oModel.setProperty("/newCode", "");
-        //     //         oModel.setProperty("/newDescription", "");
-        //     //     })
-        //     //     .catch(err => {
-        //     //         console.error("Error saving MainItem:", err);
-        //     //         sap.m.MessageBox.error("Error: " + err.message);
-        //     //     });
-
-        //     oModel.refresh();
-
-        //     this.byId("addMainDialog").close();
-        // },
         onSearch: function (oEvent) {
             var sQuery = oEvent.getParameter("query");
             var oTable = this.byId("treeTable");
