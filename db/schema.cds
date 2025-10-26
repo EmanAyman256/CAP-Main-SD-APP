@@ -238,9 +238,10 @@ entity InvoiceMainItem : managed {
       amountPerUnitWithProfit : Decimal;
       doNotPrint              : Boolean;
       lineNumber              : String(225) @unique;
-
       subItemList             : Composition of many InvoiceSubItem
-                                  on subItemList.mainItem = $self;
+                                  on subItemList.invoiceMainItemCode = $self.invoiceMainItemCode;
+      // subItemList             : Composition of many InvoiceSubItem
+      //                             on subItemList.mainItem = $self;
       serviceNumber           : Association to ServiceNumber;
 }
 
