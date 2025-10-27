@@ -13,8 +13,10 @@ sap.ui.define([
     return Controller.extend("project1.controller.Model", {
         onInit: function () {
 
+
+
             this.getOwnerComponent().getRouter()
-                .getRoute("model")  
+                .getRoute("model")
                 .attachPatternMatched(this._onRouteMatched, this);
 
             var oModel = new sap.ui.model.json.JSONModel({
@@ -26,6 +28,14 @@ sap.ui.define([
             //         //this.byId("modelTable");
             //         oTable.getBinding("items").refresh();
 
+
+            // currency
+            fetch("/odata/v4/sales-cloud/Currencies")
+                .then(res => res.json())
+                .then(data => {
+                    var oModel = new sap.ui.model.json.JSONModel(data.value);
+                    this.getView().setModel(oModel, "currencies");
+                });
             // Fetch data from CAP OData service
 
             fetch("/odata/v4/sales-cloud/ModelSpecifications")
@@ -76,7 +86,54 @@ sap.ui.define([
                 this._oServiceSelectionInput = new Input();
                 this._oDescriptionInput = new Input();
                 this._oSearchTermInput = new Input();
-                this._oCurrencyCodeInput = new Input();
+                // this._oCurrencyCodeInput = new Input();
+                this._oCurrencyCodeSelect = new sap.m.Select({
+                    id: "currency",
+                    class: "sapUiSmallMarginStart",
+                    width: "200px",
+                    forceSelection: false,
+                    items: {
+                        path: "currencies>/",
+                        template:
+                            new sap.ui.core.Item({
+                                key: "{currencies>currencyCode}",
+                                text: "{currencies>description}"
+                            })
+                    }
+                });
+
+                this._oCurrencyCodeSelect.insertItem(
+                    new sap.ui.core.Item({ key: "", text: "Cancel" }),
+                    0
+                );
+
+                // this._oCurrencyCodeSelect = new sap.m.Select({
+                //     id: "currency",
+                //     class: "sapUiSmallMarginStart",
+                //     width: "200px",
+                //     forceSelection: false,
+                //     items: [
+                //         new sap.ui.core.Item({ key: "", text: "Cancel" }) // 👈 static cancel option
+                //     ],
+                //     // Dynamic items from the model
+                //     additionalText: "currencies>",
+                //     bindItems: {
+                //         path: "currencies>/",
+                //         template: new sap.ui.core.Item({
+                //             key: "{currencies>currencyCode}",
+                //             text: "{currencies>description}"
+                //         })
+                //     },
+                //     change: function (oEvent) {
+                //         const sSelectedKey = oEvent.getParameter("selectedItem").getKey();
+                //         if (sSelectedKey === "") {
+                //             // 👇 handle cancel action
+                //             sap.m.MessageToast.show("Selection cancelled");
+                //         }
+                //     }
+                // });
+
+
 
                 this._oEditDialog = new Dialog({
                     title: "Edit Model",
@@ -102,7 +159,7 @@ sap.ui.define([
                             this._oSearchTermInput,
 
                             new Label({ text: "currencyCode", design: "Bold" }),
-                            this._oCurrencyCodeInput
+                            this._oCurrencyCodeSelect
                         ]
                     }),
                     beginButton: new Button({
@@ -116,7 +173,7 @@ sap.ui.define([
                                 serviceSelection: this._oServiceSelectionInput.getValue() === "true" || this._oServiceSelectionInput.getValue() === true,
                                 description: this._oDescriptionInput.getValue(),
                                 searchTerm: this._oSearchTermInput.getValue(),
-                                currencyCode: this._oCurrencyCodeInput.getValue()
+                                currencyCode: this._oCurrencyCodeSelect.getSelectedKey()
                             };
 
                             // Send PATCH request to CAP OData
@@ -176,7 +233,7 @@ sap.ui.define([
             this._oServiceSelectionInput.setValue(oSelectedData.serviceSelection);
             this._oDescriptionInput.setValue(oSelectedData.description);
             this._oSearchTermInput.setValue(oSelectedData.searchTerm);
-            this._oCurrencyCodeInput.setValue(oSelectedData.currencyCode);
+            this._oCurrencyCodeSelect.setValue(oSelectedData.currencyCode);
 
             this._oEditDialog.open();
         },

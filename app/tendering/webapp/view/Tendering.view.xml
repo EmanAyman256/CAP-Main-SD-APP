@@ -2,6 +2,7 @@
     controllerName="tendering.controller.Tendering"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.ui.table"
+    xmlns:u="sap.ui.unified"
     xmlns:m="sap.m"
     xmlns:l="sap.ui.layout"
     xmlns:f="sap.ui.layout.form"
@@ -42,6 +43,7 @@
                         type="Transparent"
                         press=".onPrint"
                     />
+
                     <m:MenuButton
                         id="_IDGenMenuButton1"
                         text="Actions"
@@ -70,6 +72,7 @@
                     </m:MenuButton>
                 </m:HBox>
             </m:HBox>
+
             <m:HBox
                 id="_IDGenHBox2"
                 justifyContent="Center"
@@ -125,7 +128,7 @@
                     id="searchField"
                     width="80%"
                     placeholder="Search..."
-                    search=".onSearch"
+                    liveChange=".onSearch"
                 />
                 <m:HBox id="_IDGenHBox5">
                     <m:Input
@@ -522,6 +525,12 @@
                         change="onFormulaSelected"
                     >
                         <core:Item
+                            id="_IDGenItem9"
+                            key=""
+                            text="— Select Formula —"
+                        />
+
+                        <core:Item
                             id="_IDGenItem2"
                             key="{formulaCode}"
                             text="{description}"
@@ -845,5 +854,78 @@
                 />
             </m:endButton>
         </m:Dialog>
+
+        <!-- Import Dialog -->
+        <m:Dialog
+            id="importDialog"
+            title="Import from Excel"
+            contentWidth="500px"
+            class="sapUiContentPadding"
+        >
+            <m:VBox
+                id="_IDGenVBox7"
+                class="sapUiSmallMargin"
+            >
+                <m:Label
+                    id="_IDGenLabel1"
+                    text="Select Excel file (.xlsx):"
+                />
+                <u:FileUploader
+                    id="fileUploader"
+                    fileType="XLSX,xlsx"
+                    uploadUrl="/upload"
+                    change=".onFileChange"
+                    uploadComplete=".onUploadComplete"
+                />
+                <m:Label
+                    id="importStatus"
+                    text=""
+                />
+            </m:VBox>
+            <m:buttons>
+                <m:Button
+                    id="_IDGenButton8"
+                    text="Import"
+                    type="Emphasized"
+                    press=".onImportData"
+                    enabled="{importReady}"
+                />
+                <m:Button
+                    id="_IDGenButton17"
+                    text="Cancel"
+                    press=".onCloseImportDialog"
+                />
+            </m:buttons>
+        </m:Dialog>
+        <!-- Export Choice Dialog -->
+<m:Dialog
+    id="exportChoiceDialog"
+    title="Export Format"
+    contentWidth="300px"
+    class="sapUiContentPadding"
+>
+    <m:VBox id="_IDGenVBox8" class="sapUiSmallMargin" alignItems="Center">
+        <m:Label id="_IDGenLabel27" text="Choose export format:" />
+        <m:Button
+            id="btnExportPDF"
+            text="PDF"
+            type="Emphasized"
+            icon="sap-icon://pdf-attachment"
+            width="100%"
+            press=".onExportPDF"
+            class="sapUiMediumMarginBottom"
+        />
+        <m:Button
+            id="btnExportExcel"
+            text="Excel (.xlsx)"
+            icon="sap-icon://excel-attachment"
+            width="100%"
+            press=".onExport"
+        />
+    </m:VBox>
+    <m:buttons>
+        <m:Button id="_IDGenButton18" text="Cancel" press=".onCloseExportDialog" />
+    </m:buttons>
+</m:Dialog>
     </m:Page>
 </mvc:View>

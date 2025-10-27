@@ -11,19 +11,19 @@
 
                 <!-- First row with HBox (okay to keep for checkboxes) -->
                 <HBox id="_IDGenHBox4" class="sapUiSmallMargin" justifyContent="Start" alignItems="Center">
-                    <VBox id="_IDGenVBox2" class="sapUiSmallMarginEnd">
-                        <Label id="_IDGenLabel" text="ModelServ.Spec:"/>
-                        <Input id="_IDGenInput" width="200px"/>
+                    <VBox id="_IDGenVBox17" class="sapUiSmallMarginEnd">
+                        <Label id="_IDGenLabel57" text="ModelServ.Spec:"/>
+                        <Input id="modelServSpec" width="200px"/>
                     </VBox>
 
                     <VBox id="_IDGenVBox3" class="sapUiSmallMarginEnd">
-                        <Label id="_IDGenLabel1" text="Blocking Indicator:"/>
-                        <CheckBox id="_IDGenCheckBox"/>
+                        <Label id="_IDGenLabel109" text="Blocking Indicator:"/>
+                        <CheckBox id="blockingIndicator"/>
                     </VBox>
 
                     <VBox id="_IDGenVBox4" class="sapUiSmallMarginEnd">
                         <Label id="_IDGenLabel2" text="Service Selection:"/>
-                        <CheckBox id="_IDGenCheckBox2"/>
+                        <CheckBox id="serviceSelection"/>
                     </VBox>
                 </HBox>
 
@@ -38,22 +38,42 @@
                     <form:content>
                     <!-- <HBox id="_IDGenHBox7" justifyContent="Start" alignItems="Start" class="sapUiMediumMarginTop"> -->
                         <Label id="_IDGenLabel4" text="Description" required="true"/>
-                        <Input id="_IDGenInput6" width="250px"/>
+                        <Input id="description" width="250px"/>
 
                         <Label id="_IDGenLabel5" text="Search Term"/>
-                        <Input id="_IDGenInput7" width="250px"/>
+                        <Input id="searchTerm" width="250px"/>
 
-                        <Label id="_IDGenLabel6" text=" Currency"/>
-				<!-- <Select id="_IDGenSelect6" 
+                         <Label
+                        id="_IDGenLabel110"
+                        required="true"
+                        class="sapUiSmallMarginEnd"
+                        text="Select Currency"
+                    />
+                    <Select
+                        id="currency"
+                        class="sapUiSmallMarginStart"
+                        width="200px"
+                        forceSelection="false"
+                        items="{	path: 'currencies>/'}"
+                    >
+                        <core:Item
+                            id="_IDGenItem8"
+                            key="{currencies>currencyCode}"
+                            text="{currencies>description}"
+                        />
+                    </Select>
+
+                        <!-- <Label id="_IDGenLabel6" text=" Currency"/>
+				<Select id="_IDGenSelect6" 
             class="sapUiSmallMarginStart"
             width="200px" 
 						forceSelection="false"
-						items="{	path: '/Currency',
+						items="{	path: '/currencies',
 							sorter: { path: 'Code' }
               }">
-					<core:Item id="_IDGenItem5"  key="{code}" text="{description}" />
-				</Select> -->
-                        <Input id="_IDGenInput8" width="250px"/>
+					<core:Item id="_IDGenItem8"  key="{code}" text="{description}" />
+				</Select>
+                        <Input id="_IDGenInput8" width="250px"/> -->
                          <!-- </HBox> -->
                     </form:content>
                 

@@ -20,6 +20,8 @@ sap.ui.define([
             var oModel = new sap.ui.model.json.JSONModel({
                 totalValue: 0,
                 docNumber: "",
+                importReady: false,
+                importRows: [],
                 itemNumber: "",
                 MainItems: [],
                 Formulas: [],
@@ -681,17 +683,27 @@ sap.ui.define([
                             new sap.m.Label({ text: "Formula" }),
                             new sap.m.Select(this.createId("editSubFormula"), {
                                 selectedKey: "{/editRow/formulaCode}",
+                                forceSelection: false,
+                                items: [
+                                    new sap.ui.core.Item({ key: "", text: "— Select Formula —" }),
+                                    new sap.ui.core.Item({
+                                        key: "{formulaCode}",
+                                        text: "{description}"
+                                    })
+                                ],
                                 items: {
                                     path: "/Formulas",
+                                    templateShareable: false,
                                     template: new sap.ui.core.Item({
                                         key: "{formulaCode}",
                                         text: "{description}"
                                     })
                                 }
                             }),
+
                             new sap.m.Button(this.createId("btnEditEnterParams"), {
                                 text: "Enter Parameters",
-                                enabled: "{= ${/editRow/formulaCode} ? true : false }",
+                                enabled: "{/HasSelectedFormula}",
                                 press: this.onOpenEditFormulaDialog.bind(this)
                             }),
 
@@ -1249,29 +1261,285 @@ sap.ui.define([
             sap.m.MessageToast.show("Main item added successfully!");
         },
         onSearch: function (oEvent) {
-            var sQuery = oEvent.getParameter("query");
-            var oTable = this.byId("treeTable");
-            var oBinding = oTable.getBinding("rows");
+            const oTable = this.byId("treeTable");
+            const oBinding = oTable.getBinding("rows");
+            const sQuery = oEvent.getParameter("query") || oEvent.getSource().getValue();
 
-            if (sQuery) {
-                var aFilters = [
-                    new sap.ui.model.Filter("MainItemNo", sap.ui.model.FilterOperator.Contains, sQuery),
-                    new sap.ui.model.Filter("SubItemNo", sap.ui.model.FilterOperator.Contains, sQuery),
-                    new sap.ui.model.Filter("ServiceNo", sap.ui.model.FilterOperator.Contains, sQuery),
-                    new sap.ui.model.Filter("Description", sap.ui.model.FilterOperator.Contains, sQuery),
-                    new sap.ui.model.Filter("Quantity", sap.ui.model.FilterOperator.Contains, sQuery),
-                    new sap.ui.model.Filter("UOM", sap.ui.model.FilterOperator.Contains, sQuery)
-                ];
-                var oFinalFilter = new sap.ui.model.Filter({
-                    filters: aFilters,
-                    and: false
+            if (!oBinding) {
+                console.warn("Table binding not found.");
+                return;
+            }
+
+            if (!sQuery) {
+                oBinding.filter([]);
+                return;
+            }
+
+            const aFilters = [
+                new sap.ui.model.Filter("serviceNumberCode", sap.ui.model.FilterOperator.Contains, sQuery),
+                new sap.ui.model.Filter("description", sap.ui.model.FilterOperator.Contains, sQuery),
+                new sap.ui.model.Filter("quantity", sap.ui.model.FilterOperator.Contains, sQuery),
+                new sap.ui.model.Filter("unitOfMeasurementCode", sap.ui.model.FilterOperator.Contains, sQuery),
+                new sap.ui.model.Filter("formulaCode", sap.ui.model.FilterOperator.Contains, sQuery),
+                new sap.ui.model.Filter("currencyCode", sap.ui.model.FilterOperator.Contains, sQuery)
+            ];
+
+            // Combine them with OR logic
+            const oCombinedFilter = new sap.ui.model.Filter({
+                filters: aFilters,
+                and: false
+            });
+
+            oBinding.filter(oCombinedFilter);
+
+        },
+        onImport: function () {
+            // Open import dialog
+            this.byId("importDialog").open();
+            // Reset status
+            this.byId("importStatus").setText("");
+            this.byId("fileUploader").removeAllUploadedFiles();  // Clear previous
+            this.getView().getModel().setProperty("/importReady", false);
+        },
+
+        onFileChange: function (oEvent) {
+            var oUploader = oEvent.getSource();
+            var oFile = oUploader.oList[0].files[0];  // Get selected file
+            if (!oFile || !oFile.name.endsWith('.xlsx')) {
+                sap.m.MessageToast.show("Please select a valid .xlsx file.");
+                return;
+            }
+            // Read file as binary
+            var oReader = new FileReader();
+            oReader.onload = function (e) {
+                var sData = new Uint8Array(e.target.result);
+                var oWorkbook = XLSX.read(sData, { type: 'array' });
+                var oSheet = oWorkbook.Sheets[oWorkbook.SheetNames[0]];  // First sheet
+                var aData = XLSX.utils.sheet_to_json(oSheet, { header: 1 });  // Array of arrays
+
+                if (aData.length < 2) {  // No data rows
+                    sap.m.MessageToast.show("Excel file is empty or has no data rows.");
+                    return;
+                }
+
+                // Validate headers (assume exact match; customize as needed)
+                var aHeaders = aData[0];  // Row 0 = headers
+                var aRequiredHeaders = ["Service No", "Description", "Quantity", "UOM", "Amount Per Unit", "Currency"];
+                var bValidHeaders = aRequiredHeaders.every(function (sHeader) {
+                    return aHeaders.includes(sHeader);
+                });
+                if (!bValidHeaders) {
+                    sap.m.MessageToast.show("Excel must have headers: " + aRequiredHeaders.join(", "));
+                    return;
+                }
+
+                // Store parsed data in model for import
+                var aRows = aData.slice(1).map(function (aRow, iIndex) {  // Skip header
+                    var oRow = {};
+                    aHeaders.forEach(function (sHeader, iCol) {
+                        oRow[sHeader] = aRow[iCol] || "";  // Map by position
+                    });
+                    // Coerce types (customize)
+                    oRow.Quantity = parseFloat(oRow.Quantity) || 0;
+                    oRow["Amount Per Unit"] = parseFloat(oRow["Amount Per Unit"]) || 0;
+                    oRow.Total = (oRow.Quantity * oRow["Amount Per Unit"]).toFixed(3);  // Auto-calc
+                    // Map to model fields (e.g., snake_case if needed)
+                    return {
+                        serviceNumberCode: oRow["Service No"] || "",
+                        description: oRow.Description || "",
+                        quantity: oRow.Quantity.toFixed(3),
+                        unitOfMeasurementCode: oRow.UOM || "",
+                        amountPerUnit: oRow["Amount Per Unit"].toFixed(3),
+                        total: oRow.Total,
+                        currencyCode: oRow.Currency || "",
+                        formulaCode: "",  // Default empty
+                        profitMargin: "0.000",  // Default
+                        amountPerUnitWithProfit: "0.000",
+                        totalWithProfit: "0.000",
+                        subItemList: []  // New main item, no subs
+                    };
+                }).filter(function (oRow) {  // Validate rows
+                    return oRow.description.trim() && oRow.quantity > 0;  // Required: desc & qty >0
                 });
 
-                oBinding.filter([oFinalFilter]);
-            } else {
-                // Clear filter if empty search
-                oBinding.filter([]);
+                if (aRows.length === 0) {
+                    sap.m.MessageToast.show("No valid rows to import.");
+                    return;
+                }
+
+                // Store in model
+                this.getView().getModel().setProperty("/importRows", aRows);
+                this.getView().getModel().setProperty("/importReady", true);
+                this.byId("importStatus").setText(aRows.length + " valid rows ready to import.");
+            }.bind(this);
+            oReader.readAsArrayBuffer(oFile);
+        },
+
+        onImportData: function () {
+            var oModel = this.getView().getModel();
+            var aNewRows = oModel.getProperty("/importRows") || [];
+
+            // Append to existing MainItems
+            var aMainItems = oModel.getProperty("/MainItems") || [];
+            aMainItems = aMainItems.concat(aNewRows);
+
+            // Recalc totalValue
+            var totalValue = aMainItems.reduce(function (sum, oItem) {
+                return parseFloat((sum + parseFloat(oItem.total || "0.000")).toFixed(3));
+            }, 0);
+            oModel.setProperty("/MainItems", aMainItems);
+            oModel.setProperty("/totalValue", totalValue.toFixed(3));
+
+            // Refresh table
+            oModel.refresh(true);
+
+            // Close & reset
+            this.onCloseImportDialog();
+            sap.m.MessageToast.show(aNewRows.length + " items imported successfully!");
+        },
+        onExport: function () {
+            // Open choice dialog
+            this.byId("exportChoiceDialog").open();
+        },
+
+        onCloseExportDialog: function () {
+            this.byId("exportChoiceDialog").close();
+        },
+
+        // Existing onExport (Excel) – now called from choice button
+        onExport: function () {  // Overload/rename if needed; or keep as-is for Excel button press
+            var aData = this._flattenDataForExport();
+            if (aData.length === 0) {
+                sap.m.MessageToast.show("No data to export.");
+                return;
             }
+
+            var aHeaders = Object.keys(aData[0]);
+            var aHeaderRow = [aHeaders];
+
+            var aDataRows = aData.map(function (oRow) {
+                return aHeaders.map(function (sKey) {
+                    return oRow[sKey];
+                });
+            });
+
+            var oWS = XLSX.utils.aoa_to_sheet(aHeaderRow.concat(aDataRows));
+            var oWB = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(oWB, oWS, "Tendering Items");
+
+            XLSX.writeFile(oWB, "Tendering_Export_" + new Date().toISOString().slice(0, 10) + ".xlsx");
+            sap.m.MessageToast.show(aData.length + " rows exported to Excel.");
+
+            // Close choice dialog after export
+            this.onCloseExportDialog();
+        },
+
+        // PDF from choice (existing logic)
+        onExportPDF: function () {
+            var aData = this._flattenDataForExport();
+            if (aData.length === 0) {
+                sap.m.MessageToast.show("No data to export.");
+                return;
+            }
+
+            var aHeaders = Object.keys(aData[0]);
+            var aDataRows = aData.map(function (oRow) {
+                return aHeaders.map(function (sKey) {
+                    return oRow[sKey];
+                });
+            });
+
+            var { jsPDF } = window.jspdf;
+            var oDoc = new jsPDF('l', 'mm', 'a4');
+
+            oDoc.text("Tendering Items Export - " + new Date().toLocaleDateString(), 14, 20);
+
+            oDoc.autoTable({
+                head: [aHeaders],
+                body: aDataRows,
+                startY: 30,
+                theme: 'grid',
+                styles: { fontSize: 8, cellPadding: 2 },
+                headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
+                columnStyles: {
+                    0: { cellWidth: 20 },  // Type
+                    1: { cellWidth: 40 },  // Service No
+                    2: { cellWidth: 50 },  // Description
+                    // Auto for rest
+                },
+                margin: { top: 30, left: 10, right: 10 }
+            });
+
+            var totalValue = this.getView().getModel().getProperty("/totalValue") || "0.000";
+            oDoc.text("Total Value: " + totalValue + " SAR", 14, oDoc.lastAutoTable.finalY + 10);
+
+            oDoc.save("Tendering_Export_" + new Date().toISOString().slice(0, 10) + ".pdf");
+            sap.m.MessageToast.show(aData.length + " rows exported to PDF.");
+
+            // Close choice dialog
+            this.onCloseExportDialog();
+        },
+_flattenDataForExport: function () {
+    var oModel = this.getView().getModel();
+    var aMainItems = oModel.getProperty("/MainItems") || [];
+    var aFlatData = [];
+
+    aMainItems.forEach(function (oMain, iMainIndex) {
+        // Main row
+        aFlatData.push({
+            "Type": "Main",
+            "Service No": oMain.serviceNumberCode || "",
+            "Description": oMain.description || "",
+            "Quantity": oMain.quantity || "0.000",
+            "UOM": oMain.unitOfMeasurementCode || "",
+            "Formula": oMain.formulaCode || "",
+            "Parameters": oMain.parameters ? Object.keys(oMain.parameters).join(", ") : "None",
+            "Currency": oMain.currencyCode || "",
+            "Amount Per Unit": oMain.amountPerUnit || "0.000",
+            "Total": oMain.total || "0.000",
+            "Profit Margin": oMain.profitMargin || "0.000",
+            "Amount Per Unit with Profit": oMain.amountPerUnitWithProfit || "0.000",
+            "Total with Profit": oMain.totalWithProfit || "0.000"
+        });
+
+        // Sub rows (indented)
+        if (oMain.subItemList && oMain.subItemList.length > 0) {
+            oMain.subItemList.forEach(function (oSub) {
+                aFlatData.push({
+                    "Type": "  Sub",  // Indent for hierarchy
+                    "Service No": oSub.serviceNumberCode || "",
+                    "Description": oSub.description || "",
+                    "Quantity": oSub.quantity || "0.000",
+                    "UOM": oSub.unitOfMeasurementCode || "",
+                    "Formula": oSub.formulaCode || "",
+                    "Parameters": oSub.parameters ? Object.keys(oSub.parameters).join(", ") : "None",
+                    "Currency": oSub.currencyCode || "",
+                    "Amount Per Unit": oSub.amountPerUnit || "0.000",
+                    "Total": oSub.total || "0.000",
+                    "Profit Margin": "",  // Subs may not have profit
+                    "Amount Per Unit with Profit": "",
+                    "Total with Profit": ""
+                });
+            });
+        }
+    });
+
+    return aFlatData;
+},
+        // Optional: For "Print" button (browser print of page/table)
+        onPrintUI: function () {
+            window.print();  // Native browser print
+            sap.m.MessageToast.show("Printing current view...");
+        },
+        onCloseImportDialog: function () {
+            this.byId("importDialog").close();
+            this.getView().getModel().setProperty("/importReady", false);
+            this.getView().getModel().setProperty("/importRows", []);  // Clear stored rows
+            this.byId("importStatus").setText("");
+        },
+
+        onUploadComplete: function () {
+            // Optional: If you later add server upload, handle here
         },
         onCancelSubDialog: function () {
             this.byId("addSubDialog").close();
@@ -1280,22 +1548,18 @@ sap.ui.define([
             const oTreeTable = this.byId("treeTable");
             oTreeTable.collapseAll();
         },
-
         onCollapseSelection: function () {
             const oTreeTable = this.byId("treeTable");
             oTreeTable.collapse(oTreeTable.getSelectedIndices());
         },
-
         onExpandFirstLevel: function () {
             const oTreeTable = this.byId("treeTable");
             oTreeTable.expandToLevel(1);
         },
-
         onExpandSelection: function () {
             const oTreeTable = this.byId("treeTable");
             oTreeTable.expand(oTreeTable.getSelectedIndices());
         },
-
         onOpenMainDialog: function () {
             this.byId("addMainDialog").open();
         },

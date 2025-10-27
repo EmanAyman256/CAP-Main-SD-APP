@@ -5,24 +5,49 @@ sap.ui.define([
 
     return Controller.extend("project1.controller.AddModel", {
         onInit() {
+             var oView = this.getView();
+
+            // Initialize the view model
+            var oViewModel = new sap.ui.model.json.JSONModel({
+                
+            });
+            oView.setModel(oViewModel, "view");
+
+            // currency
+            fetch("/odata/v4/sales-cloud/Currencies")
+                .then(res => res.json())
+                .then(data => {
+                    var oModel = new sap.ui.model.json.JSONModel(data.value);
+                    oView.setModel(oModel, "currencies");
+                });
         },
 
        
 
         onAddModel: function () {
-            const modelServSpec = this.byId("_IDGenInput").getValue();
-            const blockingIndicator = this.byId("_IDGenCheckBox").getSelected();
-            const serviceSelection = this.byId("_IDGenCheckBox2").getSelected();
-            const oDescriptionInput = this.byId("_IDGenInput6");
+            // var oView = this.getView();
+           // var serviceTypeCode = oView.byId("_IDGenSelect").getSelectedKey();
+            const modelServSpec = this.byId("modelServSpec").getValue();
+            const blockingIndicator = this.byId("blockingIndicator").getSelected();
+            const serviceSelection = this.byId("serviceSelection").getSelected();
+            const oDescriptionInput = this.byId("description");
             const description = oDescriptionInput.getValue();
-            const searchTerm = this.byId("_IDGenInput7").getValue();
-            const currency = this.byId("_IDGenInput8").getValue();
+            const searchTerm = this.byId("searchTerm").getValue();
+             const currencyInput = this.byId("currency")
+            const currency = this.byId("currency").getSelectedKey();
+            //this.byId("_IDGenInput8").getValue();
 
             // ✅ Mandatory check
             if (!description) {
                 oDescriptionInput.setValueState("Error");
                 oDescriptionInput.setValueStateText("Description is required");
                 sap.m.MessageToast.show("Description is required");
+                return;
+            }
+             if (!currency) {
+                currencyInput.setValueState("Error");
+                currencyInput.setValueStateText("Currency is required");
+                sap.m.MessageToast.show("Currency is required");
                 return;
             }
 
@@ -60,12 +85,12 @@ sap.ui.define([
                     });
 
                     // optional: clear fields
-                    this.byId("_IDGenInput").setValue("");
-                    this.byId("_IDGenCheckBox").setSelected(false);
-                    this.byId("_IDGenCheckBox2").setSelected(false);
-                    this.byId("_IDGenInput6").setValue("");
-                    this.byId("_IDGenInput7").setValue("");
-                    this.byId("_IDGenInput8").setValue("");
+                    this.byId("modelServSpec").setValue("");
+                    this.byId("blockingIndicator").setSelected(false);
+                    this.byId("serviceSelection").setSelected(false);
+                    this.byId("description").setValue("");
+                    this.byId("searchTerm").setValue("");
+                    this.byId("currency").setValue("");
 
                     // optional: refresh table if you show models
                     // let oTable = this.byId("modelTable");

@@ -102,14 +102,14 @@
                         text="Select Service Type"
                     />
                     <Select
-                        id="_IDGenSelect"
+                        id="_IDGenSelect5"
                         class="sapUiSmallMarginStart"
                         width="200px"
                         forceSelection="false"
                         items="{	path: 'serviceTypes>/'}"
                     >
                         <core:Item
-                            id="_IDGenItem"
+                            id="_IDGenItem5"
                             key="{serviceTypes>serviceTypeCode}"
                             text="{serviceTypes>description}"
                         />
@@ -133,7 +133,7 @@
                         items="{	path: 'unitsOfMeasurement>/'}"
                     >
                         <core:Item
-                            id="_IDGenItem1"
+                            id="_IDGenItem6"
                             key="{unitsOfMeasurement>unitOfMeasurementCode}"
                             text="{unitsOfMeasurement>description}"
                         />
@@ -257,7 +257,7 @@
                     items="{	path: 'materialGroups>/'}"
                 >
                     <core:Item
-                        id="_IDGenItem2"
+                        id="_IDGenItem7"
                         key="{materialGroups>materialGroupCode}"
                         text="{materialGroups>description}"
                     />
