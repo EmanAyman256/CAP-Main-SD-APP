@@ -196,14 +196,14 @@ sap.ui.define([
             console.log("Total Calculated:", iTotal);
 
             if (bIsEdit && oEditRow) {
-                oEditRow.total = iTotal.toFixed(2);
-                oEditRow.totalWithProfit = totalWithProfit.toFixed(2);
-                oEditRow.amountPerUnitWithProfit = amountPerUnitWithProfit.toFixed(2);
+                oEditRow.total = iTotal.toFixed(3);
+                oEditRow.totalWithProfit = totalWithProfit.toFixed(3);
+                oEditRow.amountPerUnitWithProfit = amountPerUnitWithProfit.toFixed(3);
                 oModel.setProperty("/editRow", oEditRow);
             } else {
-                oModel.setProperty("/Total", iTotal.toFixed(2));
-                oModel.setProperty("/totalWithProfit", totalWithProfit.toFixed(2));
-                oModel.setProperty("/amountPerUnitWithProfit", amountPerUnitWithProfit.toFixed(2));
+                oModel.setProperty("/Total", iTotal.toFixed(3));
+                oModel.setProperty("/totalWithProfit", totalWithProfit.toFixed(3));
+                oModel.setProperty("/amountPerUnitWithProfit", amountPerUnitWithProfit.toFixed(3));
             }
         },
         onServiceNumberChange: function (oEvent) {
@@ -230,8 +230,7 @@ sap.ui.define([
                 oDescriptionInput.setValue("");
                 oDescriptionInput.setEditable(true);
             }
-        }
-        ,
+        },
         _calculateFormulaResult: function (oFormula, oParams) {
             if (!oFormula || !oParams) return 0;
 
@@ -253,16 +252,15 @@ sap.ui.define([
                 const result = Function('"use strict";return (' + expression + ')')();
 
                 // Round to 2 decimals for display
-                console.log(parseFloat(result.toFixed(2)));
+                console.log(parseFloat(result.toFixed(3)));
 
-                return parseFloat(result.toFixed(2));
+                return parseFloat(result.toFixed(3));
             } catch (err) {
                 console.error("Error evaluating formula:", err);
                 sap.m.MessageToast.show("Invalid formula or parameters.");
                 return 0;
             }
         },
-
         onFormulaSelected: function (oEvent) {
             var oSelect = oEvent.getSource();
             var sKey = oSelect.getSelectedKey();
@@ -317,9 +315,9 @@ sap.ui.define([
             // Calculate new totals
             // Update the row
             oItem.profitMargin = eProfitMargin;
-            oItem.total = eTotal.toFixed(2);
-            oItem.amountPerUnitWithProfit = eAmountPerUnitWithProfit.toFixed(2);
-            oItem.totalWithProfit = eTotalWithProfit.toFixed(2);
+            oItem.total = eTotal.toFixed(3);
+            oItem.amountPerUnitWithProfit = eAmountPerUnitWithProfit.toFixed(3);
+            oItem.totalWithProfit = eTotalWithProfit.toFixed(3);
 
             // Update model to refresh UI
             oModel.setProperty(sPath, oItem);
@@ -404,7 +402,7 @@ sap.ui.define([
             var iAmount = parseFloat(sAmount) || 0;
 
             var iTotal = iQuantity * iAmount;
-            oModel.setProperty("/SubTotal", iTotal.toFixed(2));
+            oModel.setProperty("/SubTotal", iTotal.toFixed(3));
         },
         onSubServiceNumberChange: function (oEvent) {
             var oSelect = oEvent.getSource();
@@ -441,7 +439,7 @@ sap.ui.define([
 
             var total = qty * amount;
 
-            oTotalInput.setValue(total.toFixed(2)); // show with 2 decimals
+            oTotalInput.setValue(total.toFixed(3)); // show with 2 decimals
         },
         onSaveDocument: function () {
             const oModel = this.getView().getModel();
@@ -455,6 +453,7 @@ sap.ui.define([
                     salesQuotation, salesQuotationItem, pricingProcedureCounter, pricingProcedureStep,
                     customerNumber, ...rest
                 } = item;
+                rest.totalHeader = parseFloat(Number(rest.totalHeader || 0).toFixed(3));
 
                 // ✅ Clean subitems if exist
                 const cleanedSubItems = (item.subItemList || [])
@@ -467,12 +466,15 @@ sap.ui.define([
                         // Ensure relation is kept
                         return {
                             ...subRest,
+                            amountPerUnit: parseFloat(Number(subRest.amountPerUnit || 0).toFixed(3)),
+                            total: parseFloat(Number(subRest.total || 0).toFixed(3))
                             //invoiceMainItemCode: item.invoiceMainItemCode
                         };
                     });
 
                 return {
                     ...rest,
+
                     //invoiceMainItemCode: item.invoiceMainItemCode,
                     subItemList: cleanedSubItems
                 };
@@ -561,7 +563,7 @@ sap.ui.define([
 
             if (isSubItem) {
                 // 🟢 For subitems: calculate only their own total
-                oItem.total = (quantity * amountPerUnit).toFixed(2);
+                oItem.total = (quantity * amountPerUnit).toFixed(3);
                 return;
             }
 
@@ -570,9 +572,9 @@ sap.ui.define([
             const amountWithProfit = amountPerUnit + (amountPerUnit * profitMargin / 100);
             const totalWithProfit = quantity * amountWithProfit;
 
-            oItem.total = total.toFixed(2);
-            oItem.amountPerUnitWithProfit = amountWithProfit.toFixed(2);
-            oItem.totalWithProfit = totalWithProfit.toFixed(2);
+            oItem.total = total.toFixed(3);
+            oItem.amountPerUnitWithProfit = amountWithProfit.toFixed(3);
+            oItem.totalWithProfit = totalWithProfit.toFixed(3);
         },
         _recalculateMainFromSubitems: function (oMainItem) {
             if (!oMainItem || !Array.isArray(oMainItem.subItemList)) return;
@@ -584,7 +586,7 @@ sap.ui.define([
             }, 0);
 
             // 2️⃣ Update main amount per unit = total of all subitems
-            oMainItem.amountPerUnit = totalSubItems.toFixed(2);
+            oMainItem.amountPerUnit = totalSubItems.toFixed(3);
 
             // 3️⃣ Base calculations
             const quantity = parseFloat(oMainItem.quantity) || 0;
@@ -593,15 +595,15 @@ sap.ui.define([
             const eAmount = totalSubItems;                 // base amount per unit
             const eTotal = quantity * eAmount;             // base total
 
-            oMainItem.total = eTotal.toFixed(2);
+            oMainItem.total = eTotal.toFixed(3);
 
             // 4️⃣ Profit logic (your version)
             if (profitMargin > 0) {
                 var eAmountPerUnitWithProfit = (eAmount * (profitMargin / 100) + eAmount);
                 var eTotalWithProfit = (eTotal * (profitMargin / 100) + eTotal);
 
-                oMainItem.amountPerUnitWithProfit = eAmountPerUnitWithProfit.toFixed(2);
-                oMainItem.totalWithProfit = eTotalWithProfit.toFixed(2);
+                oMainItem.amountPerUnitWithProfit = eAmountPerUnitWithProfit.toFixed(3);
+                oMainItem.totalWithProfit = eTotalWithProfit.toFixed(3);
             } else {
                 // No profit → clear those fields
                 oMainItem.amountPerUnitWithProfit = 0;
@@ -907,16 +909,16 @@ sap.ui.define([
 
             if (isSubItem) {
                 // Subitems: only total
-                oEditRow.total = (safeQuantity * safeAmountPerUnit).toFixed(2);
+                oEditRow.total = (safeQuantity * safeAmountPerUnit).toFixed(3);
             } else {
                 // Main items: include profit
                 const total = safeQuantity * safeAmountPerUnit;
                 const amountWithProfit = safeAmountPerUnit + (safeAmountPerUnit * safeProfitMargin / 100);
                 const totalWithProfit = safeQuantity * amountWithProfit;
 
-                oEditRow.total = total.toFixed(2);
-                oEditRow.amountPerUnitWithProfit = amountWithProfit.toFixed(2);
-                oEditRow.totalWithProfit = totalWithProfit.toFixed(2);
+                oEditRow.total = total.toFixed(3);
+                oEditRow.amountPerUnitWithProfit = amountWithProfit.toFixed(3);
+                oEditRow.totalWithProfit = totalWithProfit.toFixed(3);
             }
 
             // ✅ Update the model safely
@@ -1140,7 +1142,6 @@ sap.ui.define([
 
             sap.m.MessageToast.show("Subitem added successfully!");
         },
-
         onDeleteRow: function (oEvent) {
             const oModel = this.getView().getModel();
             const oContext = oEvent.getSource().getBindingContext();
@@ -1239,6 +1240,7 @@ sap.ui.define([
             // Push new record to model
             const aMainItems = oModel.getProperty("/MainItems") || [];
             aMainItems.push(oNewMain);
+            // this._recalculateMainFromSubitems(aMainItems)
             oModel.setProperty("/MainItems", aMainItems);
             oModel.refresh(true);
 
@@ -1246,7 +1248,6 @@ sap.ui.define([
             this.byId("addMainDialog").close();
             sap.m.MessageToast.show("Main item added successfully!");
         },
-
         onSearch: function (oEvent) {
             var sQuery = oEvent.getParameter("query");
             var oTable = this.byId("treeTable");
