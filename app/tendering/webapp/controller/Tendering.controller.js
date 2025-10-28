@@ -281,51 +281,7 @@ sap.ui.define([
                 oQuantityInput.setValue(""); // optional: clear old value
             }
         },
-        onApplyProfitMargin: function () {
-            var oView = this.getView();
-            var oModel = oView.getModel();
-            var oTable = oView.byId("treeTable"); // your main table ID
-            var aSelectedIndices = oTable.getSelectedIndices();
-
-            if (aSelectedIndices.length === 0) {
-                sap.m.MessageToast.show("Please select a main item first.");
-                return;
-            }
-
-            var iIndex = aSelectedIndices[0];
-            var sPath = oTable.getContextByIndex(iIndex).getPath();
-            var oItem = oModel.getProperty(sPath);
-
-            // Get entered profit margin
-            var eProfitMargin = parseFloat(oView.byId("groupInput").getValue()) || 0;
-            var eQuantity = parseFloat(oItem.quantity) || 0;
-            var eAmount = parseFloat(oItem.amountPerUnit) || 0;
-            var eTotal = eQuantity * eAmount;
-            var eAmountPerUnitWithProfit = (eAmount * (eProfitMargin / 100) + eAmount);
-            var eTotalWithProfit = (eTotal * (eProfitMargin / 100) + eTotal);
-
-            if (eProfitMargin === 0) {
-                eAmountPerUnitWithProfit = 0
-                eTotalWithProfit = 0
-            }
-            else {
-                var eTotal = eQuantity * eAmount;
-                var eAmountPerUnitWithProfit = (eAmount * (eProfitMargin / 100) + eAmount)
-
-                var eTotalWithProfit = (eTotal * (eProfitMargin / 100) + eTotal);
-            }
-            // Calculate new totals
-            // Update the row
-            oItem.profitMargin = eProfitMargin;
-            oItem.total = eTotal.toFixed(3);
-            oItem.amountPerUnitWithProfit = eAmountPerUnitWithProfit.toFixed(3);
-            oItem.totalWithProfit = eTotalWithProfit.toFixed(3);
-
-            // Update model to refresh UI
-            oModel.setProperty(sPath, oItem);
-
-            sap.m.MessageToast.show("Profit margin applied to selected item.");
-        },
+       
         onOpenFormulaDialog: function (oEvent) {
             var oButton = oEvent.getSource();
             var sButtonId = oButton.getId();
@@ -386,6 +342,51 @@ sap.ui.define([
 
             // Mark as formula-based quantity
             oModel.setProperty("/IsFormulaBasedQuantity", true);
+        },
+         onApplyProfitMargin: function () {
+            var oView = this.getView();
+            var oModel = oView.getModel();
+            var oTable = oView.byId("treeTable"); // your main table ID
+            var aSelectedIndices = oTable.getSelectedIndices();
+
+            if (aSelectedIndices.length === 0) {
+                sap.m.MessageToast.show("Please select a main item first.");
+                return;
+            }
+
+            var iIndex = aSelectedIndices[0];
+            var sPath = oTable.getContextByIndex(iIndex).getPath();
+            var oItem = oModel.getProperty(sPath);
+
+            // Get entered profit margin
+            var eProfitMargin = parseFloat(oView.byId("groupInput").getValue()) || 0;
+            var eQuantity = parseFloat(oItem.quantity) || 0;
+            var eAmount = parseFloat(oItem.amountPerUnit) || 0;
+            var eTotal = eQuantity * eAmount;
+            var eAmountPerUnitWithProfit = (eAmount * (eProfitMargin / 100) + eAmount);
+            var eTotalWithProfit = (eTotal * (eProfitMargin / 100) + eTotal);
+
+            if (eProfitMargin === 0) {
+                eAmountPerUnitWithProfit = 0
+                eTotalWithProfit = 0
+            }
+            else {
+                var eTotal = eQuantity * eAmount;
+                var eAmountPerUnitWithProfit = (eAmount * (eProfitMargin / 100) + eAmount)
+
+                var eTotalWithProfit = (eTotal * (eProfitMargin / 100) + eTotal);
+            }
+            // Calculate new totals
+            // Update the row
+            oItem.profitMargin = eProfitMargin;
+            oItem.total = eTotal.toFixed(3);
+            oItem.amountPerUnitWithProfit = eAmountPerUnitWithProfit.toFixed(3);
+            oItem.totalWithProfit = eTotalWithProfit.toFixed(3);
+
+            // Update model to refresh UI
+            oModel.setProperty(sPath, oItem);
+
+            sap.m.MessageToast.show("Profit margin applied to selected item.");
         },
         onSubFormulaDialogOK: function () {
             var oModel = this.getView().getModel();

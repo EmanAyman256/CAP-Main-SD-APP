@@ -104,7 +104,7 @@ sap.ui.define([
             var deletionIndicator = oView.byId("_IDGenCheckBox3").getSelected();
             var toBeConvertedNum = oView.byId("_IDGenInput5").getValue();
             var convertedNum = oView.byId("_IDGenInput9").getValue();
-            var serviceTypeCode = oView.byId("_IDGenSelect").getSelectedKey();
+            var serviceTypeCode = oView.byId("_IDGenSelect5").getSelectedKey();
             var unitOfMeasurementCode = oView.byId("_IDGenSelect1").getSelectedKey();
             var toBeConvertedUOM = oView.byId("_IDGenSelect2").getSelectedKey();
             var convertedUOM = oView.byId("_IDGenSelect3").getSelectedKey();
@@ -157,13 +157,23 @@ sap.ui.define([
                     return response.json().catch(() => newServiceMaster); // Handle empty response
                 })
                 .then(savedItem => {
-                    sap.m.MessageToast.show("Service Master created successfully!");
-                    console.log("Server response:", savedItem);
+                     sap.m.MessageBox.success("ServiceMaster saved successfully!,Press OK To return to the main page", {
+                        title: "Success",
+                        actions: [sap.m.MessageBox.Action.OK],
+                        onClose: function (sAction) {
+                            if (sAction === sap.m.MessageBox.Action.OK) {
+                                var oRouter = sap.ui.core.UIComponent.getRouterFor(this);
+                                oRouter.navTo("serviceMaster");
+                            }
+                        }.bind(this)
+                    })
+                    // sap.m.MessageToast.show("Service Master created successfully!");
+                    // console.log("Server response:", savedItem);
 
-                    // Navigate with the new item as a parameter
-                    this.getOwnerComponent().getRouter().navTo("serviceMaster", {
-                        newItem: encodeURIComponent(JSON.stringify(savedItem))
-                    });
+                    // // Navigate with the new item as a parameter
+                    // this.getOwnerComponent().getRouter().navTo("serviceMaster", {
+                    //     newItem: encodeURIComponent(JSON.stringify(savedItem))
+                    // });
                 })
                 .catch(err => {
                     console.error("Error saving ServiceMaster:", err);

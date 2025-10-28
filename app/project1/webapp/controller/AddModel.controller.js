@@ -5,11 +5,11 @@ sap.ui.define([
 
     return Controller.extend("project1.controller.AddModel", {
         onInit() {
-             var oView = this.getView();
+            var oView = this.getView();
 
             // Initialize the view model
             var oViewModel = new sap.ui.model.json.JSONModel({
-                
+
             });
             oView.setModel(oViewModel, "view");
 
@@ -21,37 +21,29 @@ sap.ui.define([
                     oView.setModel(oModel, "currencies");
                 });
         },
-
-       
-
         onAddModel: function () {
-            // var oView = this.getView();
-           // var serviceTypeCode = oView.byId("_IDGenSelect").getSelectedKey();
             const modelServSpec = this.byId("modelServSpec").getValue();
             const blockingIndicator = this.byId("blockingIndicator").getSelected();
             const serviceSelection = this.byId("serviceSelection").getSelected();
             const oDescriptionInput = this.byId("description");
             const description = oDescriptionInput.getValue();
             const searchTerm = this.byId("searchTerm").getValue();
-             const currencyInput = this.byId("currency")
+            const currencyInput = this.byId("currency")
             const currency = this.byId("currency").getSelectedKey();
-            //this.byId("_IDGenInput8").getValue();
 
-            // ✅ Mandatory check
             if (!description) {
                 oDescriptionInput.setValueState("Error");
                 oDescriptionInput.setValueStateText("Description is required");
                 sap.m.MessageToast.show("Description is required");
                 return;
             }
-             if (!currency) {
+            if (!currency) {
                 currencyInput.setValueState("Error");
                 currencyInput.setValueStateText("Currency is required");
                 sap.m.MessageToast.show("Currency is required");
                 return;
             }
 
-            // ✅ Prepare payload
             const newModel = {
                 modelServSpec: modelServSpec,
                 blockingIndicator: blockingIndicator,
@@ -81,10 +73,9 @@ sap.ui.define([
                                 var oRouter = sap.ui.core.UIComponent.getRouterFor(this);
                                 oRouter.navTo("model");
                             }
-                        }.bind(this) 
+                        }.bind(this)
                     });
 
-                    // optional: clear fields
                     this.byId("modelServSpec").setValue("");
                     this.byId("blockingIndicator").setSelected(false);
                     this.byId("serviceSelection").setSelected(false);

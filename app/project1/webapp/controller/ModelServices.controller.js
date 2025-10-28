@@ -22,102 +22,206 @@ sap.ui.define([
 
     return Controller.extend("project1.controller.ModelServices", {
         onInit: function () {
-            // var oModel = new sap.ui.model.json.JSONModel({
-            //     ModelServices: [],
-            // });
-            // this.getView().setModel(oModel, "view");
-            // fetch("/odata/v4/sales-cloud/ModelSpecificationsDetails")
-            //     .then(response => response.json())
-            //     .then(data => {
-            //         oModel.setData({ ModelServices: data.value });
-            //         this.getView().byId("modelServicesTable").setModel(oModel);
-            //     })
-            //     .catch(err => {
-            //         console.error("Error fetching model Services", err);
-            //     });
+            var oModel = new sap.ui.model.json.JSONModel({
+                ModelServices: [],
+                Formulas: [],
+                Currency: [],
+                UOM: [],
+                ServiceNumbers: [],
+                FormulaParameters: {},
+                HasSelectedFormula: false,
+                Total: 0,
+                SubTotal: 0,
+                IsFormulaBasedQuantity: false,
+                ServiceNumbers: [],
+                SelectedServiceNumber: "",
+                SelectedServiceNumberDescription: "",               
+                SubDescriptionEditable: true,
+                SelectedFormula: null,
+                totalWithProfit: 0,
+                amountPerUnitWithProfit: 0,
+            });
+            this.getView().setModel(oModel, "view");
+            fetch("/odata/v4/sales-cloud/ModelSpecificationsDetails")
+                .then(response => response.json())
+                .then(data => {
+                    oModel.setData({ ModelServices: data.value });
+                    this.getView().byId("modelServicesTable").setModel(oModel);
+                    console.log("Model Object", data.value);
 
-            var oOriginalData = {
-                ModelSpecificationsDetails: [
-                    {
-                        line: "001",
-                        serviceNo: "S001",
-                        shortText: "Service 1",
-                        quantity: "10",
-                        formula: "F1",
-                        formulaParameters: "P1,P2",
-                        grossPrice: "100.00",
-                        netValue: "90.00",
-                        unitOfMeasure: "EA",
-                        crcy: "USD",
-                        overFPercentage: "5%",
-                        priceChangeAllowed: "Yes",
-                        unlimitedOverF: "No",
-                        pricePerUnitOfMeasurement: "10.00",
-                        matGroup: "MG1",
-                        serviceType: "ST1",
-                        externalServiceNo: "ES001",
-                        serviceText: "Service Text 1",
-                        lineText: "Line Text 1",
-                        personnelNumber: "P001",
-                        lineType: "LT1",
-                        lineNumber: "1",
-                        alt: "A1",
-                        biddersLine: "B001",
-                        suppLine: "S001",
-                        cstgLs: "CL1"
-                    },
-                    {
-                        line: "002",
-                        serviceNo: "S002",
-                        shortText: "Service 2",
-                        quantity: "20",
-                        formula: "F2",
-                        formulaParameters: "P3,P4",
-                        grossPrice: "200.00",
-                        netValue: "180.00",
-                        unitOfMeasure: "EA",
-                        crcy: "EUR",
-                        overFPercentage: "10%",
-                        priceChangeAllowed: "No",
-                        unlimitedOverF: "Yes",
-                        pricePerUnitOfMeasurement: "20.00",
-                        matGroup: "MG2",
-                        serviceType: "ST2",
-                        externalServiceNo: "ES002",
-                        serviceText: "Service Text 2",
-                        lineText: "Line Text 2",
-                        personnelNumber: "P002",
-                        lineType: "LT2",
-                        lineNumber: "2",
-                        alt: "A2",
-                        biddersLine: "B002",
-                        suppLine: "S002",
-                        cstgLs: "CL2"
+                })
+                .catch(err => {
+                    console.error("Error fetching model Services", err);
+                });
+            fetch("/odata/v4/sales-cloud/ServiceNumbers")
+                .then(response => {
+                    if (!response.ok) throw new Error(response.statusText);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Fetched ServiceNumbers:", data.value);
+
+                    if (data && data.value) {
+                        const ServiceNumbers = data.value.map(item => ({
+                            serviceNumberCode: item.serviceNumberCode,
+                            description: item.description
+                        }));
+                        this.getView().getModel().setProperty("/ServiceNumbers", ServiceNumbers);
+
+                        console.log("ServiceNumbers:", ServiceNumbers);
                     }
-                ],
-                dummy: [{}],
-                selectedLine: {},
-                originalModels: [] // Added to store the original dataset
-            };
-            // Initialize Models with original data and store originalModels
-            oOriginalData.originalModels = JSON.parse(JSON.stringify(oOriginalData.ModelSpecificationsDetails));
-            var oModel = new sap.ui.model.json.JSONModel(oOriginalData);
-            
+                })
+                .catch(err => {
+                    console.error("Error fetching ServiceNumbers:", err);
+                });
+            // Fetch Formulas
+            fetch("/odata/v4/sales-cloud/Formulas")
+                .then(r => r.json())
+                .then(data => {
+                    const formulas = Array.isArray(data.value) ? data.value : [];
+                    console.log("Fetched Formulas:", formulas); // Debug
+                    oModel.setProperty("/Formulas", formulas);
+                    oModel.refresh(true);
+                })
+                .catch(err => {
+                    console.error("Error fetching Formulas:", err);
+                    sap.m.MessageToast.show("Failed to load formulas.");
+                });
+            fetch("/odata/v4/sales-cloud/UnitOfMeasurements")
+                .then(r => r.json())
+                .then(data => {
+                    const uom = Array.isArray(data.value) ? data.value : [];
+                    oModel.setProperty("/UOM", uom);
+                    oModel.refresh(true);
+                });
+
+            // Fetch Currencies
+            fetch("/odata/v4/sales-cloud/Currencies")
+                .then(r => r.json())
+                .then(data => {
+                    const currency = Array.isArray(data.value) ? data.value : [];
+                    oModel.setProperty("/Currency", currency);
+                    oModel.refresh(true);
+                });
             this.getView().setModel(oModel);
 
-            var style = document.createElement('style');
-            style.type = 'text/css';
-            style.innerHTML = `
-                .myCustomStyle .customTopMargin {
-                    margin-top: 1rem;
-                }
-            `;
-            document.getElementsByTagName('head')[0].appendChild(style);
+            // var style = document.createElement('style');
+            // style.type = 'text/css';
+            // style.innerHTML = `
+            //     .myCustomStyle .customTopMargin {
+            //         margin-top: 1rem;
+            //     }
+            // `;
+            // document.getElementsByTagName('head')[0].appendChild(style);
         },
-        onAdd: function () {
+        onServiceNumberChange: function (oEvent) {
+            var oSelect = oEvent.getSource();
+            var oSelectedItem = oSelect.getSelectedItem();
+            var oDescriptionInput = this.byId("mainDescriptionInput");
+            var oDescSubItems = this.byId("dialogSubDescription")
+            if (oSelectedItem) {
+                var sKey = oSelectedItem.getKey();   // serviceNumberCode
+                var sText = oSelectedItem.getText(); // description
 
+                console.log("Selected Key:", sKey, " | Text:", sText);
+
+                // Store both in model
+                var oModel = this.getView().getModel();
+                oModel.setProperty("/SelectedServiceNumber", sKey);
+                oModel.setProperty("/SelectedServiceNumberDescription", sText);
+
+                // Fill input & lock it
+                oDescriptionInput.setValue(sText);
+                oDescriptionInput.setEditable(false);
+            } else {
+                // If nothing selected -> clear & allow manual typing
+                oDescriptionInput.setValue("");
+                oDescriptionInput.setEditable(true);
+            }
+        },
+        onFormulaSelected: function (oEvent) {
+            var oSelect = oEvent.getSource();
+            var sKey = oSelect.getSelectedKey();
+            var oModel = this.getView().getModel();
+            var aFormulas = oModel.getProperty("/Formulas") || [];
+            var oFormula = aFormulas.find(f => f.formulaCode === sKey);
+
+            oModel.setProperty("/SelectedFormula", oFormula || null);
+            oModel.setProperty("/HasSelectedFormula", !!oFormula);
+
+            // If user cleared formula, enable manual input
+            var oQuantityInput = this.byId("mainQuantityInput");
+            if (!oFormula) {
+                oQuantityInput.setEditable(true);
+                oModel.setProperty("/IsFormulaBasedQuantity", false);
+                oQuantityInput.setValue(""); // optional: clear old value
+            }
         },
 
+        onOpenFormulaDialog: function (oEvent) {
+            var oButton = oEvent.getSource();
+            var sButtonId = oButton.getId();
+            console.log("BUTTON PRESS FIRED! Button ID:", sButtonId); // Key: Share this log!
+
+            // More robust ID check: Split on '--' to get local ID, then check
+            var sLocalId = sButtonId.split('--').pop(); // Gets "btnSubParameters" from namespaced ID
+            var sItemType = sLocalId === "btnSubParameters" ? "sub" : "main"; // Exact local match
+            console.log("Detected Item Type:", sItemType); // Should be "sub"
+
+            var oModel = this.getView().getModel();
+            var oFormula = sItemType === "sub" ? oModel.getProperty("/SelectedSubFormula") : oModel.getProperty("/SelectedFormula");
+
+            console.log("Raw /SelectedSubFormula from model:", oModel.getProperty("/SelectedSubFormula")); // Always log this
+            console.log("Raw /SelectedFormula from model:", oModel.getProperty("/SelectedFormula")); // For comparison
+            console.log("Formula retrieved for " + sItemType + ":", oFormula); // This triggers toast if null
+
+            if (!oFormula) {
+                MessageToast.show("Please select a formula first.");
+                return;
+            }
+
+            // Rest unchanged...
+            var oVBox = sItemType === "sub" ? this.byId("subFormulaParamContainer") : this.byId("formulaParamContainer");
+            oVBox.removeAllItems();
+
+            var oParams = {};
+            oFormula.parameterIds.forEach((sId, i) => {
+                oParams[sId] = "";
+                oVBox.addItem(new Label({ text: oFormula.parameterDescriptions[i] }));
+                oVBox.addItem(new Input({
+                    placeholder: "Enter " + oFormula.parameterDescriptions[i],
+                    value: `{/${sItemType === "sub" ? "SubFormulaParameters" : "FormulaParameters"}/${sId}}`
+                }));
+            });
+
+            oModel.setProperty(sItemType === "sub" ? "/SubFormulaParameters" : "/FormulaParameters", oParams);
+
+            var oDialog = sItemType === "sub" ? this.byId("SubFormulaDialog") : this.byId("formulaDialog");
+            oDialog.open();
+            console.log("Opening dialog for " + sItemType + " with formula:", oFormula);
+        },
+        onFormulaDialogOK: function () {
+            var oModel = this.getView().getModel();
+            var oFormula = oModel.getProperty("/SelectedFormula");
+            var oParams = oModel.getProperty("/FormulaParameters");
+            oModel.setProperty("/SelectedFormulaParams", oParams);
+            this.byId("formulaDialog").close();
+
+            // Calculate the formula result
+            var result = this._calculateFormulaResult(oFormula, oParams);
+            console.log("Formula Result:", result);
+
+            // Fill the Quantity input
+            var oQuantityInput = this.byId("mainQuantityInput");
+            oQuantityInput.setValue(result);
+            oQuantityInput.setEditable(false); // Lock manual entry when formula is applied
+
+            // Mark as formula-based quantity
+            oModel.setProperty("/IsFormulaBasedQuantity", true);
+        },
+        onOpenMainDialog: function () {
+            this.byId("addModelServiceDialog").open();
+        },
         onDetails: function (oEvent) {
             var oContext = oEvent.getSource().getParent().getBindingContext();
             if (oContext) {
@@ -224,7 +328,7 @@ sap.ui.define([
 
             var oBindingContext = oEvent.getSource().getBindingContext();
             if (oBindingContext) {
-                var sPath = oBindingContext.getPath(); 
+                var sPath = oBindingContext.getPath();
                 var oModel = this.getView().byId("modelServicesTable").getModel();
                 var oItem = oModel.getProperty(sPath);
                 console.log(oItem);
@@ -243,21 +347,21 @@ sap.ui.define([
                             fetch(`/odata/v4/sales-cloud/ModelSpecificationsDetails('${oItem.modelSpecDetailsCode}')`, {
                                 method: "DELETE"
                             })
-                            .then(response => {
-                                if (!response.ok) {
-                                    throw new Error("Failed to delete: " + response.statusText);
-                               }
-                                // Remove the object from the model
-                                var aData = oModel.getProperty("/ModelSpecificationsDetails");
-                                var iIndex = parseInt(sPath.split("/")[2]); // index from binding path
-                                aData.splice(iIndex, 1); // remove 1 element at index
-                                oModel.setProperty("/ModelSpecificationsDetails", aData);                            
-                                sap.m.MessageToast.show("Record deleted successfully.");
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error("Failed to delete: " + response.statusText);
+                                    }
+                                    // Remove the object from the model
+                                    var aData = oModel.getProperty("/ModelSpecificationsDetails");
+                                    var iIndex = parseInt(sPath.split("/")[2]); // index from binding path
+                                    aData.splice(iIndex, 1); // remove 1 element at index
+                                    oModel.setProperty("/ModelSpecificationsDetails", aData);
+                                    sap.m.MessageToast.show("Record deleted successfully.");
                                 })
-                            .catch(err => {
-                                console.error("Error deleting Formula:", err);
-                                sap.m.MessageBox.error("Error: " + err.message);
-                            });
+                                .catch(err => {
+                                    console.error("Error deleting Formula:", err);
+                                    sap.m.MessageBox.error("Error: " + err.message);
+                                });
                         }
                     }
                 });
@@ -287,53 +391,53 @@ sap.ui.define([
             if (aItems.length > 0) {
                 const oRow = aItems[0];        // since you only have one row
                 const aCells = oRow.getCells();
-                var newServiceModel ={
+                var newServiceModel = {
                     serviceNumberCode: aCells[1].getValue(),
                     shortText: aCells[2].getValue(),
                     quantity: aCells[3].getValue(),
                     formulaCode: aCells[4].getValue(),
                     modelSpecifications: [
-                    {
-                        modelSpecCode: "01234567-89ab-cdef-0123-456789abcdef",
-                    }
+                        {
+                            modelSpecCode: "01234567-89ab-cdef-0123-456789abcdef",
+                        }
                     ]
                 }
-            
-            //Check Mandatories before Posting in DB
-            //Post In DB
-            fetch("/odata/v4/sales-cloud/ModelSpecificationsDetails", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(newServiceModel)
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error("Failed to save: " + response.statusText);
-                    }
-                    return response.json();
+
+                //Check Mandatories before Posting in DB
+                //Post In DB
+                fetch("/odata/v4/sales-cloud/ModelSpecificationsDetails", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(newServiceModel)
                 })
-                 .then(savedItem => {
-                    var oModel = this.getView().getModel();
-                    var models = oModel.getProperty("/ModelSpecificationsDetails") || [];
-                    models.push(savedItem);
-                    oModel.setProperty("/ModelSpecificationsDetails", models);
-                    oModel.refresh(true);
-                })
-                .catch(err => {
-                    console.error("Error saving Model Service:", err);
-                    sap.m.MessageBox.error("Error: " + err.message);
-                    return;
-                });
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error("Failed to save: " + response.statusText);
+                        }
+                        return response.json();
+                    })
+                    .then(savedItem => {
+                        var oModel = this.getView().getModel();
+                        var models = oModel.getProperty("/ModelSpecificationsDetails") || [];
+                        models.push(savedItem);
+                        oModel.setProperty("/ModelSpecificationsDetails", models);
+                        oModel.refresh(true);
+                    })
+                    .catch(err => {
+                        console.error("Error saving Model Service:", err);
+                        sap.m.MessageBox.error("Error: " + err.message);
+                        return;
+                    });
                 sap.m.MessageToast.show("Record added successfully!");
                 this.onCloseDialog();
             }
-            
+
         },
 
         onCloseDialog: function () {
-            var oDialog = this.getView().byId("addServiceDialog");
+            var oDialog = this.getView().byId("addModelService");
             if (oDialog) {
                 oDialog.close();
                 this.getView().byId("dialogLine").setValue("");

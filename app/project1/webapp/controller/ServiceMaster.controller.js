@@ -13,6 +13,12 @@ sap.ui.define([
     "use strict";
     return Controller.extend("project1.controller.ServiceMaster", {
         onInit: function () {
+
+
+            
+            this.getOwnerComponent().getRouter()
+                .getRoute("serviceMaster")
+                .attachPatternMatched(this._onRouteMatched, this);
             // Initialize the view model
             var oModel = new sap.ui.model.json.JSONModel({
                 ServiceNumbers: []
@@ -34,6 +40,33 @@ sap.ui.define([
 
             // Fetch ServiceNumbers data
             fetch("/odata/v4/sales-cloud/ServiceNumbers")
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}, ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Fetched ServiceNumbers:", data); // Log the raw response
+                    // Ensure data.value is an array
+                    const serviceNumbers = Array.isArray(data.value) ? data.value : [];
+                    oModel.setData({ ServiceNumbers: serviceNumbers });
+                    console.log("ServiceNumbers set in model:", oModel.getProperty("/ServiceNumbers")); // Log the model data
+                    // Refresh the model to ensure the table updates
+                    oModel.refresh(true);
+                })
+                .catch(err => {
+                    console.error("Error fetching ServiceNumbers:", err);
+                    sap.m.MessageBox.error("Failed to load ServiceNumbers: " + err.message);
+                });
+        },
+
+        _onRouteMatched: function () {
+            this._loadModels();
+        },
+        _loadModels: function () {
+            var oModel = new sap.ui.model.json.JSONModel();
+           fetch("/odata/v4/sales-cloud/ServiceNumbers")
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP error! Status: ${response.status}, ${response.statusText}`);
