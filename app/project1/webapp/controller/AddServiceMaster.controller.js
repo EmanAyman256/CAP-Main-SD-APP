@@ -385,6 +385,9 @@ sap.ui.define([
         //     // Show success message
         //     MessageToast.show("Service added successfully!");
         // },
+        
+        
+        
         onNavigateToServiceMaster() {
             this.getOwnerComponent().getRouter().navTo("serviceMaster");
         },

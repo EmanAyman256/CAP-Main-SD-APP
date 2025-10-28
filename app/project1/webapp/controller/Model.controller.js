@@ -288,9 +288,17 @@ sap.ui.define([
             this.getOwnerComponent().getRouter().navTo("addModel");
         },
 
-        onNavigateToModelServices() {
-            this.getOwnerComponent().getRouter().navTo("modelServices");
+        onNavigateToModelServices: function (oEvent) {
+            const oContext = oEvent.getSource().getBindingContext();
+            const oData = oContext.getObject();
+            const sModelSpecCode = oData.modelSpecCode;
+
+            // navigate to ModelServices route with modelSpecCode as parameter
+            this.getOwnerComponent().getRouter().navTo("modelServices", {
+                modelSpecCode: sModelSpecCode
+            });
         }
+
 
     });
 });

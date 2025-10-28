@@ -13,9 +13,6 @@ sap.ui.define([
     "use strict";
     return Controller.extend("project1.controller.ServiceMaster", {
         onInit: function () {
-
-
-            
             this.getOwnerComponent().getRouter()
                 .getRoute("serviceMaster")
                 .attachPatternMatched(this._onRouteMatched, this);
@@ -59,6 +56,30 @@ sap.ui.define([
                     console.error("Error fetching ServiceNumbers:", err);
                     sap.m.MessageBox.error("Failed to load ServiceNumbers: " + err.message);
                 });
+
+            // Service Types
+            fetch("/odata/v4/sales-cloud/ServiceTypes")
+                .then(res => res.json())
+                .then(data => {
+                    var oModel = new sap.ui.model.json.JSONModel(data.value);
+                    this.getView().setModel(oModel, "serviceTypes");
+                });
+
+            // Material Groups
+            fetch("/odata/v4/sales-cloud/MaterialGroups")
+                .then(res => res.json())
+                .then(data => {
+                    var oModel = new sap.ui.model.json.JSONModel(data.value);
+                    this.getView().setModel(oModel, "materialGroups");
+                });
+
+            // Units of Measurement
+            fetch("/odata/v4/sales-cloud/UnitOfMeasurements")
+                .then(res => res.json())
+                .then(data => {
+                    var oModel = new sap.ui.model.json.JSONModel(data.value);
+                    this.getView().setModel(oModel, "unitsOfMeasurement");
+                });
         },
 
         _onRouteMatched: function () {
@@ -66,7 +87,7 @@ sap.ui.define([
         },
         _loadModels: function () {
             var oModel = new sap.ui.model.json.JSONModel();
-           fetch("/odata/v4/sales-cloud/ServiceNumbers")
+            fetch("/odata/v4/sales-cloud/ServiceNumbers")
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP error! Status: ${response.status}, ${response.statusText}`);
@@ -87,6 +108,69 @@ sap.ui.define([
                     sap.m.MessageBox.error("Failed to load ServiceNumbers: " + err.message);
                 });
         },
+        // onEdit: function () {
+        //     var oTable = this.byId("serviceMaster");
+        //     var oSelectedItem = oTable.getSelectedItem();
+
+        //     if (!oSelectedItem) {
+        //         sap.m.MessageBox.warning("Please select an item to edit");
+        //         return;
+        //     }
+
+        //     var oContext = oSelectedItem.getBindingContext("view"); // Specify the 'view' model explicitly
+        //     if (!oContext) {
+        //         sap.m.MessageBox.error("No binding context found for the selected item");
+        //         console.error("Binding context is undefined for selected item:", oSelectedItem);
+        //         return;
+        //     }
+
+        //     var oSelectedData = oContext.getObject();
+        //     if (!oSelectedData) {
+        //         sap.m.MessageBox.error("No data found for the selected item");
+        //         console.error("Selected data is undefined:", oContext);
+        //         return;
+        //     }
+
+        //     if (!this._oEditDialog) {
+        //         this._oEditDialog = new sap.m.Dialog({
+        //             title: "Edit Service Master",
+        //             titleAlignment: "Center",
+        //             contentWidth: "600px",
+        //             content: new sap.m.VBox({
+        //                 items: [
+        //                     new sap.m.Label({ text: "Search Term" }),
+        //                     new sap.m.Input({ value: "{editModel>/editData/searchTerm}" }),
+        //                     new sap.m.Label({ text: "Description" }),
+        //                     new sap.m.Input({ value: "{editModel>/editData/description}" }),
+        //                     new sap.m.Label({ text: "Last Change Date" }),
+        //                     new sap.m.DatePicker({ value: "{editModel>/editData/lastChangeDate}" }),
+        //                     new sap.m.Label({ text: "Service Type" }),
+        //                     new sap.m.Input({ value: "{editModel>/editData/serviceText}" })
+        //                 ]
+        //             }),
+        //             beginButton: new sap.m.Button({
+        //                 text: "Save",
+        //                 type: "Emphasized",
+        //                 press: this.onSaveEdit.bind(this)
+        //             }),
+        //             endButton: new sap.m.Button({
+        //                 text: "Cancel",
+        //                 press: () => this._oEditDialog.close()
+        //             })
+        //         });
+
+        //         this.getView().addDependent(this._oEditDialog);
+        //     }
+
+        //     // Clone selected data into dialog model
+        //     var oDialogModel = new sap.ui.model.json.JSONModel({
+        //         editData: Object.assign({}, oSelectedData)
+        //     });
+        //     this._oEditDialog.setModel(oDialogModel, "editModel");
+
+        //     this._oEditDialog.open();
+        // },
+
         onEdit: function () {
             var oTable = this.byId("serviceMaster");
             var oSelectedItem = oTable.getSelectedItem();
@@ -96,7 +180,7 @@ sap.ui.define([
                 return;
             }
 
-            var oContext = oSelectedItem.getBindingContext("view"); // Specify the 'view' model explicitly
+            var oContext = oSelectedItem.getBindingContext("view");
             if (!oContext) {
                 sap.m.MessageBox.error("No binding context found for the selected item");
                 console.error("Binding context is undefined for selected item:", oSelectedItem);
@@ -110,23 +194,15 @@ sap.ui.define([
                 return;
             }
 
+            // 🔹 Create dialog if not already created
             if (!this._oEditDialog) {
                 this._oEditDialog = new sap.m.Dialog({
                     title: "Edit Service Master",
                     titleAlignment: "Center",
-                    contentWidth: "600px",
-                    content: new sap.m.VBox({
-                        items: [
-                            new sap.m.Label({ text: "Search Term" }),
-                            new sap.m.Input({ value: "{editModel>/editData/searchTerm}" }),
-                            new sap.m.Label({ text: "Description" }),
-                            new sap.m.Input({ value: "{editModel>/editData/description}" }),
-                            new sap.m.Label({ text: "Last Change Date" }),
-                            new sap.m.DatePicker({ value: "{editModel>/editData/lastChangeDate}" }),
-                            new sap.m.Label({ text: "Service Type" }),
-                            new sap.m.Input({ value: "{editModel>/editData/serviceText}" })
-                        ]
-                    }),
+                    contentWidth: "700px",
+                    resizable: true,
+                    draggable: true,
+                    content: [],
                     beginButton: new sap.m.Button({
                         text: "Save",
                         type: "Emphasized",
@@ -141,19 +217,172 @@ sap.ui.define([
                 this.getView().addDependent(this._oEditDialog);
             }
 
-            // Clone selected data into dialog model
+            // Clone data into dialog model
             var oDialogModel = new sap.ui.model.json.JSONModel({
                 editData: Object.assign({}, oSelectedData)
             });
             this._oEditDialog.setModel(oDialogModel, "editModel");
 
+            // Clear previous content
+            this._oEditDialog.removeAllContent();
+
+            // 🔹 Form Layout for clean 2-column display
+            var oForm = new sap.ui.layout.form.SimpleForm({
+                editable: true,
+                layout: "ResponsiveGridLayout",
+                labelSpanL: 4,
+                labelSpanM: 4,
+                columnsL: 1,
+                columnsM: 1,
+                maxContainerCols: 2,
+                emptySpanL: 1,
+                emptySpanM: 1,
+                content: []
+            });
+            oForm.addStyleClass("sapUiSmallMargin sapUiNoContentPadding");
+
+            // 🔹 Helper to add Input/Select/Date fields dynamically
+            function addField(label, control) {
+                oForm.addContent(new sap.m.Label({ text: label }));
+                oForm.addContent(control);
+            }
+
+            // 🔹 Add editable fields
+            addField("Service Number Code",
+                new sap.m.Input({ value: "{editModel>/editData/serviceNumberCode}", editable: false })
+            );
+
+            addField("Service Number",
+                new sap.m.Input({ value: "{editModel>/editData/serviceNumberCodeString}", editable: false })
+            );
+
+            addField("Search Term",
+                new sap.m.Input({ value: "{editModel>/editData/searchTerm}" })
+            );
+
+            addField("Description",
+                new sap.m.Input({ value: "{editModel>/editData/description}" })
+            );
+
+            addField("Service Type",
+                new sap.m.Select({
+                    items: {
+                        path: "serviceTypes>/",
+                        template: new sap.ui.core.Item({
+                            key: "{serviceTypes>serviceTypeCode}",
+                            text: "{serviceTypes>description}"
+                        })
+                    },
+                    selectedKey: "{editModel>/editData/serviceTypeCode}"
+                })
+            );
+
+            addField("Material Group",
+                new sap.m.Select({
+                    items: {
+                        path: "materialGroups>/",
+                        template: new sap.ui.core.Item({
+                            key: "{materialGroups>materialGroupCode}",
+                            text: "{materialGroups>description}"
+                        })
+                    },
+                    selectedKey: "{editModel>/editData/materialGroupCode}"
+                })
+            );
+
+            addField("Base Unit of Measurement",
+                new sap.m.Select({
+                    items: {
+                        path: "unitsOfMeasurement>/",
+                        template: new sap.ui.core.Item({
+                            key: "{units>code}",
+                            text: "{units>description}"
+                        })
+                    },
+                    selectedKey: "{editModel>/editData/unitOfMeasurementCode}"
+                })
+            );
+
+            // addField("Base Unit of Measurement",
+            //     new sap.m.Input({ value: "{editModel>/editData/baseUnitOfMeasurement}" })
+            // );
+
+            // addField("Default Unit of Measurement",
+            //     new sap.m.Input({ value: "{editModel>/editData/defaultUnitOfMeasurement}" })
+            // );
+            addField("Default Unit of Measurement",
+                new sap.m.Select({
+                    items: {
+                        path: "unitsOfMeasurement>/",
+                        template: new sap.ui.core.Item({
+                            key: "{units>code}",
+                            text: "{units>description}"
+                        })
+                    },
+                    selectedKey: "{editModel>/editData/defaultUnitOfMeasurement}",
+                    width: "100%"
+                })
+            );
+
+            addField("Converted Number",
+                new sap.m.Input({ value: "{editModel>/editData/convertedNumber}" })
+            );
+
+            addField("Number To Be Converted",
+                new sap.m.Input({ value: "{editModel>/editData/numberToBeConverted}" })
+            );
+
+            // addField("To Be Converted Unit of Measurement",
+            //     new sap.m.Input({ value: "{editModel>/editData/toBeConvertedUnitOfMeasurement}" })
+            // );
+            addField("To Be Converted Unit of Measurement",
+                new sap.m.Select({
+                    items: {
+                        path: "unitsOfMeasurement>/",
+                        template: new sap.ui.core.Item({
+                            key: "{units>code}",
+                            text: "{units>description}"
+                        })
+                    },
+                    selectedKey: "{editModel>/editData/toBeConvertedUnitOfMeasurement}",
+                    width: "100%"
+                })
+            );
+
+            addField("Main Item",
+                new sap.m.CheckBox({
+                    selected: "{editModel>/editData/mainItem}",
+                    // text: "Is Main Item"
+                })
+            );
+
+            addField("Short Text Change Allowed",
+                new sap.m.CheckBox({
+                    selected: "{editModel>/editData/shortTextChangeAllowed}",
+                    // text: "Allowed"
+                })
+            );
+
+            addField("Deletion Indicator",
+                new sap.m.CheckBox({
+                    selected: "{editModel>/editData/deletionIndicator}",
+                    // text: "Marked for Deletion"
+                })
+            );
+            var oScroll = new sap.m.ScrollContainer({
+                height: "500px",
+                vertical: true,
+                content: [oForm]
+            });
+
+            this._oEditDialog.addContent(oScroll);
             this._oEditDialog.open();
         },
+
         onSaveEdit: function () {
             var oDialogModel = this._oEditDialog.getModel("editModel");
             var oData = oDialogModel.getProperty("/editData");
 
-            // Format the date if necessary
             if (oData.lastChangeDate instanceof Date) {
                 oData.lastChangeDate = oData.lastChangeDate.toISOString().split("T")[0];
             } else if (typeof oData.lastChangeDate === "string" && oData.lastChangeDate.includes("/")) {
@@ -166,21 +395,25 @@ sap.ui.define([
                 }
             }
 
-            // Create a clean object with only the properties expected by the OData service
             var oCleanData = {
                 serviceNumberCode: oData.serviceNumberCode,
                 searchTerm: oData.searchTerm,
                 description: oData.description,
                 lastChangeDate: oData.lastChangeDate,
-                serviceText: oData.serviceText
-                // Add other fields expected by the OData service, if any
+                serviceText: oData.serviceText,
+                mainItem: oData.mainItem, // checkbox
+                shortTextChangeAllowed: oData.shortTextChangeAllowed, // checkbox
+                deletionIndicator: oData.deletionIndicator, // checkbox
+                toBeConvertedUnitOfMeasurement: oData.toBeConvertedUnitOfMeasurement, // dropdown
+                defaultUnitOfMeasurement: oData.defaultUnitOfMeasurement // dropdown
+            
             };
 
-            // Perform the PATCH request with clean data
+         
             fetch(`/odata/v4/sales-cloud/ServiceNumbers(${oData.serviceNumberCode})`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(oCleanData) // Use the clean data
+                body: JSON.stringify(oCleanData)
             })
                 .then(res => {
                     if (!res.ok) throw new Error(res.statusText);
@@ -189,17 +422,17 @@ sap.ui.define([
                 .then(updated => {
                     sap.m.MessageToast.show("Service updated successfully");
 
-                    // Get the table's model (using 'view' model)
                     var oTableModel = this.getView().byId("serviceMaster").getModel("view");
                     var aMasters = oTableModel.getProperty("/ServiceNumbers") || [];
 
                     // Find the index of the updated item
                     var iIndex = aMasters.findIndex(x => x.serviceNumberCode === oData.serviceNumberCode);
                     if (iIndex > -1) {
-                        // Update the item in the array with the clean data
                         aMasters[iIndex] = { ...aMasters[iIndex], ...oCleanData };
+                        console.log(aMasters);
+                        
                         oTableModel.setProperty("/ServiceNumbers", aMasters);
-                        oTableModel.refresh(true); // Explicitly refresh the model to update the table
+                        oTableModel.refresh(true);
                     } else {
                         console.error("Updated item not found in ServiceNumbers array");
                     }
@@ -212,9 +445,135 @@ sap.ui.define([
                     sap.m.MessageBox.error("Update failed: " + err.message);
                 });
         },
+
+
+        // onSaveEdit: function () {
+        //     var oDialogModel = this._oEditDialog.getModel("editModel");
+        //     var oData = oDialogModel.getProperty("/editData");
+
+        //     // Format the date if necessary
+        //     if (oData.lastChangeDate instanceof Date) {
+        //         oData.lastChangeDate = oData.lastChangeDate.toISOString().split("T")[0];
+        //     } else if (typeof oData.lastChangeDate === "string" && oData.lastChangeDate.includes("/")) {
+        //         var parts = oData.lastChangeDate.split("/");
+        //         if (parts.length === 3) {
+        //             let mm = parts[0].padStart(2, "0");
+        //             let dd = parts[1].padStart(2, "0");
+        //             let yy = parts[2].length === 2 ? "20" + parts[2] : parts[2];
+        //             oData.lastChangeDate = `${yy}-${mm}-${dd}`;
+        //         }
+        //     }
+
+        //     // Create a clean object with only the properties expected by the OData service
+        //     var oCleanData = {
+        //         serviceNumberCode: oData.serviceNumberCode,
+        //         searchTerm: oData.searchTerm,
+        //         description: oData.description,
+        //         lastChangeDate: oData.lastChangeDate,
+        //         serviceText: oData.serviceText
+        //         // Add other fields expected by the OData service, if any
+        //     };
+
+        //     // Perform the PATCH request with clean data
+        //     fetch(`/odata/v4/sales-cloud/ServiceNumbers(${oData.serviceNumberCode})`, {
+        //         method: "PATCH",
+        //         headers: { "Content-Type": "application/json" },
+        //         body: JSON.stringify(oCleanData) // Use the clean data
+        //     })
+        //         .then(res => {
+        //             if (!res.ok) throw new Error(res.statusText);
+        //             return res.json(); // Assuming the server returns the updated object
+        //         })
+        //         .then(updated => {
+        //             sap.m.MessageToast.show("Service updated successfully");
+
+        //             // Get the table's model (using 'view' model)
+        //             var oTableModel = this.getView().byId("serviceMaster").getModel("view");
+        //             var aMasters = oTableModel.getProperty("/ServiceNumbers") || [];
+
+        //             // Find the index of the updated item
+        //             var iIndex = aMasters.findIndex(x => x.serviceNumberCode === oData.serviceNumberCode);
+        //             if (iIndex > -1) {
+        //                 // Update the item in the array with the clean data
+        //                 aMasters[iIndex] = { ...aMasters[iIndex], ...oCleanData };
+        //                 oTableModel.setProperty("/ServiceNumbers", aMasters);
+        //                 oTableModel.refresh(true); // Explicitly refresh the model to update the table
+        //             } else {
+        //                 console.error("Updated item not found in ServiceNumbers array");
+        //             }
+
+        //             // Close the dialog
+        //             this._oEditDialog.close();
+        //         })
+        //         .catch(err => {
+        //             console.error("Update failed", err);
+        //             sap.m.MessageBox.error("Update failed: " + err.message);
+        //         });
+        // },
+
+
         onNavigateToAddServiceMaster() {
             this.getOwnerComponent().getRouter().navTo("addServiceMaster");
         },
+        // onShowDetails: function () {
+        //     var oTable = this.byId("serviceMaster");
+        //     var oSelectedItem = oTable.getSelectedItem();
+
+        //     if (!oSelectedItem) {
+        //         sap.m.MessageBox.warning("Please, select an item");
+        //         return;
+        //     }
+
+        //     var oContext = oSelectedItem.getBindingContext("view");
+        //     var oSelectedData = oContext.getObject();
+
+        //     // Build dialog content dynamically
+        //     if (!this._oValueHelpDialog) {
+        //         this._oValueHelpDialog = new Dialog({
+        //             title: "Service Master Details",
+        //             titleAlignment: "Center",
+        //             contentWidth: "600px",
+        //             content: new VBox({}),
+        //             endButton: new Button({
+        //                 text: "Close",
+        //                 press: () => this._oValueHelpDialog.close()
+        //             })
+        //         });
+
+        //         this.getView().addDependent(this._oValueHelpDialog);
+        //     }
+
+        //     // Update dialog content each time
+        //     this._oValueHelpDialog.setTitle("Service Master: " + oSelectedData.description);
+
+        //     this._oValueHelpDialog.removeAllContent();
+        //     this._oValueHelpDialog.addContent(
+        //         new sap.m.VBox({
+        //             items: [
+        //                 new sap.m.Label({ text: "Service Master Code", design: "Bold" }),
+        //                 new sap.m.Input({ value: oSelectedData.serviceNumberCode, editable: false }),
+
+        //                 new sap.m.Label({ text: "Search Term", design: "Bold" }),
+        //                 new sap.m.Input({ value: oSelectedData.searchTerm, editable: false }),
+
+        //                 new sap.m.Label({ text: "Description", design: "Bold" }),
+        //                 new sap.m.Input({ value: oSelectedData.description, editable: false }),
+
+        //                 new sap.m.Label({ text: "Last Changed Date", design: "Bold" }),
+        //                 new sap.m.Input({ value: oSelectedData.lastChangeDate, editable: false }),
+
+        //                 new sap.m.Label({ text: "Service Type", design: "Bold" }),
+        //                 new sap.m.Input({ value: oSelectedData.serviceText, editable: false }),
+
+
+        //             ]
+        //         })
+        //     );
+
+        //     this._oValueHelpDialog.open();
+        // },
+
+
         onShowDetails: function () {
             var oTable = this.byId("serviceMaster");
             var oSelectedItem = oTable.getSelectedItem();
@@ -227,14 +586,16 @@ sap.ui.define([
             var oContext = oSelectedItem.getBindingContext("view");
             var oSelectedData = oContext.getObject();
 
-            // Build dialog content dynamically
+            // Create dialog if not already created
             if (!this._oValueHelpDialog) {
-                this._oValueHelpDialog = new Dialog({
+                this._oValueHelpDialog = new sap.m.Dialog({
                     title: "Service Master Details",
                     titleAlignment: "Center",
-                    contentWidth: "600px",
-                    content: new VBox({}),
-                    endButton: new Button({
+                    contentWidth: "800px",
+                    resizable: true,
+                    draggable: true,
+                    content: [],
+                    endButton: new sap.m.Button({
                         text: "Close",
                         press: () => this._oValueHelpDialog.close()
                     })
@@ -243,35 +604,79 @@ sap.ui.define([
                 this.getView().addDependent(this._oValueHelpDialog);
             }
 
-            // Update dialog content each time
-            this._oValueHelpDialog.setTitle("Service Master: " + oSelectedData.description);
+            // Update title dynamically
+            this._oValueHelpDialog.setTitle("Service Master: " + (oSelectedData.description || ""));
 
+            // Clear previous content
             this._oValueHelpDialog.removeAllContent();
-            this._oValueHelpDialog.addContent(
-                new sap.m.VBox({
-                    items: [
-                        new sap.m.Label({ text: "Service Master Code", design: "Bold" }),
-                        new sap.m.Input({ value: oSelectedData.serviceNumberCode, editable: false }),
 
-                        new sap.m.Label({ text: "Search Term", design: "Bold" }),
-                        new sap.m.Input({ value: oSelectedData.searchTerm, editable: false }),
+            // Prepare content items dynamically from JSON keys
+            // Prepare fields
+            var aFields = [
+                { label: "Service Master Code", value: oSelectedData.serviceNumberCode },
+                { label: "Service Number", value: oSelectedData.serviceNumberCodeString },
+                { label: "Search Term", value: oSelectedData.searchTerm },
+                { label: "Description", value: oSelectedData.description },
+                { label: "Service Type Code", value: oSelectedData.serviceTypeCode },
+                { label: "Material Group Code", value: oSelectedData.materialGroupCode },
+                { label: "Base Unit of Measurement", value: oSelectedData.baseUnitOfMeasurement },
+                { label: "Default Unit of Measurement", value: oSelectedData.defaultUnitOfMeasurement },
+                { label: "Converted Number", value: oSelectedData.convertedNumber },
+                { label: "Number To Be Converted", value: oSelectedData.numberToBeConverted },
+                { label: "To Be Converted Unit of Measurement", value: oSelectedData.toBeConvertedUnitOfMeasurement },
+                { label: "Unit of Measurement Code", value: oSelectedData.unitOfMeasurementCode },
+                { label: "Main Item", value: oSelectedData.mainItem ? "Yes" : "No" },
+                { label: "Short Text Change Allowed", value: oSelectedData.shortTextChangeAllowed ? "Yes" : "No" },
+                { label: "Deletion Indicator", value: oSelectedData.deletionIndicator ? "Yes" : "No" },
+                // { label: "Created At", value: oSelectedData.createdAt },
+                // { label: "Created By", value: oSelectedData.createdBy },
+                // { label: "Modified At", value: oSelectedData.modifiedAt },
+                // { label: "Modified By", value: oSelectedData.modifiedBy },
+                { label: "Last Change Date", value: oSelectedData.lastChangeDate }
+            ];
 
-                        new sap.m.Label({ text: "Description", design: "Bold" }),
-                        new sap.m.Input({ value: oSelectedData.description, editable: false }),
+            // Create layout for details
+            var oFormLayout = new sap.ui.layout.form.SimpleForm({
+                editable: false,
+                layout: "ResponsiveGridLayout",
+                labelSpanM: 4,
+                labelSpanL: 4,
+                emptySpanL: 1,
+                emptySpanM: 1,
+                columnsL: 1,
+                columnsM: 1,
+                maxContainerCols: 2,
+                content: []
+            });
 
-                        new sap.m.Label({ text: "Last Changed Date", design: "Bold" }),
-                        new sap.m.Input({ value: oSelectedData.lastChangeDate, editable: false }),
+            // Add left-right padding
+            oFormLayout.addStyleClass("sapUiSmallMargin sapUiNoContentPadding");
 
-                        new sap.m.Label({ text: "Service Type", design: "Bold" }),
-                        new sap.m.Input({ value: oSelectedData.serviceText, editable: false }),
+            // Add each field as label-input pair
+            aFields.forEach(function (field) {
+                oFormLayout.addContent(new sap.m.Label({ text: field.label }));
+                oFormLayout.addContent(
+                    new sap.m.Input({
+                        value: field.value != null ? field.value.toString() : "",
+                        editable: false,
+                        width: "100%"
+                    })
+                );
+            });
 
+            // Add scroll container for long lists
+            var oScrollContainer = new sap.m.ScrollContainer({
+                height: "400px",
+                vertical: true,
+                content: [oFormLayout]
+            });
 
-                    ]
-                })
-            );
-
+            this._oValueHelpDialog.addContent(oScrollContainer);
             this._oValueHelpDialog.open();
+
         },
+
+
         _generateUUID: function () {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
                 var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);

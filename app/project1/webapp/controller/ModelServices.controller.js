@@ -26,7 +26,10 @@ sap.ui.define([
                 ModelServices: [],
                 Formulas: [],
                 Currency: [],
+                LineTypes:[],
                 UOM: [],
+                personnelNumbers: [],
+                ServiceTypes: [],
                 ServiceNumbers: [],
                 FormulaParameters: {},
                 HasSelectedFormula: false,
@@ -35,7 +38,7 @@ sap.ui.define([
                 IsFormulaBasedQuantity: false,
                 ServiceNumbers: [],
                 SelectedServiceNumber: "",
-                SelectedServiceNumberDescription: "",               
+                SelectedServiceNumberDescription: "",
                 SubDescriptionEditable: true,
                 SelectedFormula: null,
                 totalWithProfit: 0,
@@ -74,6 +77,69 @@ sap.ui.define([
                 .catch(err => {
                     console.error("Error fetching ServiceNumbers:", err);
                 });
+            fetch("/odata/v4/sales-cloud/PersonnelNumbers")
+                .then(response => {
+                    if (!response.ok) throw new Error(response.statusText);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Fetched personnelNumbers:", data.value);
+
+                    if (data && data.value) {
+                        const personnelNumbers = data.value.map(item => ({
+                            serviceNumberCode: item.serviceNumberCode,
+                            description: item.description
+                        }));
+                        this.getView().getModel().setProperty("/personnelNumbers", personnelNumbers);
+
+                        console.log("personnelNumbers:", personnelNumbers);
+                    }
+                })
+                .catch(err => {
+                    console.error("Error fetching ServiceNumbers:", err);
+                });
+            fetch("/odata/v4/sales-cloud/ServiceTypes")
+                .then(response => {
+                    if (!response.ok) throw new Error(response.statusText);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Fetched ServiceTypes:", data.value);
+
+                    if (data && data.value) {
+                        const ServiceTypes = data.value.map(item => ({
+                            serviceNumberCode: item.serviceNumberCode,
+                            description: item.description
+                        }));
+                        this.getView().getModel().setProperty("/ServiceTypes", ServiceTypes);
+
+                        console.log("ServiceTypes:", ServiceTypes);
+                    }
+                })
+                .catch(err => {
+                    console.error("Error fetching ServiceNumbers:", err);
+                });
+                  fetch("/odata/v4/sales-cloud/LineTypes")
+                .then(response => {
+                    if (!response.ok) throw new Error(response.statusText);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Fetched LineTypes:", data.value);
+
+                    if (data && data.value) {
+                        const LineTypes = data.value.map(item => ({
+                            serviceNumberCode: item.serviceNumberCode,
+                            description: item.description
+                        }));
+                        this.getView().getModel().setProperty("/LineTypes", LineTypes);
+
+                        console.log("LineTypes:", LineTypes);
+                    }
+                })
+                .catch(err => {
+                    console.error("Error fetching ServiceNumbers:", err);
+                });
             // Fetch Formulas
             fetch("/odata/v4/sales-cloud/Formulas")
                 .then(r => r.json())
@@ -104,20 +170,45 @@ sap.ui.define([
                     oModel.refresh(true);
                 });
             this.getView().setModel(oModel);
+            this.getOwnerComponent().getRouter()
+                .getRoute("modelServices")
+                .attachPatternMatched(this._onObjectMatched, this);
 
-            // var style = document.createElement('style');
-            // style.type = 'text/css';
-            // style.innerHTML = `
-            //     .myCustomStyle .customTopMargin {
-            //         margin-top: 1rem;
-            //     }
-            // `;
-            // document.getElementsByTagName('head')[0].appendChild(style);
+
         },
+        _onObjectMatched: function (oEvent) {
+            const sModelSpecCode = oEvent.getParameter("arguments").modelSpecCode;
+            console.log("Navigated with modelSpecCode:", sModelSpecCode);
+
+            // Load data for that specific ModelSpecification
+            this._loadModelSpecificationDetails(sModelSpecCode);
+
+            // Load static data (Formulas, UOM, Currency, ServiceNumbers)
+        },
+        _loadModelSpecificationDetails: function (sModelSpecCode) {
+            const oModel = this.getView().getModel("view");
+            const sUrl = `/odata/v4/sales-cloud/ModelSpecifications(${sModelSpecCode})/modelSpecificationsDetails`;
+            console.log(sUrl);
+
+            fetch(sUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const aData = Array.isArray(data) ? data : [data];
+                    oModel.setProperty("/ModelServices", aData);
+                    console.log("Fetched ModelServices for", sModelSpecCode, aData);
+                    //    console.log("Fetched ModelServices for", sModelSpecCode, data);
+                })
+                .catch(err => {
+                    console.error("Error fetching ModelSpecificationDetails:", err);
+                    sap.m.MessageToast.show("Failed to load model details.");
+                });
+        },
+
+
         onServiceNumberChange: function (oEvent) {
             var oSelect = oEvent.getSource();
             var oSelectedItem = oSelect.getSelectedItem();
-            var oDescriptionInput = this.byId("mainDescriptionInput");
+            var oDescriptionInput = this.byId("mainShortTextInput");
             var oDescSubItems = this.byId("dialogSubDescription")
             if (oSelectedItem) {
                 var sKey = oSelectedItem.getKey();   // serviceNumberCode
@@ -139,6 +230,59 @@ sap.ui.define([
                 oDescriptionInput.setEditable(true);
             }
         },
+        onInputChange: function (oEvent) {
+            var oView = this.getView();
+            var oModel = oView.getModel();
+            var oEditRow = oModel.getProperty("/editRow") || {};
+
+            var oSource = oEvent.getSource();
+            var sId = oSource.getId();
+            var bIsEdit = sId.includes("editMain");
+
+            var sViewId = this.getView().getId();
+
+            // Resolve input IDs explicitly
+            var oQtyInput = bIsEdit
+                ? this.byId("editMainQuantityInput")
+                : sap.ui.getCore().byId(sViewId + "--mainQuantityInput");
+            var oAmtInput = bIsEdit
+                ? this.byId("editMainAmountPerUnitInput")
+                : sap.ui.getCore().byId(sViewId + "--mainAmountPerUnitInput");
+            var oProfitInput = bIsEdit
+                ? this.byId("editMainProfitMarginInput")
+                : sap.ui.getCore().byId(sViewId + "--mainProfitMarginInput");
+
+            var iQuantity = parseFloat(oQtyInput?.getValue()) || 0;
+            var iAmount = parseFloat(oAmtInput?.getValue()) || 0;
+            var iProfitMargin = parseFloat(oProfitInput?.getValue()) || 0;
+
+            console.log("Quantity Calculated:", iQuantity);
+            console.log("amount :", iAmount);
+            console.log("Profit Calculated:", iProfitMargin);
+
+            var iTotal = iQuantity * iAmount;
+            var amountPerUnitWithProfit = iProfitMargin
+                ? (iAmount * (iProfitMargin / 100) + iAmount)
+                //iAmount + (iAmount * iProfitMargin / 100)
+                : 0;
+            var totalWithProfit = iProfitMargin
+                ? (iTotal * (iProfitMargin / 100) + iTotal)
+                //iTotal + (iTotal * iProfitMargin / 100)
+                : 0;
+
+            console.log("Total Calculated:", iTotal);
+
+            if (bIsEdit && oEditRow) {
+                oEditRow.total = iTotal.toFixed(3);
+                oEditRow.totalWithProfit = totalWithProfit.toFixed(3);
+                oEditRow.amountPerUnitWithProfit = amountPerUnitWithProfit.toFixed(3);
+                oModel.setProperty("/editRow", oEditRow);
+            } else {
+                oModel.setProperty("/Total", iTotal.toFixed(3));
+                oModel.setProperty("/totalWithProfit", totalWithProfit.toFixed(3));
+                oModel.setProperty("/amountPerUnitWithProfit", amountPerUnitWithProfit.toFixed(3));
+            }
+        },
         onFormulaSelected: function (oEvent) {
             var oSelect = oEvent.getSource();
             var sKey = oSelect.getSelectedKey();
@@ -157,7 +301,36 @@ sap.ui.define([
                 oQuantityInput.setValue(""); // optional: clear old value
             }
         },
+        _calculateFormulaResult: function (oFormula, oParams) {
+            if (!oFormula || !oParams) return 0;
 
+            try {
+                // Use the formulaLogic property from the backend
+                let expression = oFormula.formulaLogic; // e.g. "22/7*r^2"
+                console.log("expression", expression);
+
+                // Replace parameter names with actual values entered by the user
+                oFormula.parameterIds.forEach(paramId => {
+                    const value = parseFloat(oParams[paramId]) || 0;
+                    expression = expression.replaceAll(paramId, value);
+                });
+
+                // Replace ^ with ** to make it valid JavaScript
+                expression = expression.replace(/\^/g, "**");
+
+                // Safely evaluate
+                const result = Function('"use strict";return (' + expression + ')')();
+
+                // Round to 2 decimals for display
+                console.log(parseFloat(result.toFixed(3)));
+
+                return parseFloat(result.toFixed(3));
+            } catch (err) {
+                console.error("Error evaluating formula:", err);
+                sap.m.MessageToast.show("Invalid formula or parameters.");
+                return 0;
+            }
+        },
         onOpenFormulaDialog: function (oEvent) {
             var oButton = oEvent.getSource();
             var sButtonId = oButton.getId();
@@ -220,8 +393,22 @@ sap.ui.define([
             oModel.setProperty("/IsFormulaBasedQuantity", true);
         },
         onOpenMainDialog: function () {
+            const oModel = this.getView().getModel();
+            oModel.setProperty("/newModelService", {}); // Reset before opening
             this.byId("addModelServiceDialog").open();
         },
+
+        onAddMainItem: function () {
+            const oModel = this.getView().getModel();
+            const aModelServices = oModel.getProperty("/ModelServices") || [];
+            const oNewItem = oModel.getProperty("/newModelService");
+
+            aModelServices.push(oNewItem);
+            oModel.setProperty("/ModelServices", aModelServices);
+
+            this.byId("addModelServiceDialog").close();
+        },
+
         onDetails: function (oEvent) {
             var oContext = oEvent.getSource().getParent().getBindingContext();
             if (oContext) {
@@ -241,88 +428,88 @@ sap.ui.define([
             }
         },
 
-        onCloseDetailsDialog: function () {
-            var oDialog = this.getView().byId("detailsDialog");
-            if (oDialog) {
-                oDialog.close();
-            }
+        // onCloseDetailsDialog: function () {
+        //     var oDialog = this.getView().byId("detailsDialog");
+        //     if (oDialog) {
+        //         oDialog.close();
+        //     }
 
-        },
-        onEdit: function (oEvent) {
-            var oContext = oEvent.getSource().getParent().getBindingContext();
-            if (oContext) {
-                var modelData = oContext.getProperty();
-                //MessageToast.show("Details: " + modelData.line);
+        // },
+        // onEdit: function (oEvent) {
+        //     var oContext = oEvent.getSource().getParent().getBindingContext();
+        //     if (oContext) {
+        //         var modelData = oContext.getProperty();
+        //         //MessageToast.show("Details: " + modelData.line);
 
-                var oModel = this.getView().getModel();
-                oModel.setProperty("/selectedLine", modelData);
+        //         var oModel = this.getView().getModel();
+        //         oModel.setProperty("/selectedLine", modelData);
 
-                var oDialog = this.getView().byId("editDialog");
-                if (oDialog) {
-                    oDialog.open();
-                } else {
-                    console.error("edit dialog not found");
-                }
+        //         var oDialog = this.getView().byId("editDialog");
+        //         if (oDialog) {
+        //             oDialog.open();
+        //         } else {
+        //             console.error("edit dialog not found");
+        //         }
 
-            }
-        },
-        onSaveEditDialog: function () {
-            var oModel = this.getView().getModel();
-            var oDialog = this.getView().byId("editDialog");
-            if (oDialog) {
-                var oForm = oDialog.getContent()[0].getItems()[0];
-                var aContent = oForm.getContent();
-                var selectedLine = oModel.getProperty("/selectedLine");
+        //     }
+        // },
+        // onSaveEditDialog: function () {
+        //     var oModel = this.getView().getModel();
+        //     var oDialog = this.getView().byId("editDialog");
+        //     if (oDialog) {
+        //         var oForm = oDialog.getContent()[0].getItems()[0];
+        //         var aContent = oForm.getContent();
+        //         var selectedLine = oModel.getProperty("/selectedLine");
 
-                selectedLine.line = aContent[1].getValue();
-                selectedLine.serviceNo = aContent[3].getValue();
-                selectedLine.shortText = aContent[5].getValue();
-                selectedLine.quantity = aContent[7].getValue();
-                selectedLine.formula = aContent[9].getValue();
-                selectedLine.formulaParameters = aContent[11].getValue();
-                selectedLine.grossPrice = aContent[13].getValue();
-                selectedLine.netValue = aContent[15].getValue();
-                selectedLine.unitOfMeasure = aContent[17].getValue();
-                selectedLine.crcy = aContent[19].getValue();
-                selectedLine.overFPercentage = aContent[21].getValue();
-                selectedLine.priceChangeAllowed = aContent[23].getValue();
-                selectedLine.unlimitedOverF = aContent[25].getValue();
-                selectedLine.pricePerUnitOfMeasurement = aContent[27].getValue();
-                selectedLine.matGroup = aContent[29].getValue();
-                selectedLine.serviceType = aContent[31].getValue();
-                selectedLine.externalServiceNo = aContent[33].getValue();
-                selectedLine.serviceText = aContent[35].getValue();
-                selectedLine.lineText = aContent[37].getValue();
-                selectedLine.personnelNumber = aContent[39].getValue();
-                selectedLine.lineType = aContent[41].getValue();
-                selectedLine.lineNumber = aContent[43].getValue();
-                selectedLine.alt = aContent[45].getValue();
-                selectedLine.biddersLine = aContent[47].getValue();
-                selectedLine.suppLine = aContent[49].getValue();
-                selectedLine.cstgLs = aContent[51].getValue();
+        //         selectedLine.line = aContent[1].getValue();
+        //         selectedLine.serviceNo = aContent[3].getValue();
+        //         selectedLine.shortText = aContent[5].getValue();
+        //         selectedLine.quantity = aContent[7].getValue();
+        //         selectedLine.formula = aContent[9].getValue();
+        //         selectedLine.formulaParameters = aContent[11].getValue();
+        //         selectedLine.grossPrice = aContent[13].getValue();
+        //         selectedLine.netValue = aContent[15].getValue();
+        //         selectedLine.unitOfMeasure = aContent[17].getValue();
+        //         selectedLine.crcy = aContent[19].getValue();
+        //         selectedLine.overFPercentage = aContent[21].getValue();
+        //         selectedLine.priceChangeAllowed = aContent[23].getValue();
+        //         selectedLine.unlimitedOverF = aContent[25].getValue();
+        //         selectedLine.pricePerUnitOfMeasurement = aContent[27].getValue();
+        //         selectedLine.matGroup = aContent[29].getValue();
+        //         selectedLine.serviceType = aContent[31].getValue();
+        //         selectedLine.externalServiceNo = aContent[33].getValue();
+        //         selectedLine.serviceText = aContent[35].getValue();
+        //         selectedLine.lineText = aContent[37].getValue();
+        //         selectedLine.personnelNumber = aContent[39].getValue();
+        //         selectedLine.lineType = aContent[41].getValue();
+        //         selectedLine.lineNumber = aContent[43].getValue();
+        //         selectedLine.alt = aContent[45].getValue();
+        //         selectedLine.biddersLine = aContent[47].getValue();
+        //         selectedLine.suppLine = aContent[49].getValue();
+        //         selectedLine.cstgLs = aContent[51].getValue();
 
-                // Update the original data in the Models array
-                var models = oModel.getProperty("/Models");
-                var index = models.findIndex(function (item) {
-                    return item.line === oModel.getProperty("/selectedLine/line");
-                });
-                if (index !== -1) {
-                    models[index] = Object.assign({}, selectedLine);
-                    oModel.setProperty("/Models", models);
-                }
+        //         // Update the original data in the Models array
+        //         var models = oModel.getProperty("/Models");
+        //         var index = models.findIndex(function (item) {
+        //             return item.line === oModel.getProperty("/selectedLine/line");
+        //         });
+        //         if (index !== -1) {
+        //             models[index] = Object.assign({}, selectedLine);
+        //             oModel.setProperty("/Models", models);
+        //         }
 
-                oModel.refresh(true);
-                oDialog.close();
-                MessageToast.show("Changes saved successfully");
-            }
-        },
-        onCloseEditDialog: function () {
-            var oDialog = this.getView().byId("editDialog");
-            if (oDialog) {
-                oDialog.close();
-            }
+        //         oModel.refresh(true);
+        //         oDialog.close();
+        //         MessageToast.show("Changes saved successfully");
+        //     }
+        // },
+        // onCloseEditDialog: function () {
+        //     var oDialog = this.getView().byId("editDialog");
+        //     if (oDialog) {
+        //         oDialog.close();
+        //     }
 
-        },
+        // },
 
         onDelete: function (oEvent) {
 
@@ -437,7 +624,7 @@ sap.ui.define([
         },
 
         onCloseDialog: function () {
-            var oDialog = this.getView().byId("addModelService");
+            var oDialog = this.getView().byId("addModelServiceDialog");
             if (oDialog) {
                 oDialog.close();
                 this.getView().byId("dialogLine").setValue("");
