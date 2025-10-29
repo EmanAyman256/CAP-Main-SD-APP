@@ -281,7 +281,7 @@ sap.ui.define([
                 oQuantityInput.setValue(""); // optional: clear old value
             }
         },
-       
+
         onOpenFormulaDialog: function (oEvent) {
             var oButton = oEvent.getSource();
             var sButtonId = oButton.getId();
@@ -343,7 +343,7 @@ sap.ui.define([
             // Mark as formula-based quantity
             oModel.setProperty("/IsFormulaBasedQuantity", true);
         },
-         onApplyProfitMargin: function () {
+        onApplyProfitMargin: function () {
             var oView = this.getView();
             var oModel = oView.getModel();
             var oTable = oView.byId("treeTable"); // your main table ID
@@ -1295,35 +1295,37 @@ sap.ui.define([
 
         },
         onImport: function () {
-            // Open import dialog
             this.byId("importDialog").open();
-            // Reset status
             this.byId("importStatus").setText("");
-            this.byId("fileUploader").removeAllUploadedFiles();  // Clear previous
+            this.byId("fileUploader").clear();
             this.getView().getModel().setProperty("/importReady", false);
         },
 
+
         onFileChange: function (oEvent) {
             var oUploader = oEvent.getSource();
-            var oFile = oUploader.oList[0].files[0];  // Get selected file
+            var $fileInput = oUploader.$().find('input[type="file"]');
+            if ($fileInput.length === 0) {
+                sap.m.MessageToast.show("File input not found. Please try selecting again.");
+                return;
+            }
+            var oFile = $fileInput[0].files[0];  
             if (!oFile || !oFile.name.endsWith('.xlsx')) {
                 sap.m.MessageToast.show("Please select a valid .xlsx file.");
                 return;
             }
-            // Read file as binary
             var oReader = new FileReader();
             oReader.onload = function (e) {
                 var sData = new Uint8Array(e.target.result);
                 var oWorkbook = XLSX.read(sData, { type: 'array' });
-                var oSheet = oWorkbook.Sheets[oWorkbook.SheetNames[0]];  // First sheet
-                var aData = XLSX.utils.sheet_to_json(oSheet, { header: 1 });  // Array of arrays
+                var oSheet = oWorkbook.Sheets[oWorkbook.SheetNames[0]]; 
+                var aData = XLSX.utils.sheet_to_json(oSheet, { header: 1 });  
 
-                if (aData.length < 2) {  // No data rows
+                if (aData.length < 2) {  
                     sap.m.MessageToast.show("Excel file is empty or has no data rows.");
                     return;
                 }
 
-                // Validate headers (assume exact match; customize as needed)
                 var aHeaders = aData[0];  // Row 0 = headers
                 var aRequiredHeaders = ["Service No", "Description", "Quantity", "UOM", "Amount Per Unit", "Currency"];
                 var bValidHeaders = aRequiredHeaders.every(function (sHeader) {
@@ -1334,17 +1336,14 @@ sap.ui.define([
                     return;
                 }
 
-                // Store parsed data in model for import
-                var aRows = aData.slice(1).map(function (aRow, iIndex) {  // Skip header
+                var aRows = aData.slice(1).map(function (aRow, iIndex) {  
                     var oRow = {};
                     aHeaders.forEach(function (sHeader, iCol) {
-                        oRow[sHeader] = aRow[iCol] || "";  // Map by position
+                        oRow[sHeader] = aRow[iCol] || "";  
                     });
-                    // Coerce types (customize)
                     oRow.Quantity = parseFloat(oRow.Quantity) || 0;
                     oRow["Amount Per Unit"] = parseFloat(oRow["Amount Per Unit"]) || 0;
-                    oRow.Total = (oRow.Quantity * oRow["Amount Per Unit"]).toFixed(3);  // Auto-calc
-                    // Map to model fields (e.g., snake_case if needed)
+                    oRow.Total = (oRow.Quantity * oRow["Amount Per Unit"]).toFixed(3);  
                     return {
                         serviceNumberCode: oRow["Service No"] || "",
                         description: oRow.Description || "",
@@ -1360,7 +1359,7 @@ sap.ui.define([
                         subItemList: []  // New main item, no subs
                     };
                 }).filter(function (oRow) {  // Validate rows
-                    return oRow.description.trim() && oRow.quantity > 0;  // Required: desc & qty >0
+                    return oRow.description.trim() && oRow.quantity > 0;  
                 });
 
                 if (aRows.length === 0) {
@@ -1368,14 +1367,12 @@ sap.ui.define([
                     return;
                 }
 
-                // Store in model
                 this.getView().getModel().setProperty("/importRows", aRows);
                 this.getView().getModel().setProperty("/importReady", true);
                 this.byId("importStatus").setText(aRows.length + " valid rows ready to import.");
             }.bind(this);
             oReader.readAsArrayBuffer(oFile);
         },
-
         onImportData: function () {
             var oModel = this.getView().getModel();
             var aNewRows = oModel.getProperty("/importRows") || [];
@@ -1399,7 +1396,6 @@ sap.ui.define([
             sap.m.MessageToast.show(aNewRows.length + " items imported successfully!");
         },
         onExport: function () {
-            // Open choice dialog
             this.byId("exportChoiceDialog").open();
         },
 
@@ -1480,53 +1476,53 @@ sap.ui.define([
             // Close choice dialog
             this.onCloseExportDialog();
         },
-_flattenDataForExport: function () {
-    var oModel = this.getView().getModel();
-    var aMainItems = oModel.getProperty("/MainItems") || [];
-    var aFlatData = [];
+        _flattenDataForExport: function () {
+            var oModel = this.getView().getModel();
+            var aMainItems = oModel.getProperty("/MainItems") || [];
+            var aFlatData = [];
 
-    aMainItems.forEach(function (oMain, iMainIndex) {
-        // Main row
-        aFlatData.push({
-            "Type": "Main",
-            "Service No": oMain.serviceNumberCode || "",
-            "Description": oMain.description || "",
-            "Quantity": oMain.quantity || "0.000",
-            "UOM": oMain.unitOfMeasurementCode || "",
-            "Formula": oMain.formulaCode || "",
-            "Parameters": oMain.parameters ? Object.keys(oMain.parameters).join(", ") : "None",
-            "Currency": oMain.currencyCode || "",
-            "Amount Per Unit": oMain.amountPerUnit || "0.000",
-            "Total": oMain.total || "0.000",
-            "Profit Margin": oMain.profitMargin || "0.000",
-            "Amount Per Unit with Profit": oMain.amountPerUnitWithProfit || "0.000",
-            "Total with Profit": oMain.totalWithProfit || "0.000"
-        });
-
-        // Sub rows (indented)
-        if (oMain.subItemList && oMain.subItemList.length > 0) {
-            oMain.subItemList.forEach(function (oSub) {
+            aMainItems.forEach(function (oMain, iMainIndex) {
+                // Main row
                 aFlatData.push({
-                    "Type": "  Sub",  // Indent for hierarchy
-                    "Service No": oSub.serviceNumberCode || "",
-                    "Description": oSub.description || "",
-                    "Quantity": oSub.quantity || "0.000",
-                    "UOM": oSub.unitOfMeasurementCode || "",
-                    "Formula": oSub.formulaCode || "",
-                    "Parameters": oSub.parameters ? Object.keys(oSub.parameters).join(", ") : "None",
-                    "Currency": oSub.currencyCode || "",
-                    "Amount Per Unit": oSub.amountPerUnit || "0.000",
-                    "Total": oSub.total || "0.000",
-                    "Profit Margin": "",  // Subs may not have profit
-                    "Amount Per Unit with Profit": "",
-                    "Total with Profit": ""
+                    "Type": "Main",
+                    "Service No": oMain.serviceNumberCode || "",
+                    "Description": oMain.description || "",
+                    "Quantity": oMain.quantity || "0.000",
+                    "UOM": oMain.unitOfMeasurementCode || "",
+                    "Formula": oMain.formulaCode || "",
+                    "Parameters": oMain.parameters ? Object.keys(oMain.parameters).join(", ") : "None",
+                    "Currency": oMain.currencyCode || "",
+                    "Amount Per Unit": oMain.amountPerUnit || "0.000",
+                    "Total": oMain.total || "0.000",
+                    "Profit Margin": oMain.profitMargin || "0.000",
+                    "Amount Per Unit with Profit": oMain.amountPerUnitWithProfit || "0.000",
+                    "Total with Profit": oMain.totalWithProfit || "0.000"
                 });
-            });
-        }
-    });
 
-    return aFlatData;
-},
+                // Sub rows (indented)
+                if (oMain.subItemList && oMain.subItemList.length > 0) {
+                    oMain.subItemList.forEach(function (oSub) {
+                        aFlatData.push({
+                            "Type": "  Sub",  // Indent for hierarchy
+                            "Service No": oSub.serviceNumberCode || "",
+                            "Description": oSub.description || "",
+                            "Quantity": oSub.quantity || "0.000",
+                            "UOM": oSub.unitOfMeasurementCode || "",
+                            "Formula": oSub.formulaCode || "",
+                            "Parameters": oSub.parameters ? Object.keys(oSub.parameters).join(", ") : "None",
+                            "Currency": oSub.currencyCode || "",
+                            "Amount Per Unit": oSub.amountPerUnit || "0.000",
+                            "Total": oSub.total || "0.000",
+                            "Profit Margin": "",  // Subs may not have profit
+                            "Amount Per Unit with Profit": "",
+                            "Total with Profit": ""
+                        });
+                    });
+                }
+            });
+
+            return aFlatData;
+        },
         // Optional: For "Print" button (browser print of page/table)
         onPrintUI: function () {
             window.print();  // Native browser print
