@@ -1500,34 +1500,30 @@ sap.ui.define([
                 });
 
                 // Sub rows (indented)
-                if (oMain.subItemList && oMain.subItemList.length > 0) {
-                    oMain.subItemList.forEach(function (oSub) {
-                        aFlatData.push({
-                            "Type": "  Sub",  // Indent for hierarchy
-                            "Service No": oSub.serviceNumberCode || "",
-                            "Description": oSub.description || "",
-                            "Quantity": oSub.quantity || "0.000",
-                            "UOM": oSub.unitOfMeasurementCode || "",
-                            "Formula": oSub.formulaCode || "",
-                            "Parameters": oSub.parameters ? Object.keys(oSub.parameters).join(", ") : "None",
-                            "Currency": oSub.currencyCode || "",
-                            "Amount Per Unit": oSub.amountPerUnit || "0.000",
-                            "Total": oSub.total || "0.000",
-                            "Profit Margin": "",  // Subs may not have profit
-                            "Amount Per Unit with Profit": "",
-                            "Total with Profit": ""
-                        });
-                    });
-                }
+                // if (oMain.subItemList && oMain.subItemList.length > 0) {
+                //     oMain.subItemList.forEach(function (oSub) {
+                //         aFlatData.push({
+                //             "Type": "  Sub",  // Indent for hierarchy
+                //             "Service No": oSub.serviceNumberCode || "",
+                //             "Description": oSub.description || "",
+                //             "Quantity": oSub.quantity || "0.000",
+                //             "UOM": oSub.unitOfMeasurementCode || "",
+                //             "Formula": oSub.formulaCode || "",
+                //             "Parameters": oSub.parameters ? Object.keys(oSub.parameters).join(", ") : "None",
+                //             "Currency": oSub.currencyCode || "",
+                //             "Amount Per Unit": oSub.amountPerUnit || "0.000",
+                //             "Total": oSub.total || "0.000",
+                //             "Profit Margin": "",  // Subs may not have profit
+                //             "Amount Per Unit with Profit": "",
+                //             "Total with Profit": ""
+                //         });
+                //     });
+                // }
             });
 
             return aFlatData;
         },
-        // Optional: For "Print" button (browser print of page/table)
-        onPrintUI: function () {
-            window.print();  // Native browser print
-            sap.m.MessageToast.show("Printing current view...");
-        },
+      
         onCloseImportDialog: function () {
             this.byId("importDialog").close();
             this.getView().getModel().setProperty("/importReady", false);
