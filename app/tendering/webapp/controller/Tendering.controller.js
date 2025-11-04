@@ -281,7 +281,6 @@ sap.ui.define([
                 oQuantityInput.setValue(""); // optional: clear old value
             }
         },
-
         onOpenFormulaDialog: function (oEvent) {
             var oButton = oEvent.getSource();
             var sButtonId = oButton.getId();
@@ -1300,8 +1299,6 @@ sap.ui.define([
             this.byId("fileUploader").clear();
             this.getView().getModel().setProperty("/importReady", false);
         },
-
-
         onFileChange: function (oEvent) {
             var oUploader = oEvent.getSource();
             var $fileInput = oUploader.$().find('input[type="file"]');
@@ -1398,13 +1395,11 @@ sap.ui.define([
         onExport: function () {
             this.byId("exportChoiceDialog").open();
         },
-
         onCloseExportDialog: function () {
             this.byId("exportChoiceDialog").close();
         },
 
-        // Existing onExport (Excel) – now called from choice button
-        onExport: function () {  // Overload/rename if needed; or keep as-is for Excel button press
+        onExport: function () {  
             var aData = this._flattenDataForExport();
             if (aData.length === 0) {
                 sap.m.MessageToast.show("No data to export.");
@@ -1431,7 +1426,6 @@ sap.ui.define([
             this.onCloseExportDialog();
         },
 
-        // PDF from choice (existing logic)
         onExportPDF: function () {
             var aData = this._flattenDataForExport();
             if (aData.length === 0) {
@@ -1531,9 +1525,7 @@ sap.ui.define([
             this.byId("importStatus").setText("");
         },
 
-        onUploadComplete: function () {
-            // Optional: If you later add server upload, handle here
-        },
+        
         onCancelSubDialog: function () {
             this.byId("addSubDialog").close();
         },

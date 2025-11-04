@@ -700,7 +700,6 @@
                         value="{/currencyCode}"
                     />
 
-                    <!-- 🟦 Add the missing fields -->
                     <Label
                         id="_IDGenLabel36"
                         text="OverF.Percentage"
@@ -718,7 +717,6 @@
                     />
                     <CheckBox
                         id="mainPriceChangeAllowed"
-                        selected="{priceChangedAllowed}"
                     />
 
                     <Label
@@ -727,7 +725,6 @@
                     />
                     <CheckBox
                         id="mainUnlimitedOverF"
-                        selected="{unlimitedOverFulfillment}"
                     />
 
                     <Label

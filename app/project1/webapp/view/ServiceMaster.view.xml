@@ -18,7 +18,7 @@
         id="_IDGenPage3"
         title="Service Master"
     >
-        <Panel id="_IDGenPanel">
+        <Panel id="_IDGenPanel6">
             <HBox
                 id="_IDGenVBox"
                 class="sapUiSmallMargin"
@@ -51,12 +51,15 @@
                     class="sapUiSmallMargin"
                     ariaDescribedBy="defaultButtonDescription genericButtonDescription"
                 />
-                <!-- <Button id="_IDGenButton4"
+                <Button 
+                id="_IDGenButton6"
                     text="Delete"
                     press="onDeletePress"
+                    class="sapUiSmallMargin"
                     icon="sap-icon://delete"
                     enabled="{= ${view>/ServiceNumbers}.length > 0 }"
-                /> -->
+                     ariaDescribedBy="defaultButtonDescription genericButtonDescription"
+                />
                 <Button
                     id="_IDGenButton11"
                     text="Copy"
@@ -106,7 +109,7 @@
                 <Column id="_IDGenColumn73">
                     <Text
                         id="_IDGenText85"
-                        text="Service Type"
+                        text="Service Text"
                     />
                 </Column>
             </columns>

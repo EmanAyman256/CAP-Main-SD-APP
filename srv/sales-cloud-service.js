@@ -1279,18 +1279,165 @@ module.exports = cds.service.impl(async function () {
   });
 
   // === GET /ModelSpecDetails
-  this.on('READ', ModelSpecificationsDetails, async (req) => {
-    if (req.data.modelSpecDetailsID) {
-      return SELECT.one.from(ModelSpecificationsDetails).where({ modelSpecDetailsID: req.data.modelSpecDetailsID });
-    }
-    return SELECT.from(ModelSpecificationsDetails);
-  });
+this.on('READ', ModelSpecificationsDetails, async (req) => {
+  const { modelSpecDetailsCode } = req.data;
+
+  if (modelSpecDetailsCode) {
+    return await SELECT
+      .from(ModelSpecificationsDetails, m => {
+        m('*',
+          m.modelSpecifications('*')
+        );
+      })
+      .where({ modelSpecDetailsCode });
+  }
+
+  return await SELECT
+    .from(ModelSpecificationsDetails, m => {
+      m('*',
+        m.modelSpecifications('*')
+      );
+    });
+});
+
+
+// this.on('saveOrUpdateModelSpecificationsDetails', async (req) => {
+//     const { modelSpecificationsDetailsCommands } = req.data;
+//     const tx = cds.transaction(req);
+//     const results = [];
+
+//     try {
+//       for (const detail of modelSpecificationsDetailsCommands) {
+//         const { modelSpecifications, ...detailData } = detail;
+
+//         // 1️⃣ Ensure UUID for parent
+//         if (!detailData.modelSpecDetailsCode) {
+//           detailData.modelSpecDetailsCode = cds.utils.uuid();
+//         }
+
+//         // 2️⃣ Upsert ModelSpecificationsDetails
+//         const exists = await tx.run(
+//           SELECT.one.from(ModelSpecificationsDetails)
+//             .where({ modelSpecDetailsCode: detailData.modelSpecDetailsCode })
+//         );
+
+//         if (exists) {
+//           await tx.run(
+//             UPDATE(ModelSpecificationsDetails)
+//               .set(detailData)
+//               .where({ modelSpecDetailsCode: detailData.modelSpecDetailsCode })
+//           );
+//         } else {
+//           await tx.run(INSERT.into(ModelSpecificationsDetails).entries(detailData));
+//         }
+
+//         // 3️⃣ Handle children: ModelSpecifications
+//         if (Array.isArray(modelSpecifications) && modelSpecifications.length > 0) {
+//           for (const spec of modelSpecifications) {
+//             if (!spec.modelSpecCode) {
+//               spec.modelSpecCode = cds.utils.uuid();
+//             }
+//             spec.modelSpecificationsDetails_modelSpecDetailsCode = detailData.modelSpecDetailsCode;
+
+//             const existingSpec = await tx.run(
+//               SELECT.one.from(ModelSpecifications)
+//                 .where({ modelSpecCode: spec.modelSpecCode })
+//             );
+
+//             if (existingSpec) {
+//               await tx.run(
+//                 UPDATE(ModelSpecifications)
+//                   .set(spec)
+//                   .where({ modelSpecCode: spec.modelSpecCode })
+//               );
+//             } else {
+//               await tx.run(INSERT.into(ModelSpecifications).entries(spec));
+//             }
+//           }
+//         }
+
+//         // 4️⃣ Re-fetch saved parent with children
+//         const full = await tx.run(
+//           SELECT.from(ModelSpecificationsDetails, d => {
+//             d('*', d.modelSpecifications('*'));
+//           }).where({ modelSpecDetailsCode: detailData.modelSpecDetailsCode })
+//         );
+
+//         results.push(full[0]);
+//       }
+
+//       await tx.commit();
+//       return results;
+
+//     } catch (err) {
+//       await tx.rollback();
+//       console.error("❌ Error in saveOrUpdateModelSpecificationsDetails:", err);
+//       req.error(500, `Failed to save model specifications details: ${err.message}`);
+//     }
+//   });
+
+//   /**
+//    * 🔹 Action: Get ModelSpecificationsDetails by ModelSpecCode
+//    */
+//   this.on('getModelSpecificationsDetailsByModelSpecCode', async (req) => {
+//     const { modelSpecCode } = req.data;
+
+//     if (!modelSpecCode) return req.error(400, 'modelSpecCode is required');
+
+//     try {
+//       const result = await SELECT.from(ModelSpecificationsDetails, d => {
+//         d('*', d.modelSpecifications('*'));
+//       }).where({
+//         'modelSpecifications.modelSpecCode': modelSpecCode
+//       });
+
+//       return result;
+
+//     } catch (err) {
+//       console.error("❌ Error in getModelSpecificationsDetailsByModelSpecCode:", err);
+//       req.error(500, `Failed to fetch details: ${err.message}`);
+//     }
+//   });
+
 
   // === POST /ModelSpecDetails
-  this.on('CREATE', ModelSpecificationsDetails, async (req) => {
-    const data = req.data;
-    return await INSERT.into(ModelSpecificationsDetails).entries(data);
-  });
+ this.on('CREATE', ModelSpecificationsDetails, async (req) => {
+  const data = req.data;
+
+  try {
+    // 1️⃣ Extract child records (if any)
+    const { modelSpecifications, ...parentData } = data;
+
+    // 2️⃣ Insert parent record
+    const insertedParent = await INSERT.into(ModelSpecificationsDetails).entries(parentData);
+
+    // 3️⃣ Insert child records (if provided)
+    if (Array.isArray(modelSpecifications) && modelSpecifications.length > 0) {
+      for (const child of modelSpecifications) {
+        // Ensure foreign key reference to parent
+        child.modelSpecificationsDetails_modelSpecDetailsCode = parentData.modelSpecDetailsCode;
+
+        // Insert child
+        await INSERT.into(ModelSpecifications).entries(child);
+      }
+    }
+
+    // 4️⃣ Query back the newly inserted record (with its children)
+    const result = await SELECT
+      .from(ModelSpecificationsDetails, m => {
+        m('*', m.modelSpecifications('*'));
+      })
+      .where({ modelSpecDetailsCode: parentData.modelSpecDetailsCode });
+
+    // 5️⃣ Return full object to client
+    return result;
+
+  } catch (err) {
+    console.error("Error creating ModelSpecificationsDetails:", err);
+    req.error(500, err.message);
+  }
+});
+
 
   // === PATCH /ModelSpecDetails/{id}
   this.on('UPDATE', ModelSpecificationsDetails, async (req) => {

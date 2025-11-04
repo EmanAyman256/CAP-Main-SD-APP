@@ -216,6 +216,7 @@ service SalesCloudService {
                                  customerNumber: String,
                                  invoiceMainItemCommands: array of InvoiceMainItemCommand) returns array of InvoiceMainItemCommand;
 
+ 
   @Core.LongDescription: 'Fetches InvoiceMainItems by referenceId and salesQuotationItem'
   action   getInvoiceMainItemByReferenceIdAndItemNumber(referenceId: String  @mandatory  @title: 'Reference ID',
                                                         salesQuotationItem: String  @mandatory  @title: 'Sales Quotation Item'
@@ -435,5 +436,58 @@ service SalesCloudService {
     temporaryDeletion        : String(9);
   }
 
+// action saveOrUpdateModelSpecificationsDetails(
+//   modelSpecificationsDetailsCommands: array of ModelSpecificationsDetailsCommand
+// ) returns array of ModelSpecificationsDetails;
+// type ModelSpecificationsCommand {
+//   modelSpecCode        : UUID;
+//   modelSpecDetailsCode : UUID;
+//   currencyCode         : String;
+//   modelServSpec        : String(225);
+//   blockingIndicator    : Boolean;
+//   serviceSelection     : Boolean;
+//   description          : String;
+//   searchTerm           : String;
+//   lastChangeDate       : Date;
+// }
 
+// type ModelSpecificationsDetailsCommand {
+//   modelSpecDetailsCode      : UUID;
+//   serviceNumberCode         : Integer;
+//   noServiceNumber           : Integer;
+//   serviceTypeCode           : String;
+//   materialGroupCode         : String;
+//   personnelNumberCode       : String;
+//   unitOfMeasurementCode     : String;
+//   currencyCode              : String;
+//   formulaCode               : String;
+//   lineTypeCode              : String;
+//   selectionCheckBox         : Boolean;
+//   lineIndex                 : String(225);
+//   shortText                 : String;
+//   quantity                  : Integer;
+//   grossPrice                : Integer;
+//   overFulfilmentPercentage  : Integer;
+//   priceChangedAllowed       : Boolean;
+//   unlimitedOverFulfillment  : Boolean;
+//   pricePerUnitOfMeasurement : Integer;
+//   externalServiceNumber     : String(225);
+//   netValue                  : Integer;
+//   serviceText               : String;
+//   lineText                  : String;
+//   lineNumber                : String(225);
+//   alternatives              : String;
+//   biddersLine               : Boolean;
+//   supplementaryLine         : Boolean;
+//   lotSizeForCostingIsOne    : Boolean;
+//   lastChangeDate            : Date;
+//   deletionIndicator         : Boolean;
+
+//   modelSpecifications       : array of ModelSpecificationsCommand;
+// }
+
+
+  // action getModelSpecificationsDetailsByModelSpecCode(modelSpecCode: UUID)
+  //   returns array of ModelSpecificationsDetails;
+    
 }

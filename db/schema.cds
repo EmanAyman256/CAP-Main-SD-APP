@@ -262,57 +262,61 @@ entity InvoiceSubItem : managed {
       serviceNumber         : Association to ServiceNumber;
 }
 
-// ------------------- Model Specifications -------------------
+// ------------------- Model -------------------
 
-entity ModelSpecifications : managed {
-  key modelSpecCode              : UUID;
-      modelSpecDetailsCode       : array of Integer;
-      currencyCode               : String;
-      modelServSpec              : String(225) @unique;
-      blockingIndicator          : Boolean;
-      serviceSelection           : Boolean;
-      description                : String not null;
-      searchTerm                 : String;
-      lastChangeDate             : Date;
-
-      modelSpecificationsDetails : Association to ModelSpecificationsDetails;
-}
 
 entity ModelSpecificationsDetails : managed {
-  key modelSpecDetailsCode      : UUID;
+  key modelSpecDetailsCode : Integer;              // Long → Integer (CAP uses Integer for numeric IDs)
 
-      serviceNumberCode         : Integer;
-      noServiceNumber           : Integer     @unique;
-      serviceTypeCode           : String;
-      materialGroupCode         : String;
-      personnelNumberCode       : String;
-      unitOfMeasurementCode     : String;
-      currencyCode              : String;
-      formulaCode               : String;
-      lineTypeCode              : String;
+  serviceNumberCode          : Integer;
+  noServiceNumber            : Integer;
+  serviceTypeCode            : String;
+  materialGroupCode          : String;
+  personnelNumberCode        : String;
+  unitOfMeasurementCode      : String;
+  currencyCode               : String;
+  formulaCode                : String;
+  lineTypeCode               : String;
+  selectionCheckBox          : Boolean;
+  lineIndex                  : String(225);
+  shortText                  : String;
+  quantity                   : Integer not null;
+  grossPrice                 : Integer not null;
+  overFulfilmentPercentage   : Integer;
+  priceChangedAllowed        : Boolean;
+  unlimitedOverFulfillment   : Boolean;
+  pricePerUnitOfMeasurement  : Integer;
+  externalServiceNumber      : String(225);
+  netValue                   : Integer;
+  serviceText                : String;
+  lineText                   : String;
+  lineNumber                 : String(225);
+  alternatives               : String;
+  biddersLine                : Boolean;
+  supplementaryLine           : Boolean;
+  lotSizeForCostingIsOne     : Boolean;
+  lastChangeDate             : Date;
 
-      selectionCheckBox         : Boolean;
-      lineIndex                 : String(225) @unique;
-      shortText                 : String;
-      quantity                  : Integer not null;
-      grossPrice                : Integer not null;
-      overFulfilmentPercentage  : Integer;
-      priceChangedAllowed       : Boolean;
-      unlimitedOverFulfillment  : Boolean;
-      pricePerUnitOfMeasurement : Integer;
-      externalServiceNumber     : String(225);
-      netValue                  : Integer;
-      serviceText               : String;
-      lineText                  : String;
-      lineNumber                : String(225);
-      alternatives              : String;
-      biddersLine               : Boolean;
-      supplementaryLine         : Boolean;
-      lotSizeForCostingIsOne    : Boolean;
-      lastChangeDate            : Date;
-      deletionIndicator         : Boolean default false;
+  // Same direction as Java — parent has many children
+  modelSpecifications : Composition of many ModelSpecifications
+    on modelSpecifications.modelSpecificationsDetails = $self;
 
-      modelSpecifications       : Composition of many ModelSpecifications
-                                    on modelSpecifications.modelSpecificationsDetails = $self;
-      serviceNumber             : Association to ServiceNumber;
+  serviceNumber : Association to ServiceNumber;
+}
+
+entity ModelSpecifications : managed {
+  key modelSpecCode : Integer;     // Long → Integer
+
+  modelSpecDetailsCode : array of Integer;   // List<Long> → array of Integer ✅
+
+  currencyCode      : String;
+  modelServSpec     : String(225);
+  blockingIndicator : Boolean;
+  serviceSelection  : Boolean;
+  description       : String not null;
+  searchTerm        : String;
+  lastChangeDate    : Date;
+
+  // Child side of relationship
+  modelSpecificationsDetails : Association to ModelSpecificationsDetails;
 }
