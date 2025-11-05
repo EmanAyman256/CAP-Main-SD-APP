@@ -28,7 +28,7 @@ sap.ui.define([
       var oModel = new sap.ui.model.json.JSONModel({
         totalValue: 0,
         docNumber: "",
-        TotalQuantity:0,
+        TotalQuantity: 0,
         itemNumber: "",
         MainItems: [],
 
@@ -171,13 +171,13 @@ sap.ui.define([
                   unitOfMeasurementCode: oData.unitOfMeasurementCode,
                   amountPerUnit: oData.amountPerUnit,
                   currencyCode: oData.currencyCode,
-                  total: oData.total ,
-                  totalQuantity:oData.totalQuantity
+                  total: oData.total,
+                  totalQuantity: oData.totalQuantity
                   //* oData.amountPerUnit
                 });
-                
-                
-                
+
+
+
               });
 
               oMainModel.setProperty("/MainItems", aMainItems);
@@ -186,6 +186,15 @@ sap.ui.define([
               if (oExecTable && oExecTable.getBinding("rows")) {
                 oExecTable.getBinding("rows").refresh();
               }
+
+               const mainItems = oMainModel.getProperty("/MainItems")
+              // Calculate the total sum
+               this.totalValue = mainItems.reduce(
+                (sum, record) => sum + Number(record.total || 0),
+                0
+              );
+              console.log(this.totalValue);
+               oModel.setProperty("/totalValue", this.totalValue);
 
               console.log(" MainItems after copy:", oMainModel.getProperty("/MainItems"));
               sap.m.MessageToast.show("Selected rows copied to Main Items table!");
@@ -264,6 +273,16 @@ sap.ui.define([
                 if (iIndex > -1) {
                   aItems.splice(iIndex, 1);
                   oModel.setProperty("/MainItems", aItems);
+
+                  const mainItems = oModel.getProperty("/MainItems")
+                  // Calculate the total sum
+                  this.totalValue = mainItems.reduce(
+                    (sum, record) => sum + Number(record.total || 0),
+                    0
+                  );
+                  console.log(this.totalValue);
+                  oModel.setProperty("/totalValue", this.totalValue);
+
                   oModel.refresh(true);
                   sap.m.MessageToast.show("Item deleted successfully!");
                 }
@@ -577,7 +596,7 @@ sap.ui.define([
       const updatedData = oModel.getProperty("/editRow");
       const oEditRow = oModel.getProperty("/editRow");
 
- const payload = {
+      const payload = {
         executionOrderMainCode: oEditRow.executionOrderMainCode,
         quantity: (oEditRow.currentQuantity) || 0,
         totalQuantity: (oEditRow.total) || 0,
@@ -617,6 +636,14 @@ sap.ui.define([
       if (this._editPath) {
         oModel.setProperty(this._editPath, updatedData);
       }
+      const mainItems = oModel.getProperty("/MainItems")
+      // Calculate the total sum
+      this.totalValue = mainItems.reduce(
+        (sum, record) => sum + Number(record.total || 0),
+        0
+      );
+      console.log(this.totalValue);
+      oModel.setProperty("/totalValue", this.totalValue);
 
       this._EditItemDialog.close();
       this._EditItemDialog.destroy();
@@ -628,7 +655,7 @@ sap.ui.define([
       const oModel = this.getView().getModel();
 
       // Prepare request payload
-     
+
     }
 
 

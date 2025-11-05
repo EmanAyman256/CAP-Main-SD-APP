@@ -315,6 +315,8 @@ sap.ui.define([
 
     _openQuotationsDialog: function () {
       var that = this;
+      var oView = this.getView();
+      var oModel = oView.getModel();
 
       var oDialog = new sap.m.Dialog({
         title: "Select Rows to Copy",
@@ -361,6 +363,14 @@ sap.ui.define([
               if (oExecTable && oExecTable.getBinding("rows")) {
                 oExecTable.getBinding("rows").refresh();
               }
+              const mainItems = oMainModel.getProperty("/MainItems")
+              // Calculate the total sum
+              this.totalValue = mainItems.reduce(
+                (sum, record) => sum + Number(record.total || 0),
+                0
+              );
+              console.log(this.totalValue);
+              oModel.setProperty("/totalValue", this.totalValue);
 
               console.log(" MainItems after copy:", oMainModel.getProperty("/MainItems"));
               sap.m.MessageToast.show("Selected rows copied to Main Items table!");
@@ -539,6 +549,15 @@ sap.ui.define([
                 });
               });
               oMainModel.setProperty("/MainItems", aMainItems);
+              const mainItems = oMainModel.getProperty("/MainItems")
+              // Calculate the total sum
+              this.totalValue = mainItems.reduce(
+                (sum, record) => sum + Number(record.total || 0),
+                0
+              );
+              console.log(this.totalValue);
+              oModel.setProperty("/totalValue", this.totalValue);
+
               oView.byId("executionTable").getBinding("rows").refresh();
               sap.m.MessageToast.show("Selected services copied to Main Items table.");
               oDialog.close();
@@ -665,6 +684,15 @@ sap.ui.define([
 
                 // Update model
                 oModel.setProperty("/MainItems", aMainItems);
+                const mainItems = oModel.getProperty("/MainItems")
+                // Calculate the total sum
+                this.totalValue = mainItems.reduce(
+                  (sum, record) => sum + Number(record.total || 0),
+                  0
+                );
+                console.log(this.totalValue);
+                oModel.setProperty("/totalValue", this.totalValue);
+
                 that.getView().byId("executionTable").getModel().refresh(true);
 
                 sap.m.MessageToast.show("Excel data imported successfully!");
@@ -877,6 +905,14 @@ sap.ui.define([
       if (this._editPath) {
         oModel.setProperty(this._editPath, oEditRow);
       }
+      const mainItems = oModel.getProperty("/MainItems")
+      // Calculate the total sum
+      this.totalValue = mainItems.reduce(
+        (sum, record) => sum + Number(record.total || 0),
+        0
+      );
+      console.log(this.totalValue);
+      oModel.setProperty("/totalValue", this.totalValue);
 
       // ✅ Refresh model to update table view
       oModel.refresh(true);
@@ -907,6 +943,16 @@ sap.ui.define([
                 if (iIndex > -1) {
                   aItems.splice(iIndex, 1);
                   oModel.setProperty("/MainItems", aItems);
+
+                  const mainItems = oModel.getProperty("/MainItems")
+                  // Calculate the total sum
+                  this.totalValue = mainItems.reduce(
+                    (sum, record) => sum + Number(record.total || 0),
+                    0
+                  );
+                  console.log(this.totalValue);
+                  oModel.setProperty("/totalValue", this.totalValue);
+                  
                   oModel.refresh(true);
                   sap.m.MessageToast.show("Item deleted successfully!");
                 }

@@ -99,7 +99,6 @@
                 </HBox>
             </VBox>
         </Panel>
-
         <table:Table
             id="modelServicesTable"
             rows="{/ModelServices}"
@@ -570,7 +569,6 @@
                 </table:Column>
             </table:columns>
         </table:Table>
-
         <!-- Main Item Dialog -->
         <m:Dialog
             id="addModelServiceDialog"
@@ -604,7 +602,6 @@
                             text="{description}"
                         />
                     </m:Select>
-
                     <m:Label
                         id="_IDGenLabel25"
                         text="Short Text"
@@ -613,7 +610,6 @@
                         id="mainShortTextInput"
                         placeholder="Short Text"
                     />
-
                     <m:Label
                         id="_IDGenLabel6"
                         text="Quantity"
@@ -661,7 +657,6 @@
                             text="{description}"
                         />
                     </m:Select>
-
                     <m:Label
                         id="_IDGenLabel31"
                         text=""
@@ -672,7 +667,6 @@
                         enabled="{/HasSelectedFormula}"
                         press="onOpenFormulaDialog"
                     />
-
                     <m:Label
                         id="_IDGenLabel32"
                         text="UOM"
@@ -688,18 +682,20 @@
                             text="{description}"
                         />
                     </m:Select>
-
                     <Label
                         id="_IDGenLabel29"
                         text="Currency"
                     />
-                    <Input
-                        id="mainCurrency"
-                        placeholder="Currency"
-                        editable="false"
-                        value="{/currencyCode}"
-                    />
-
+                    <Select
+                        id="mainCurrencySelect"
+                        forceSelection="false"
+                        items="{path: '/Currency'}"
+                    >
+                        <core:Item id="mainCurrency"
+                            key="{currencyCode}"
+                            text="{description}"
+                        />
+                    </Select>
                     <Label
                         id="_IDGenLabel36"
                         text="OverF.Percentage"
@@ -708,9 +704,7 @@
                         id="mainOverFInput"
                         placeholder="OverFulfilment %"
                         type="Number"
-                        value="{overFulfilmentPercentage}"
                     />
-
                     <Label
                         id="_IDGenLabel37"
                         text="Price Change Allowed"
@@ -718,7 +712,6 @@
                     <CheckBox
                         id="mainPriceChangeAllowed"
                     />
-
                     <Label
                         id="_IDGenLabel38"
                         text="Unlimited OverFulfillment"
@@ -726,7 +719,6 @@
                     <CheckBox
                         id="mainUnlimitedOverF"
                     />
-
                     <Label
                         id="_IDGenLabel39"
                         text="Price Per Unit Of Measurement"
@@ -734,10 +726,8 @@
                     <Input
                         id="mainPricePerUnitInput"
                         type="Number"
-                        value="{pricePerUnitOfMeasurement}"
                         placeholder="Price/Unit"
                     />
-
                     <Label
                         id="_IDGenLabel40"
                         text="Mat Group"
@@ -753,7 +743,6 @@
                             text="{description}"
                         />
                     </Select>
-
                     <Label
                         id="_IDGenLabel41"
                         text="Service Type"
@@ -775,27 +764,22 @@
                     />
                     <Input
                         id="mainExternalServiceNo"
-                        value="{externalServiceNumber}"
                         placeholder="External Service No"
                     />
-
                     <Label
                         id="_IDGenLabel42"
                         text="Service Text"
                     />
                     <Input
                         id="mainServiceText"
-                        value="{serviceText}"
                         placeholder="Service Text"
                     />
-
                     <Label
                         id="_IDGenLabel43"
                         text="Line Text"
                     />
                     <Input
                         id="mainLineText"
-                        value="{lineText}"
                         placeholder="Line Text"
                     />
                     <Label
@@ -847,19 +831,17 @@
                         text="Line Number"
                     />
                     <Input id="_IDGenInput6"
-                        value="{lineNumber}"
                         placeholder="Line Number"
                     />
-                    <Label id="_IDGenLabel48" 
+                    <Label id="_IDGenLabel48"
                         text="Alt"
                     />
-                    <Input id="_IDGenInput7" 
-                        value="{alternatives}"
+                    <Input id="_IDGenInput7"
                         placeholder="ALT"
                     />
-                    
+                   
                     <Label id="_IDGenLabel49"
-                        text="	Bidder's Line"
+                        text=" Bidder's Line"
                     />
                     <CheckBox id="_IDGenCheckBox"
                     />
@@ -868,19 +850,18 @@
                     />
                     <CheckBox id="_IDGenCheckBox2"
                     />
-                       <Label id="_IDGenLabel46" 
+                       <Label id="_IDGenLabel46"
                         text="Cstg_Ls"/>
-                    <CheckBox id="_IDGenCheckBox6" 
+                    <CheckBox id="_IDGenCheckBox6"
                     />
                 </f:content>
             </f:SimpleForm>
-
             <m:buttons>
                 <m:Button
                     id="_IDGenButton7"
                     text="Add"
                     type="Emphasized"
-                    press=".onAddMainItem"
+                    press=".onAddModelSpecDetails"
                 />
                 <m:Button
                     id="_IDGenButton5"

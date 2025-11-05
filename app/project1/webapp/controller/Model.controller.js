@@ -292,10 +292,12 @@ sap.ui.define([
             const oContext = oEvent.getSource().getBindingContext();
             const oData = oContext.getObject();
             const sModelSpecCode = oData.modelSpecCode;
-
+            console.log("Nav to Service",oData);
+            
             // navigate to ModelServices route with modelSpecCode as parameter
             this.getOwnerComponent().getRouter().navTo("modelServices", {
-                modelSpecCode: sModelSpecCode
+                modelSpecCode: sModelSpecCode,
+                Record:oData
             });
         }
 

@@ -1,3 +1,5 @@
+
+
 sap.ui.define([
     "sap/ui/core/mvc/Controller"
 ], (Controller) => {
@@ -50,8 +52,19 @@ sap.ui.define([
                 serviceSelection: serviceSelection,
                 description: description,
                 searchTerm: searchTerm,
-                currencyCode: currency
+                currencyCode: currency,
+              //  modelSpecDetailsCode: [],
+                modelSpecCode: Math.floor(Date.now() / 1000),
+                lastChangeDate: new Date().toISOString().split("T")[0],
+                //modelSpecificationsDetails_modelSpecDetailsCode: 0
+
             };
+            console.log(newModel);
+            
+
+            {
+
+            }
 
             fetch("/odata/v4/sales-cloud/ModelSpecifications", {
                 method: "POST",
@@ -60,7 +73,10 @@ sap.ui.define([
             })
                 .then(response => {
                     if (!response.ok) {
+                        console.log(response.statusText);
                         throw new Error("Failed to create model: " + response.statusText);
+
+
                     }
                     return response.json();
                 })

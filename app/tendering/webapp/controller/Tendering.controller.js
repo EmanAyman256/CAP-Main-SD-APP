@@ -1221,24 +1221,9 @@ sap.ui.define([
                 formulaCode: oFormulaSelect && oFormulaSelect.getSelectedItem()
                     ? oFormulaSelect.getSelectedItem().getText()
                     : "",
-                // formulaCode: oView.byId("formulaSelect").getSelectedItem().getText() || "", // Fixed ID
                 currencyCode: oCurrencySelect && oCurrencySelect.getSelectedItem()
                     ? oCurrencySelect.getSelectedItem().getText()
                     : "",
-                // ✅ UOM (Key = ID, Text = Description)
-                // unitOfMeasurementCode: oUOMSelect?.getSelectedItem()?.getKey() || "",
-                // unitOfMeasurementText: oUOMSelect?.getSelectedItem()?.getText() || "",
-                // unitOfMeasurementCode: this.byId("mainUOMInput").getSelectedItem().getText(),
-
-
-                // ✅ Formula (Key = formulaCode, Text = description)
-                // formulaCode: oFormulaSelect?.getSelectedItem()?.getKey() || "",
-                // formulaText: oFormulaSelect?.getSelectedItem()?.getText() || "",
-
-                // ✅ Currency (Key = currencyCode UUID, Text = description)
-                // currencyCode: oCurrencySelect?.getSelectedItem()?.getKey() || "",
-                // currencyText: oCurrencySelect?.getSelectedItem()?.getText() || "",
-
                 // Amounts
                 amountPerUnit: parseFloat(oView.byId("mainAmountPerUnitInput").getValue()) || 0,
                 total: parseFloat(oView.byId("mainTotalInput").getValue()) || 0,
