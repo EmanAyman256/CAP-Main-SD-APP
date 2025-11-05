@@ -52,136 +52,6 @@ module.exports = cds.service.impl(async function () {
       ExecutionOrderMains, ServiceInvoiceMains
     } = this.entities;
 
-  // this.on('saveOrUpdateMainItems', async (req) => {
-  //     const {
-  //       salesQuotation,
-  //       salesQuotationItem,
-  //       pricingProcedureStep,
-  //       pricingProcedureCounter,
-  //       customerNumber,
-  //       invoiceMainItemCommands
-  //     } = req.data;
-
-  //     const tx = cds.transaction(req);
-  //     let savedItems = [];
-
-  //     try {
-  //       // Step 1: delete existing items
-  //       if (salesQuotation && salesQuotationItem) {
-  //         await tx.run(
-  //           DELETE.from(InvoiceMainItems)
-  //             .where({ referenceId: salesQuotation, salesQuotationItem })
-  //         );
-  //       }
-
-  //       // Step 2: enrich & insert main item (without subItems)
-  //       const command = { ...invoiceMainItemCommands };
-  //       command.referenceId = salesQuotation;
-  //       command.salesQuotationItem = salesQuotationItem;
-
-  //       const subItems = command.subItemList || [];
-  //       delete command.subItemList;
-
-  //       // fetch quotation details
-  //       const salesQuotationApiResponse = await axios.get(
-  //         'https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$top=50',
-  //         {
-  //           headers: { 'Accept': 'application/json' }
-  //         }
-  //       );
-
-  //       const salesQuotationResults = salesQuotationApiResponse?.data?.d?.results || [];
-  //       for (const quotation of salesQuotationResults) {
-  //         if (quotation.SalesQuotation === salesQuotation) {
-  //           command.referenceSDDocument = quotation.ReferenceSDDocument;
-  //           break;
-  //         }
-  //       }
-
-  //       // insert main item
-  //       const insertedMain = await tx.run(INSERT.into(InvoiceMainItems).entries(command));
-  //       const savedMain = insertedMain[0] ?? command;
-
-  //       // Step 3: insert subItems
-  //       for (const sub of subItems) {
-  //         sub.invoiceMainItemCode = savedMain.invoiceMainItemCode;
-  //         await tx.run(INSERT.into(InvoiceSubItems).entries(sub));
-  //       }
-
-  //       // Step 4: calculate & update totalHeader
-  //       const totalHeader = (savedMain.totalWithProfit || 0) +
-  //         subItems.reduce((sum, s) => sum + (s.total || 0), 0);
-
-  //       await tx.run(
-  //         UPDATE(InvoiceMainItems)
-  //           .set({ totalHeader })
-  //           .where({ invoiceMainItemCode: savedMain.invoiceMainItemCode })
-  //       );
-
-  //       savedMain.totalHeader = totalHeader;
-  //       savedItems.push(savedMain);
-
-  //       // 🔹 Step 5: Call external Invoice Pricing API
-  //       try {
-  //         await callInvoicePricingAPI(
-  //           salesQuotation,
-  //           salesQuotationItem,
-  //           pricingProcedureStep,
-  //           pricingProcedureCounter,
-  //           totalHeader
-  //         );
-  //       } catch (apiErr) {
-  //         req.warn(`Failed to update invoice pricing: ${apiErr.message}`);
-  //       }
-
-  //       return savedItems;
-  //     } catch (err) {
-  //       req.error(500, `Error in saveOrUpdateMainItems: ${err.message}`);
-  //     }
-  //   });
-
-  //   async function callInvoicePricingAPI(salesQuotation, salesQuotationItem, pricingProcedureStep, pricingProcedureCounter, totalHeader) {
-  //     // prepare request body
-  //     const body = {
-  //       ConditionType: "PPR0",
-  //       ConditionRateValue: String(totalHeader)
-  //     };
-
-  //     // TODO: move credentials to destination / env vars
-  //     const credentials = "BTP_USER1:#yiVfheJbFolFxgkEwCBFcWvYkPzrQDENEArAXn5";
-  //     const encoded = Buffer.from(credentials, 'utf8').toString('base64');
-
-  //     // fetch CSRF token
-  //     const tokenResp = await axios.get(
-  //       `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItem(SalesQuotation='${salesQuotation}',SalesQuotationItem='${salesQuotationItem}')/to_PricingElement?$top=50`,
-  //       {
-  //         headers: {
-  //           'x-csrf-token': 'Fetch',
-  //           'Authorization': `Basic ${encoded}`,
-  //           'Accept': 'application/json'
-  //         }
-  //       }
-  //     );
-
-  //     const csrfToken = tokenResp.headers['x-csrf-token'];
-  //     const cookies = tokenResp.headers['set-cookie'];
-
-  //     if (!csrfToken) throw new Error("Failed to fetch CSRF token");
-
-  //     // patch request
-  //     const patchURL = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotationItemPrcgElmnt(SalesQuotation='${salesQuotation}',SalesQuotationItem='${salesQuotationItem}',PricingProcedureStep='${pricingProcedureStep}',PricingProcedureCounter='${pricingProcedureCounter}')`;
-
-  //     await axios.patch(patchURL, body, {
-  //       headers: {
-  //         'Authorization': `Basic ${encoded}`,
-  //         'x-csrf-token': csrfToken,
-  //         'If-Match': '*',
-  //         'Content-Type': 'application/json',
-  //         'Cookie': cookies.join('; ')
-  //       }
-  //     });
-  //   }
-
 
   ///////////////////////////////////////////////////////////////////////////
   this.on('saveOrUpdateMainItems', async (req) => {
@@ -393,143 +263,7 @@ module.exports = cds.service.impl(async function () {
   async function deleteByReferenceIdAndSalesQuotationItem(referenceId, salesQuotationItem) {
     return await DELETE.from(InvoiceMainItems).where({ referenceId, salesQuotationItem });
   }
-  //   this.on('saveOrUpdateMainItems', async (req) => {
-  //   const {
-  //     salesQuotation,
-  //     salesQuotationItem,
-  //     pricingProcedureStep,
-  //     pricingProcedureCounter,
-  //     customerNumber,
-  //     invoiceMainItemCommands
-  //   } = req.data;
-
-  //   const tx = cds.transaction(req);
-  //   let savedItems = [];
-
-  //   try {
-  //     // Step 1: delete existing items
-  //     if (salesQuotation && salesQuotationItem) {
-  //       await deleteByReferenceIdAndSalesQuotationItem(salesQuotation, salesQuotationItem);
-  //     }
-
-  //     // Step 2: enrich & insert main item (without subItems)
-  //     const command = { ...invoiceMainItemCommands };
-  //     command.referenceId = salesQuotation;
-  //     command.salesQuotationItem = salesQuotationItem;
-
-  //     // detach subItems so we don’t insert them here
-  //     const subItems = command.subItemList || [];
-  //     delete command.subItemList;
-
-  //     // fetch quotation details
-  //     const salesQuotationApiResponse = await axios.get(
-  //       'https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$inlinecount=allpages&$'
-  //     );
-  //     const salesQuotationResults = salesQuotationApiResponse?.data?.d?.results || [];
-  //     for (const quotation of salesQuotationResults) {
-  //       if (quotation.SalesQuotation === salesQuotation) {
-  //         command.referenceSDDocument = quotation.ReferenceSDDocument;
-  //         break;
-  //       }
-  //     }
-
-  //     // insert main item
-  //     const insertedMain = await tx.run(INSERT.into(InvoiceMainItems).entries(command));
-  //     const savedMain = insertedMain[0] ?? command;
-
-  //     // Step 3: insert subItems with the new main item id
-  //     for (const sub of subItems) {
-  //       sub.invoiceMainItemCode = savedMain.invoiceMainItemCode; // link to parent
-  //       await tx.run(INSERT.into(InvoiceSubItems).entries(sub));
-  //     }
-
-  //     // Step 4: calculate & update totalHeader
-  //     const totalHeader = (savedMain.totalWithProfit || 0) +
-  //       subItems.reduce((sum, s) => sum + (s.total || 0), 0);
-
-  //     await tx.run(
-  //       UPDATE(InvoiceMainItems)
-  //         .set({ totalHeader })
-  //         .where({ invoiceMainItemCode: savedMain.invoiceMainItemCode })
-  //     );
-
-  //     savedMain.totalHeader = totalHeader;
-  //     savedItems.push(savedMain);
-
-  //     return savedItems;
-  //   } catch (err) {
-  //     req.error(500, `Error in saveOrUpdateMainItems: ${err.message}`);
-  //   }
-  // });
-
-
-  //   this.on('saveOrUpdateMainItems', async (req) => {
-  //     console.log("ssssssssssssssssss");
-
-  //     const {
-  //       salesQuotation,
-  //       salesQuotationItem,
-  //       pricingProcedureStep,
-  //       pricingProcedureCounter,
-  //       customerNumber,
-  //       invoiceMainItemCommands
-  //     } = req.data;
-
-  //     const tx = cds.transaction(req);
-  //     let savedItems = [];
-
-  //     try {
-  //       // Step 1: delete existing items if params provided
-  //       if (salesQuotation && salesQuotationItem) {
-  //         console.log("fsdfas");
-
-  //         await deleteByReferenceIdAndSalesQuotationItem(salesQuotation, salesQuotationItem);
-  //         console.log("nnnnn");
-
-  //       }
-  // console.log("here");
-
-  //       // Step 2: enrich & insert new item (single command)
-  //       const command = invoiceMainItemCommands;
-  //       command.referenceId = salesQuotation;
-  //       command.salesQuotationItem = salesQuotationItem;
-
-  //       // fetch quotation details
-  //       const salesQuotationApiResponse = await axios.get('https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$inlinecount=allpages&$');
-  //       const salesQuotationResults = salesQuotationApiResponse?.data?.d?.results || [];
-
-  //       for (const quotation of salesQuotationResults) {
-  //         if (quotation.SalesQuotation === salesQuotation) {
-  //           command.referenceSDDocument = quotation.ReferenceSDDocument;
-  //           break;
-  //         }
-  //       }
-
-  //       const inserted = await tx.run(INSERT.into(InvoiceMainItems).entries(command));
-  //       const savedItem = inserted[0] ?? command;
-  //       savedItems.push(savedItem);
-
-  //       // Step 3: calculate totalHeader
-  //       const totalHeader = savedItems.reduce((sum, item) => sum + (item.totalWithProfit || 0), 0);
-
-  //       // Step 4: update totalHeader
-  //       await tx.run(
-  //         UPDATE(InvoiceMainItems).set({ totalHeader }).where({ invoiceMainItemCode: savedItem.invoiceMainItemCode })
-  //       );
-  // console.log("aaaaaaaaaaaa");
-
-  //       // Step 5: call pricing API
-  //       await this.run(INSERT.into('InvoiceMainItems').entries(
-  //       savedItems
-  //     ));
-
-  //     return { message: 'Saved successfully' };
-
-  //       return savedItems;
-  //     } catch (err) {
-  //       req.error(500, `Error in saveOrUpdateMainItems: ${err.message}`);
-  //     }
-  //   });
+  
 
   /*-------------------------- First App -------------------------------------*/
 
@@ -911,93 +645,7 @@ module.exports = cds.service.impl(async function () {
     });
   }
 
-  // --- UnitOfMeasurement Handlers ---
-  // if (UnitOfMeasurement) {
-  //   this.on('READ', UnitOfMeasurement, async (req) => {
-  //     console.log('Executing READ for all UnitOfMeasurements');
-  //     try {
-  //       const tx = cds.tx(req);
-  //       const units = await tx.run(SELECT.from(UnitOfMeasurement));
-  //       console.log('UnitOfMeasurement response:', JSON.stringify(units));
-  //       return units;
-  //     } catch (error) {
-  //       console.error('Error in READ UnitOfMeasurement:', error.message);
-  //       throw new Error(`Database query failed: ${error.message}`);
-  //     }
-  //   });
-
-  //   this.on('READ', UnitOfMeasurement, async (req) => {
-  //     console.log('Executing READ for UnitOfMeasurement by ID');
-  //     const unitOfMeasurementCode = req.params[0]?.unitOfMeasurementCode || req.query.SELECT.where?.find(w => w.ref?.[0] === 'unitOfMeasurementCode')?.val;
-  //     if (!unitOfMeasurementCode) {
-  //       throw new Error('UnitOfMeasurement code is required');
-  //     }
-  //     try {
-  //       const tx = cds.tx(req);
-  //       const unit = await tx.run(SELECT.one.from(UnitOfMeasurement).where({ unitOfMeasurementCode: unitOfMeasurementCode }));
-  //       console.log('UnitOfMeasurement response by ID:', JSON.stringify(unit));
-  //       return unit;
-  //     } catch (error) {
-  //       console.error('Error in READ UnitOfMeasurement by ID:', error.message);
-  //       throw new Error(`Database query failed: ${error.message}`);
-  //     }
-  //   });
-
-  //   this.on('CREATE', UnitOfMeasurement, async (req) => {
-  //     console.log('Executing CREATE for new UnitOfMeasurement');
-  //     const newUnit = req.data;
-  //     try {
-  //       const tx = cds.tx(req);
-  //       const created = await tx.run(INSERT.into(UnitOfMeasurement).entries(newUnit));
-  //       console.log('Created UnitOfMeasurement:', JSON.stringify(created));
-  //       await tx.commit();
-  //       return created;
-  //     } catch (error) {
-  //       console.error('Error in CREATE UnitOfMeasurement:', error.message);
-  //       await tx.rollback();
-  //       throw new Error(`Database insert failed: ${error.message}`);
-  //     }
-  //   });
-
-  //   this.on('DELETE', UnitOfMeasurement, async (req) => {
-  //     console.log('Executing DELETE for UnitOfMeasurement');
-  //     const unitOfMeasurementCode = req.params[0]?.unitOfMeasurementCode || req.query.SELECT.where?.find(w => w.ref?.[0] === 'unitOfMeasurementCode')?.val;
-  //     if (!unitOfMeasurementCode) {
-  //       throw new Error('UnitOfMeasurement code is required');
-  //     }
-  //     try {
-  //       const tx = cds.tx(req);
-  //       const deleted = await tx.run(DELETE.from(UnitOfMeasurement).where({ unitOfMeasurementCode: unitOfMeasurementCode }));
-  //       console.log('Deleted UnitOfMeasurement:', JSON.stringify(deleted));
-  //       await tx.commit();
-  //       return { success: true };
-  //     } catch (error) {
-  //       console.error('Error in DELETE UnitOfMeasurement:', error.message);
-  //       await tx.rollback();
-  //       throw new Error(`Database delete failed: ${error.message}`);
-  //     }
-  //   });
-
-  //   this.on('UPDATE', UnitOfMeasurement, async (req) => {
-  //     console.log('Executing UPDATE for UnitOfMeasurement');
-  //     const unitOfMeasurementCode = req.params[0]?.unitOfMeasurementCode || req.query.SELECT.where?.find(w => w.ref?.[0] === 'unitOfMeasurementCode')?.val;
-  //     if (!unitOfMeasurementCode) {
-  //       throw new Error('UnitOfMeasurement code is required');
-  //     }
-  //     try {
-  //       const tx = cds.tx(req);
-  //       const updated = await tx.run(UPDATE(UnitOfMeasurement).with(req.data).where({ unitOfMeasurementCode: unitOfMeasurementCode }));
-  //       console.log('Updated UnitOfMeasurement:', JSON.stringify(updated));
-  //       await tx.commit();
-  //       return updated;
-  //     } catch (error) {
-  //       console.error('Error in UPDATE UnitOfMeasurement:', error.message);
-  //       await tx.rollback();
-  //       throw new Error(`Database update failed: ${error.message}`);
-  //     }
-  //   });
-  // }
-
+  
   // --- ServiceType Handlers ---
   if (ServiceType) {
     this.on('READ', ServiceType, async (req) => {
@@ -1121,110 +769,154 @@ module.exports = cds.service.impl(async function () {
       description: { like: `%${keyword}%` }  // assuming Formula has a 'description' field
     })
   })
-  // === GET /modelspecs (READ all or by id)
-  this.on('READ', ModelSpecifications, async (req) => {
-    if (req.data.modelSpecCode) {
-      return SELECT.one.from(ModelSpecifications).where({ modelSpecCode: req.data.modelSpecCode })
+  // === GET /ModelSpecifications (all or by ID)
+this.on('READ', ModelSpecifications, async (req) => {
+  const { modelSpecCode } = req.data;
+
+  if (modelSpecCode) {
+    return await SELECT
+      .from(ModelSpecifications, s => {
+        s('*', s.modelSpecificationsDetails('*'));
+      })
+      .where({ modelSpecCode });
+  }
+
+  return await SELECT
+    .from(ModelSpecifications, s => {
+      s('*', s.modelSpecificationsDetails('*'));
+    });
+});
+// === POST /ModelSpecifications
+this.on('CREATE', ModelSpecifications, async (req) => {
+  const data = req.data;
+
+  try {
+    // 1️⃣ Extract child records (details)
+    const { modelSpecificationsDetails, ...parentData } = data;
+
+    // 2️⃣ Insert parent record
+    const insertedParent = await INSERT.into(ModelSpecifications).entries(parentData);
+
+    // 3️⃣ Insert details if provided
+    if (Array.isArray(modelSpecificationsDetails) && modelSpecificationsDetails.length > 0) {
+      for (const detail of modelSpecificationsDetails) {
+        detail.modelSpecifications_modelSpecCode = parentData.modelSpecCode; // FK reference
+        await INSERT.into(ModelSpecificationsDetails).entries(detail);
+      }
     }
-    return SELECT.from(ModelSpecifications)
-  })
 
-  // === POST /modelspecs (CREATE)
-  this.on('CREATE', ModelSpecifications, async (req) => {
-    const data = req.data
-    return INSERT.into(ModelSpecifications).entries(data)
-  })
+    // 4️⃣ Query full record back (with children)
+    const result = await SELECT
+      .from(ModelSpecifications, s => {
+        s('*', s.modelSpecificationsDetails('*'));
+      })
+      .where({ modelSpecCode: parentData.modelSpecCode });
 
-  // === DELETE /modelspecs/{modelSpecCode}
-  this.on('DELETE', ModelSpecifications, async (req) => {
-    const { modelSpecCode } = req.data
-    return DELETE.from(ModelSpecifications).where({ modelSpecCode })
-  })
+    return result;
 
-  // === PATCH /modelspecs/{modelSpecCode} (UPDATE)
-  this.on('UPDATE', ModelSpecifications, async (req) => {
-    const { modelSpecCode, ...rest } = req.data
-    return UPDATE(ModelSpecifications).set(rest).where({ modelSpecCode })
-  })
+  } catch (err) {
+    console.error('Error creating ModelSpecifications:', err);
+    req.error(500, err.message);
+  }
+});
+this.on('UPDATE', ModelSpecifications, async (req) => {
+  const { modelSpecCode, ...rest } = req.data;
+  return await UPDATE(ModelSpecifications).set(rest).where({ modelSpecCode });
+});
+this.on('DELETE', ModelSpecifications, async (req) => {
+  const { modelSpecCode } = req.data;
 
-  // === GET /modelspecs/search?keyword=...
-  this.on('searchModelSpecifications', async (req) => {
-    const { keyword } = req.data
-    return SELECT.from(ModelSpecifications).where({
-      description: { like: `%${keyword}%` }  // assuming "description" exists in entity
+  await DELETE.from(ModelSpecificationsDetails).where({
+    modelSpecifications_modelSpecCode: modelSpecCode
+  });
+
+  return await DELETE.from(ModelSpecifications).where({ modelSpecCode });
+});
+this.on('searchModelSpecifications', async (req) => {
+  const { keyword } = req.data;
+
+  return await SELECT
+    .from(ModelSpecifications, s => {
+      s('*', s.modelSpecificationsDetails('*'));
     })
-  })
+    .where({ description: { like: `%${keyword}%` } });
+});
 
 
-  // // === GET all (READ is automatic)
-  // this.on('READ', ExecutionOrderMains, async (req) => {
-  //   if (req.data.executionOrderMainCode) {
-  //     return SELECT.one.from(ExecutionOrderMains).where({ executionOrderMainCode: req.data.executionOrderMainCode })
-  //   }
-  //   return SELECT.from(ExecutionOrderMains)
-  // })
+// === READ /ModelSpecificationsDetails (All or by ID)
+this.on('READ', ModelSpecificationsDetails, async (req) => {
+  const { modelSpecDetailsCode } = req.data;
 
-  // // === CREATE (POST)
-  // this.on('CREATE', ExecutionOrderMains, async (req) => {
-  //   const data = req.data
-  //   return INSERT.into(ExecutionOrderMains).entries(data)
-  // })
+  if (modelSpecDetailsCode) {
+    // Single record with parent
+    return await SELECT
+      .from(ModelSpecificationsDetails, d => {
+        d('*', d.modelSpecifications('*'));
+      })
+      .where({ modelSpecDetailsCode });
+  }
 
-  // // === DELETE
-  // this.on('DELETE', ExecutionOrderMains, async (req) => {
-  //   const { executionOrderMainCode } = req.data
-  //   return DELETE.from(ExecutionOrderMains).where({ executionOrderMainCode })
-  // })
+  // All records with parent
+  return await SELECT
+    .from(ModelSpecificationsDetails, d => {
+      d('*', d.modelSpecifications('*'));
+    });
+});
+// === CREATE /ModelSpecificationsDetails
+this.on('CREATE', ModelSpecificationsDetails, async (req) => {
+  const data = req.data;
 
-  // // === UPDATE (PATCH)
-  // this.on('UPDATE', ExecutionOrderMains, async (req) => {
-  //   const { executionOrderMainCode, ...rest } = req.data
-  //   return UPDATE(ExecutionOrderMains).set(rest).where({ executionOrderMainCode })
-  // })
+  try {
+    // 1️⃣ Ensure parent key exists
+    if (!data.modelSpecifications_modelSpecCode) {
+      return req.error(400, 'Parent modelSpecifications_modelSpecCode is required.');
+    }
 
-  // // === Action: getExecutionOrderMainById
-  // this.on('getExecutionOrderMainById', async (req) => {
-  //   const { executionOrderMainCode } = req.data
-  //   return SELECT.one.from(ExecutionOrderMains).where({ executionOrderMainCode })
-  // })
+    // 2️⃣ Insert child record
+    const inserted = await INSERT.into(ModelSpecificationsDetails).entries(data);
 
-  // // === Action: saveOrUpdateExecutionOrders
-  // this.on('saveOrUpdateExecutionOrders', async (req) => {
-  //   const { executionOrders, salesOrder, salesOrderItem, customerNumber } = req.data
+    // 3️⃣ Return full record (with parent info)
+    const result = await SELECT
+      .from(ModelSpecificationsDetails, d => {
+        d('*', d.modelSpecifications('*'));
+      })
+      .where({ modelSpecDetailsCode: data.modelSpecDetailsCode });
 
-  //   // delete all first
-  //   await DELETE.from(ExecutionOrderMains)
+    return result;
 
-  //   // enrich + insert each
-  //   for (const order of executionOrders) {
-  //     order.referenceId = salesOrder
-  //     // TODO: fetch sales order details (via external service if needed)
-  //     // TODO: call pricing API (mock it for now)
-  //     await INSERT.into(ExecutionOrderMains).entries(order)
-  //   }
+  } catch (err) {
+    console.error("❌ Error creating ModelSpecificationsDetails:", err);
+    req.error(500, err.message);
+  }
+});
+// === UPDATE /ModelSpecificationsDetails/{modelSpecDetailsCode}
+this.on('UPDATE', ModelSpecificationsDetails, async (req) => {
+  const { modelSpecDetailsCode, ...rest } = req.data;
+  return await UPDATE(ModelSpecificationsDetails).set(rest).where({ modelSpecDetailsCode });
+});
+// === DELETE /ModelSpecificationsDetails/{modelSpecDetailsCode}
+this.on('DELETE', ModelSpecificationsDetails, async (req) => {
+  const { modelSpecDetailsCode } = req.data;
+  return await DELETE.from(ModelSpecificationsDetails).where({ modelSpecDetailsCode });
+});
+// === SEARCH /ModelSpecificationsDetails/search
+this.on('searchModelSpecDetails', async (req) => {
+  const { keyword } = req.data;
 
-  //   return SELECT.from(ExecutionOrderMains)
-  // })
+  return await SELECT
+    .from(ModelSpecificationsDetails, d => {
+      d('*', d.modelSpecifications('*'));
+    })
+    .where({
+      or: [
+        { shortText: { like: `%${keyword}%` } },
+        { serviceText: { like: `%${keyword}%` } }
+      ]
+    });
+});
 
-  // // === Action: findBySalesOrderAndItem
-  // this.on('findBySalesOrderAndItem', async (req) => {
-  //   const { salesOrder, salesOrderItem } = req.data
-  //   // mimic external API call
-  //   return `Sales Order ${salesOrder}, Item ${salesOrderItem}`
-  // })
 
-  // // === Action: getInvoiceMainItemsByReferenceId
-  // this.on('getInvoiceMainItemsByReferenceId', async (req) => {
-  //   const { referenceId } = req.data
-  //   return SELECT.from(ExecutionOrderMains).where({ referenceId })
-  // })
-
-  // // === Action: findByLineNumber
-  // this.on('findByLineNumber', async (req) => {
-  //   const { lineNumber } = req.data
-  //   return SELECT.from(ExecutionOrderMains).where({ lineNumber })
-  // })
-
+  
 
   // Get all
   this.on('READ', 'InvoiceMainItem', async (req) => {
@@ -1278,186 +970,7 @@ module.exports = cds.service.impl(async function () {
     }
   });
 
-  // === GET /ModelSpecDetails
-this.on('READ', ModelSpecificationsDetails, async (req) => {
-  const { modelSpecDetailsCode } = req.data;
 
-  if (modelSpecDetailsCode) {
-    return await SELECT
-      .from(ModelSpecificationsDetails, m => {
-        m('*',
-          m.modelSpecifications('*')
-        );
-      })
-      .where({ modelSpecDetailsCode });
-  }
-
-  return await SELECT
-    .from(ModelSpecificationsDetails, m => {
-      m('*',
-        m.modelSpecifications('*')
-      );
-    });
-});
-
-
-// this.on('saveOrUpdateModelSpecificationsDetails', async (req) => {
-//     const { modelSpecificationsDetailsCommands } = req.data;
-//     const tx = cds.transaction(req);
-//     const results = [];
-
-//     try {
-//       for (const detail of modelSpecificationsDetailsCommands) {
-//         const { modelSpecifications, ...detailData } = detail;
-
-//         // 1️⃣ Ensure UUID for parent
-//         if (!detailData.modelSpecDetailsCode) {
-//           detailData.modelSpecDetailsCode = cds.utils.uuid();
-//         }
-
-//         // 2️⃣ Upsert ModelSpecificationsDetails
-//         const exists = await tx.run(
-//           SELECT.one.from(ModelSpecificationsDetails)
-//             .where({ modelSpecDetailsCode: detailData.modelSpecDetailsCode })
-//         );
-
-//         if (exists) {
-//           await tx.run(
-//             UPDATE(ModelSpecificationsDetails)
-//               .set(detailData)
-//               .where({ modelSpecDetailsCode: detailData.modelSpecDetailsCode })
-//           );
-//         } else {
-//           await tx.run(INSERT.into(ModelSpecificationsDetails).entries(detailData));
-//         }
-
-//         // 3️⃣ Handle children: ModelSpecifications
-//         if (Array.isArray(modelSpecifications) && modelSpecifications.length > 0) {
-//           for (const spec of modelSpecifications) {
-//             if (!spec.modelSpecCode) {
-//               spec.modelSpecCode = cds.utils.uuid();
-//             }
-//             spec.modelSpecificationsDetails_modelSpecDetailsCode = detailData.modelSpecDetailsCode;
-
-//             const existingSpec = await tx.run(
-//               SELECT.one.from(ModelSpecifications)
-//                 .where({ modelSpecCode: spec.modelSpecCode })
-//             );
-
-//             if (existingSpec) {
-//               await tx.run(
-//                 UPDATE(ModelSpecifications)
-//                   .set(spec)
-//                   .where({ modelSpecCode: spec.modelSpecCode })
-//               );
-//             } else {
-//               await tx.run(INSERT.into(ModelSpecifications).entries(spec));
-//             }
-//           }
-//         }
-
-//         // 4️⃣ Re-fetch saved parent with children
-//         const full = await tx.run(
-//           SELECT.from(ModelSpecificationsDetails, d => {
-//             d('*', d.modelSpecifications('*'));
-//           }).where({ modelSpecDetailsCode: detailData.modelSpecDetailsCode })
-//         );
-
-//         results.push(full[0]);
-//       }
-
-//       await tx.commit();
-//       return results;
-
-//     } catch (err) {
-//       await tx.rollback();
-//       console.error("❌ Error in saveOrUpdateModelSpecificationsDetails:", err);
-//       req.error(500, `Failed to save model specifications details: ${err.message}`);
-//     }
-//   });
-
-//   /**
-//    * 🔹 Action: Get ModelSpecificationsDetails by ModelSpecCode
-//    */
-//   this.on('getModelSpecificationsDetailsByModelSpecCode', async (req) => {
-//     const { modelSpecCode } = req.data;
-
-//     if (!modelSpecCode) return req.error(400, 'modelSpecCode is required');
-
-//     try {
-//       const result = await SELECT.from(ModelSpecificationsDetails, d => {
-//         d('*', d.modelSpecifications('*'));
-//       }).where({
-//         'modelSpecifications.modelSpecCode': modelSpecCode
-//       });
-
-//       return result;
-
-//     } catch (err) {
-//       console.error("❌ Error in getModelSpecificationsDetailsByModelSpecCode:", err);
-//       req.error(500, `Failed to fetch details: ${err.message}`);
-//     }
-//   });
-
-
-  // === POST /ModelSpecDetails
- this.on('CREATE', ModelSpecificationsDetails, async (req) => {
-  const data = req.data;
-
-  try {
-    // 1️⃣ Extract child records (if any)
-    const { modelSpecifications, ...parentData } = data;
-
-    // 2️⃣ Insert parent record
-    const insertedParent = await INSERT.into(ModelSpecificationsDetails).entries(parentData);
-
-    // 3️⃣ Insert child records (if provided)
-    if (Array.isArray(modelSpecifications) && modelSpecifications.length > 0) {
-      for (const child of modelSpecifications) {
-        // Ensure foreign key reference to parent
-        child.modelSpecificationsDetails_modelSpecDetailsCode = parentData.modelSpecDetailsCode;
-
-        // Insert child
-        await INSERT.into(ModelSpecifications).entries(child);
-      }
-    }
-
-    // 4️⃣ Query back the newly inserted record (with its children)
-    const result = await SELECT
-      .from(ModelSpecificationsDetails, m => {
-        m('*', m.modelSpecifications('*'));
-      })
-      .where({ modelSpecDetailsCode: parentData.modelSpecDetailsCode });
-
-    // 5️⃣ Return full object to client
-    return result;
-
-  } catch (err) {
-    console.error("Error creating ModelSpecificationsDetails:", err);
-    req.error(500, err.message);
-  }
-});
-
-
-  // === PATCH /ModelSpecDetails/{id}
-  this.on('UPDATE', ModelSpecificationsDetails, async (req) => {
-    const { modelSpecDetailsID, ...rest } = req.data;
-    return await UPDATE(ModelSpecificationsDetails).set(rest).where({ modelSpecDetailsID });
-  });
-
-  // === DELETE /ModelSpecDetails/{id}
-  this.on('DELETE', ModelSpecificationsDetails, async (req) => {
-    const { modelSpecDetailsID } = req.data;
-    return await DELETE.from(ModelSpecificationsDetails).where({ modelSpecDetailsID });
-  });
-
-  // === GET /ModelSpecDetails/search?keyword=...
-  this.on('searchModelSpecs', async (req) => {
-    const { keyword } = req.data;
-    return SELECT.from(ModelSpecificationsDetails).where({
-      description: { like: `%${keyword}%` }
-    });
-  });
 
   // GET /servicenumbers
   this.on('READ', ServiceNumbers, async (req) => {

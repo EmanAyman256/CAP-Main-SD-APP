@@ -266,48 +266,44 @@ entity InvoiceSubItem : managed {
 
 
 entity ModelSpecificationsDetails : managed {
-  key modelSpecDetailsCode : Integer;              // Long → Integer (CAP uses Integer for numeric IDs)
+  key modelSpecDetailsCode : Integer;
 
-  serviceNumberCode          : Integer;
-  noServiceNumber            : Integer;
-  serviceTypeCode            : String;
-  materialGroupCode          : String;
-  personnelNumberCode        : String;
-  unitOfMeasurementCode      : String;
-  currencyCode               : String;
-  formulaCode                : String;
-  lineTypeCode               : String;
-  selectionCheckBox          : Boolean;
-  lineIndex                  : String(225);
-  shortText                  : String;
-  quantity                   : Integer not null;
-  grossPrice                 : Integer not null;
-  overFulfilmentPercentage   : Integer;
-  priceChangedAllowed        : Boolean;
-  unlimitedOverFulfillment   : Boolean;
-  pricePerUnitOfMeasurement  : Integer;
-  externalServiceNumber      : String(225);
-  netValue                   : Integer;
-  serviceText                : String;
-  lineText                   : String;
-  lineNumber                 : String(225);
-  alternatives               : String;
-  biddersLine                : Boolean;
-  supplementaryLine           : Boolean;
-  lotSizeForCostingIsOne     : Boolean;
-  lastChangeDate             : Date;
+  serviceNumberCode         : Integer;
+  noServiceNumber           : Integer;
+  serviceTypeCode           : String;
+  materialGroupCode         : String;
+  personnelNumberCode       : String;
+  unitOfMeasurementCode     : String;
+  currencyCode              : String;
+  formulaCode               : String;
+  lineTypeCode              : String;
+  selectionCheckBox         : Boolean;
+  lineIndex                 : String(225);
+  shortText                 : String;
+  quantity                  : Integer not null;
+  grossPrice                : Integer not null;
+  overFulfilmentPercentage  : Integer;
+  priceChangedAllowed       : Boolean;
+  unlimitedOverFulfillment  : Boolean;
+  pricePerUnitOfMeasurement : Integer;
+  externalServiceNumber     : String(225);
+  netValue                  : Integer;
+  serviceText               : String;
+  lineText                  : String;
+  lineNumber                : String(225);
+  alternatives              : String;
+  biddersLine               : Boolean;
+  supplementaryLine         : Boolean;
+  lotSizeForCostingIsOne    : Boolean;
+  lastChangeDate            : Date;
 
-  // Same direction as Java — parent has many children
-  modelSpecifications : Composition of many ModelSpecifications
-    on modelSpecifications.modelSpecificationsDetails = $self;
-
-  serviceNumber : Association to ServiceNumber;
+  modelSpecifications : Association to ModelSpecifications;
+  serviceNumber       : Association to ServiceNumber;
 }
 
-entity ModelSpecifications : managed {
-  key modelSpecCode : Integer;     // Long → Integer
 
-  modelSpecDetailsCode : array of Integer;   // List<Long> → array of Integer ✅
+entity ModelSpecifications : managed {
+  key modelSpecCode : Integer;
 
   currencyCode      : String;
   modelServSpec     : String(225);
@@ -317,6 +313,7 @@ entity ModelSpecifications : managed {
   searchTerm        : String;
   lastChangeDate    : Date;
 
-  // Child side of relationship
-  modelSpecificationsDetails : Association to ModelSpecificationsDetails;
+  modelSpecificationsDetails : Composition of many ModelSpecificationsDetails
+    on modelSpecificationsDetails.modelSpecifications = $self;
 }
+
