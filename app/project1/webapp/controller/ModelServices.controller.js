@@ -194,13 +194,10 @@ sap.ui.define([
             // console.log("sModelSpecRec",sModelSpecRec);
             
             console.log("Navigated with modelSpecCode:", sModelSpecCode);
-            // Store the current modelSpecCode for use in add function
             this.currentModelSpecCode = sModelSpecCode;
 
-            // Load data for that specific ModelSpecification
             this._loadModelSpecificationDetails(sModelSpecCode);
 
-            // Load static data (Formulas, UOM, Currency, ServiceNumbers)
         },
         _loadModelSpecificationDetails: function (sModelSpecCode) {
             const oModel = this.getView().getModel("view");
@@ -397,19 +394,14 @@ sap.ui.define([
         onAddModelSpecDetails: async function () {
             const oView = this.getView();
             const oModel = oView.getModel("view");
-            const modelSpecCode = this.currentModelSpecCode; // Retrieved from route-matched storage
-
+            const modelSpecCode = this.currentModelSpecCode; 
             if (!modelSpecCode) {
                 sap.m.MessageBox.error("Model Specification Code not found! Cannot add detail.");
                 return;
             }
-
-            // Compute next sequential ID from loaded details (fallback to 1 if empty)
             const aDetails = oModel.getProperty("/ModelServices") || [];
             const maxId = aDetails.length > 0 ? Math.max(...aDetails.map(d => parseInt(d.modelSpecDetailsCode) || 0)) : 0;
             const modelSpecDetailsCode = maxId + 1;  // Sequential integer, valid for Integer type
-
-            // Get Select controls for text extraction
             const oServiceTypeSelect = oView.byId("mainServiceTypeSelect");
             const oMatGroupSelect = oView.byId("mainMatGroupSelect");
             const oPersonnelSelect = oView.byId("personnelNumber");
@@ -417,8 +409,6 @@ sap.ui.define([
             const oUOMSelect = oView.byId("mainUOMSelect");
             const oFormulaSelect = oView.byId("formulaSelect");
             const oCurrencySelect = oView.byId("mainCurrencySelect");
-
-            // Build the request body as per the API specification (use bound model paths where available)
             var oPayload = {
                 modelSpecDetailsCode: modelSpecDetailsCode,  // Integer
                 serviceNumberCode: parseInt(oView.byId("mainModelServiceNoSelect").getSelectedKey()) || 0,
@@ -466,11 +456,7 @@ sap.ui.define([
                 modelSpecifications_modelSpecCode: parseInt(modelSpecCode), // Ensure numeric as per example
                 serviceNumber_serviceNumberCode: oView.byId("mainModelServiceNoSelect").getSelectedKey() || ""
             };
-
-            // Construct the full OData URL for the navigation property POST
             const sUrl = `/odata/v4/sales-cloud/ModelSpecifications(${modelSpecCode})/modelSpecificationsDetails`;
-
-            // Send POST request
             try {
                 const response = await fetch(sUrl, {
                     method: "POST",
@@ -483,9 +469,8 @@ sap.ui.define([
                     throw new Error(`HTTP ${response.status}: ${errorText}`);
                 }
 
-                // Success: Show confirmation, reload table, close dialog
                 sap.m.MessageToast.show("Model Specification Detail added successfully!");
-                this._loadModelSpecificationDetails(modelSpecCode); // Refresh the table with updated data
+                this._loadModelSpecificationDetails(modelSpecCode); 
 
                 const oDialog = oView.byId("addModelServiceDialog");
                 if (oDialog) oDialog.close();
@@ -495,98 +480,6 @@ sap.ui.define([
                 sap.m.MessageBox.error("Failed to add Model Specification Detail: " + err.message);
             }
         },
-        // onAddModelSpecDetails: async function () {
-        //     const oView = this.getView();
-        //     const oModel = oView.getModel("view");
-
-        //      var oUOMSelect = oView.byId("mainUOMSelect");
-        //     var oFormulaSelect = oView.byId("formulaSelect");
-        //     var oCurrencySelect = oView.byId("mainCurrencySelect");
-        //     const modelSpecCode = this.currentModelSpecCode; // Retrieved from route-matched storage
-        //     console.log("Model Spec Code", modelSpecCode);
-        //     if (!modelSpecCode) {
-        //         sap.m.MessageBox.error("Model Specification Code not found! Cannot add detail.");
-        //         return;
-        //     }
-
-        //     const aDetails = oModel.getProperty("/ModelServices") || [];
-        //     const maxId = aDetails.length > 0 ? Math.max(...aDetails.map(d => parseInt(d.modelSpecDetailsCode) || 0)) : 0;
-        //     const modelSpecDetailsCode = maxId + 1;  // Sequential integer, valid for Integer type
-        //   var oPayload = {
-        //         modelSpecDetailsCode: modelSpecDetailsCode, 
-        //         serviceNumberCode: parseInt(oView.byId("mainModelServiceNoSelect").getSelectedKey()) || 0,
-        //         noServiceNumber: 0,
-        //         serviceTypeCode: oView.byId("mainServiceTypeSelect").getSelectedKey() || "",
-        //         materialGroupCode: oView.byId("mainMatGroupSelect").getSelectedKey() || "",
-        //         personnelNumberCode: oView.byId("personnelNumber").getSelectedItem().getText() || "",
-        //         unitOfMeasurementCode: oUOMSelect && oUOMSelect.getSelectedItem()
-        //             ? oUOMSelect.getSelectedItem().getText()
-        //             : "",
-        //         formulaCode: oFormulaSelect && oFormulaSelect.getSelectedItem()
-        //             ? oFormulaSelect.getSelectedItem().getText()
-        //             : "",
-        //         currencyCode: oCurrencySelect && oCurrencySelect.getSelectedItem()
-        //             ? oCurrencySelect.getSelectedItem().getText()
-        //             : "",
-        //         lineTypeCode: oView.byId("lineTypes").getSelectedKey() || "",
-        //         selectionCheckBox: true,
-        //         lineIndex: "",
-        //         shortText: oView.byId("mainShortTextInput").getValue() || "",
-        //         quantity: parseFloat(oView.byId("mainQuantityInput").getValue()) || parseFloat(oModel.getProperty("/newModelService/quantity")) || 0,
-        //         grossPrice: parseFloat(oView.byId("mainAmountPerUnitInput").getValue()) || parseFloat(oModel.getProperty("/newModelService/grossPrice")) || 0,
-        //         overFulfilmentPercentage: parseFloat(oView.byId("mainOverFInput").getValue()) || parseFloat(oModel.getProperty("/newModelService/overFulfilmentPercentage")) || 0,
-        //         priceChangedAllowed: oView.byId("mainPriceChangeAllowed").getSelected() || oModel.getProperty("/newModelService/priceChangedAllowed") || false,
-        //         unlimitedOverFulfillment: oView.byId("mainUnlimitedOverF").getSelected() || oModel.getProperty("/newModelService/unlimitedOverFulfillment") || false,
-        //         pricePerUnitOfMeasurement: parseFloat(oView.byId("mainPricePerUnitInput").getValue()) || parseFloat(oModel.getProperty("/newModelService/pricePerUnitOfMeasurement")) || 0,
-        //         externalServiceNumber: oView.byId("mainExternalServiceNo").getValue() || oModel.getProperty("/newModelService/externalServiceNumber") || "",
-        //         netValue: parseFloat(oView.byId("mainTotalInput").getValue()) || 0,
-        //         serviceText: oView.byId("mainServiceText").getValue() || oModel.getProperty("/newModelService/serviceText") || "",
-        //         lineText: oView.byId("mainLineText").getValue() || oModel.getProperty("/newModelService/lineText") || "",
-        //         lineNumber: oView.byId("_IDGenInput6").getValue() || oModel.getProperty("/newModelService/lineNumber") || "",
-        //         alternatives: oView.byId("_IDGenInput7").getValue() || oModel.getProperty("/newModelService/alternatives") || "",
-        //         biddersLine: oView.byId("_IDGenCheckBox").getSelected() || oModel.getProperty("/newModelService/biddersLine") || false,
-        //         supplementaryLine: oView.byId("_IDGenCheckBox2").getSelected() || oModel.getProperty("/newModelService/supplementaryLine") || false,
-        //         lotSizeForCostingIsOne: oView.byId("_IDGenCheckBox6").getSelected() || oModel.getProperty("/newModelService/lotSizeForCostingIsOne") || false,
-        //         lastChangeDate: new Date().toISOString().split("T")[0], // Current date in YYYY-MM-DD
-        //         modelSpecifications_modelSpecCode: parseInt(modelSpecCode), // Ensure numeric as per example
-        //         serviceNumber_serviceNumberCode: oView.byId("mainModelServiceNoSelect").getSelectedKey() || ""
-        //     };
-        //     console.log("The Add Payload", oPayload);
-
-
-        //     // Construct the full OData URL for the navigation property POST
-        //     const sUrl = `/odata/v4/sales-cloud/ModelSpecifications(${modelSpecCode})/modelSpecificationsDetails`;
-
-        //     // Send POST request
-        //     try {
-        //         const response = await fetch(sUrl, {
-        //             method: "POST",
-        //             headers: { "Content-Type": "application/json" },
-        //             body: JSON.stringify(oPayload)
-        //         });
-
-        //         if (!response.ok) {
-        //             const errorText = await response.text();
-        //             throw new Error(`HTTP ${response.status}: ${errorText}`);
-        //         }
-        //         const aModelServices = oModel.getProperty("/ModelServices") || [];
-        //         aModelServices.push(oPayload);
-        //         console.log("The Model Services After Add", aModelServices);
-
-        //         oModel.setProperty("/ModelServices", aModelServices);
-        //         oModel.refresh(true);
-        //         // Success: Show confirmation, reload table, close dialog
-        //         sap.m.MessageToast.show("Model Specification Detail added successfully!");
-        //         this._loadModelSpecificationDetails(modelSpecCode); // Refresh the table with updated data
-
-        //         const oDialog = oView.byId("addModelServiceDialog");
-        //         if (oDialog) oDialog.close();
-
-        //     } catch (err) {
-        //         console.error("Error adding Model Specification Detail:", err);
-        //         sap.m.MessageBox.error("Failed to add Model Specification Detail: " + err.message);
-        //     }
-        // },
         onDetails: function (oEvent) {
             var oContext = oEvent.getSource().getParent().getBindingContext();
             if (oContext) {

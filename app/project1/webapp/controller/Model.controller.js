@@ -9,7 +9,6 @@ sap.ui.define([
     "sap/ui/model/json/JSONModel"
 ], function (Controller, MessageBox, Dialog, Input, Button, Label, VBox, JSONModel) {
     "use strict";
-
     return Controller.extend("project1.controller.Model", {
         onInit: function () {
 
@@ -48,7 +47,6 @@ sap.ui.define([
                     console.error("Error fetching models", err);
                 });
         },
-
         _onRouteMatched: function () {
             this._loadModels();
         },
@@ -64,8 +62,6 @@ sap.ui.define([
                     console.error("Error fetching models", err);
                 });
         },
-
-
         onEdit: function (oEvent) {
             var oButton = oEvent.getSource();
             var oContext = oButton.getParent().getParent().getBindingContext();
@@ -237,7 +233,6 @@ sap.ui.define([
 
             this._oEditDialog.open();
         },
-
         onDelete: function (oEvent) {
             var oBindingContext = oEvent.getSource().getBindingContext();
             if (oBindingContext) {
@@ -282,19 +277,14 @@ sap.ui.define([
                 });
             }
         },
-
-        //Navigate to Add Model View
         onPress() {
             this.getOwnerComponent().getRouter().navTo("addModel");
         },
-
         onNavigateToModelServices: function (oEvent) {
             const oContext = oEvent.getSource().getBindingContext();
             const oData = oContext.getObject();
             const sModelSpecCode = oData.modelSpecCode;
-            console.log("Nav to Service",oData);
-            
-            // navigate to ModelServices route with modelSpecCode as parameter
+            console.log("Nav to Service",oData);   
             this.getOwnerComponent().getRouter().navTo("modelServices", {
                 modelSpecCode: sModelSpecCode,
                 Record:oData
