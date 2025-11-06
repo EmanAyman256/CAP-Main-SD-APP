@@ -553,6 +553,7 @@ sap.ui.define([
                 console.error("Dialog not found");
             }
         },
+        
         onAddRecord: function () {
 
             var shorttxt = this.byId("dialogShortText").getValue(); //For Example # Not Working

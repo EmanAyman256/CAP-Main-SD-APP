@@ -66,23 +66,20 @@ sap.ui.define([
             var oButton = oEvent.getSource();
             var oContext = oButton.getParent().getParent().getBindingContext();
 
+
             if (!oContext) {
                 MessageBox.warning("Error: Unable to retrieve row data");
                 return;
             }
-
             var oSelectedData = oContext.getObject();
             var oModel = this.getView().getModel("view");
-
-            // Create Edit Dialog if not exists
             if (!this._oEditDialog) {
-                // keep references for inputs
+
                 this._oModelServSpecInput = new Input();
-                this._oBlockingIndicatorInput = new Input();
-                this._oServiceSelectionInput = new Input();
+                this._oBlockingIndicatorInput = new sap.m.CheckBox();
+                this._oServiceSelectionInput = new sap.m.CheckBox();
                 this._oDescriptionInput = new Input();
                 this._oSearchTermInput = new Input();
-                // this._oCurrencyCodeInput = new Input();
                 this._oCurrencyCodeSelect = new sap.m.Select({
                     id: "currency",
                     class: "sapUiSmallMarginStart",
@@ -97,40 +94,10 @@ sap.ui.define([
                             })
                     }
                 });
-
                 this._oCurrencyCodeSelect.insertItem(
                     new sap.ui.core.Item({ key: "", text: "Cancel" }),
                     0
                 );
-
-                // this._oCurrencyCodeSelect = new sap.m.Select({
-                //     id: "currency",
-                //     class: "sapUiSmallMarginStart",
-                //     width: "200px",
-                //     forceSelection: false,
-                //     items: [
-                //         new sap.ui.core.Item({ key: "", text: "Cancel" }) // 👈 static cancel option
-                //     ],
-                //     // Dynamic items from the model
-                //     additionalText: "currencies>",
-                //     bindItems: {
-                //         path: "currencies>/",
-                //         template: new sap.ui.core.Item({
-                //             key: "{currencies>currencyCode}",
-                //             text: "{currencies>description}"
-                //         })
-                //     },
-                //     change: function (oEvent) {
-                //         const sSelectedKey = oEvent.getParameter("selectedItem").getKey();
-                //         if (sSelectedKey === "") {
-                //             // 👇 handle cancel action
-                //             sap.m.MessageToast.show("Selection cancelled");
-                //         }
-                //     }
-                // });
-
-
-
                 this._oEditDialog = new Dialog({
                     title: "Edit Model",
                     titleAlignment: "Center",
@@ -162,17 +129,15 @@ sap.ui.define([
                         text: "Save",
                         type: "Emphasized",
                         press: () => {
-                            // Build updated payload
                             const updatedData = {
                                 modelServSpec: this._oModelServSpecInput.getValue(),
-                                blockingIndicator: this._oBlockingIndicatorInput.getValue() === "true" || this._oBlockingIndicatorInput.getValue() === true,
-                                serviceSelection: this._oServiceSelectionInput.getValue() === "true" || this._oServiceSelectionInput.getValue() === true,
+                                blockingIndicator: this._oBlockingIndicatorInput.getSelected(),
+                                serviceSelection: this._oServiceSelectionInput.getSelected(),
                                 description: this._oDescriptionInput.getValue(),
                                 searchTerm: this._oSearchTermInput.getValue(),
                                 currencyCode: this._oCurrencyCodeSelect.getSelectedKey()
                             };
 
-                            // Send PATCH request to CAP OData
                             fetch(`/odata/v4/sales-cloud/ModelSpecifications('${(oSelectedData.modelSpecCode)}')`, {
                                 method: "PATCH",
                                 headers: {
@@ -186,10 +151,7 @@ sap.ui.define([
                                 })
                                 .then((updatedItem) => {
                                     console.log(updatedItem);
-                                    /*
-                                    Update the table after changes with 2 ways
-                                    */
-                                    // Way 1: Update local model so table refreshes
+
                                     var oModel1 = this.getView().byId("modelTable").getModel();
                                     var aModels = oModel1.getProperty("/Models") || [];
                                     var iIndex = aModels.findIndex(st => st.modelSpecCode === oSelectedData.modelSpecCode);
@@ -199,14 +161,6 @@ sap.ui.define([
                                         aModels[iIndex] = updatedData;
                                         oModel1.setProperty("/Models", aModels);
                                     }
-                                    // Way 2 : re-fetch models from backend
-                                    // fetch("/odata/v4/sales-cloud/ModelSpecifications")
-                                    //     .then(res => res.json())
-                                    //     .then(data => {
-                                    //         var oNewModel = new sap.ui.model.json.JSONModel({ Models: data.value });
-                                    //         this.getView().byId("modelTable").setModel(oNewModel);
-                                    //     });
-
                                     sap.m.MessageToast.show("Model updated successfully");
                                     this._oEditDialog.close();
                                 })
@@ -223,10 +177,12 @@ sap.ui.define([
                 });
                 this.getView().addDependent(this._oEditDialog);
             }
-            // Fill inputs with selected data
             this._oModelServSpecInput.setValue(oSelectedData.modelServSpec);
-            this._oBlockingIndicatorInput.setValue(oSelectedData.blockingIndicator);
-            this._oServiceSelectionInput.setValue(oSelectedData.serviceSelection);
+            this._oBlockingIndicatorInput.setSelected(!!oSelectedData.blockingIndicator);
+            this._oServiceSelectionInput.setSelected(!!oSelectedData.serviceSelection);
+
+            // this._oBlockingIndicatorInput.setValue(oSelectedData.blockingIndicator);
+            // this._oServiceSelectionInput.setValue(oSelectedData.serviceSelection);
             this._oDescriptionInput.setValue(oSelectedData.description);
             this._oSearchTermInput.setValue(oSelectedData.searchTerm);
             this._oCurrencyCodeSelect.setValue(oSelectedData.currencyCode);
@@ -284,10 +240,10 @@ sap.ui.define([
             const oContext = oEvent.getSource().getBindingContext();
             const oData = oContext.getObject();
             const sModelSpecCode = oData.modelSpecCode;
-            console.log("Nav to Service",oData);   
+            console.log("Nav to Service", oData);
             this.getOwnerComponent().getRouter().navTo("modelServices", {
                 modelSpecCode: sModelSpecCode,
-                Record:oData
+                Record: oData
             });
         }
 
