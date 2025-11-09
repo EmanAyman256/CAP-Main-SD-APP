@@ -38,6 +38,7 @@
             expanded="true"
             class="customPanel "
         >
+
             <VBox id="_IDGenVBox16">
                 <HBox id="_IDGenHBox23">
                     <Label
@@ -51,17 +52,7 @@
                         width="200px"
                         class="sapUiSmallMargin"
                     />
-                    <Label
-                        id="_IDGenLabel56"
-                        text="Total Value:"
-                        class="sapUiSmallMargin"
-                    />
-                    <Input
-                        id="filterQuantity"
-                        placeholder="Total Value"
-                        width="200px"
-                        class="sapUiSmallMargin"
-                    />
+                    
                     <Button
                         id="_IDGenButton41"
                         text="Export to Excel"
@@ -74,7 +65,7 @@
                         id="_IDGenButton42"
                         text="Import from Excel"
                         class="sapUiSmallMargin"
-                        press="onImport"
+                        press="_openExcelUploadDialogModelSpec"
                         type="Transparent"
                         icon="sap-icon://excel-attachment"
                     />
@@ -84,21 +75,56 @@
                     justifyContent="SpaceBetween"
                     class="summarySection"
                 >
-                    <VBox id="_IDGenVBox18">
+                   
+                </HBox>
+                       <m:HBox id="_IDGenHBox8"
+                justifyContent="Center"
+                alignItems="Center"
+            >
+                <m:VBox id="_IDGenVBox6"
+                    class="myRectangle"
+                    alignItems="Center"
+                    justifyContent="Center"
+                >
+                    <m:Text id="_IDGenText33"
+                        text="Total Value:"
+                    />
+                </m:VBox>
+                <m:VBox id="_IDGenVBox19"
+                    class="myRectangle"
+                    alignItems="Center"
+                    justifyContent="Center"
+                >
+                    <m:Text id="_IDGenText59"
+                        text="{/Total}"
+                    />
+                </m:VBox>
+                <m:VBox id="_IDGenVBox20"
+                    class="myRectangle"
+                    alignItems="Center"
+                    justifyContent="Center"
+                >
+                    <m:Text id="_IDGenText91"
+                        text="SAR"
+                    />
+                </m:VBox>
+            </m:HBox>
+            </VBox>
+            
+        </Panel>
+         <VBox id="_IDGenVBox18">
                         <!-- <Label id="_IDGenLabel57" text="Total Records:"/>
                             <Text id="totalRecords" text="{= ${/Models}.length }" /> -->
                         <HBox id="_IDGenHBox24">
-                            <Input
+                            <m:SearchField
                                 id="filterLine"
-                                placeholder="Search for line..."
-                                width="200px"
-                                change="onChangeFilterLine"
+                                placeholder="Search Models Specs..."
+                                width="250px"
+                                search="onSearchModelServices"
+                                liveChange="onSearchModelServices"
                             />
                         </HBox>
                     </VBox>
-                </HBox>
-            </VBox>
-        </Panel>
         <table:Table
             id="modelServicesTable"
             rows="{/ModelServices}"
@@ -189,7 +215,7 @@
                     <table:template>
                         <Text
                             id="_IDGenText32"
-                            text="{formulaCode}"
+                            text="{formulaDesc}"
                         />
                     </table:template>
                 </table:Column>
@@ -244,7 +270,7 @@
                     <table:template>
                         <Text
                             id="_IDGenText64"
-                            text="{unitOfMeasurementCode}"
+                            text="{unitOfMeasurementDesc}"
                         />
                     </table:template>
                 </table:Column>
@@ -261,7 +287,7 @@
                     <table:template>
                         <Text
                             id="_IDGenText66"
-                            text="{currencyCode}"
+                            text="{currencyDesc}"
                         />
                     </table:template>
                 </table:Column>
@@ -557,7 +583,7 @@
                             <Button
                                 id="_IDGenButton19"
                                 icon="sap-icon://edit"
-                                press="onEdit"
+                                press=".onEditModelSpecDetails"
                             />
                             <Button
                                 id="_IDGenButton18"
@@ -638,7 +664,7 @@
                         id="mainTotalInput"
                         placeholder="Net Value"
                         editable="false"
-                        value="{/Total}"
+                        value="{/netValue}"
                         liveChange=".onInputChange"
                     />
                     <m:Label
@@ -873,10 +899,8 @@
         <m:Dialog
             id="formulaDialog"
             title="Enter Formula Parameters"
-            class="sapUiContentPadding"
-        >
+            class="sapUiContentPadding">
             <m:VBox id="formulaParamContainer" />
-            <!-- This is the missing piece! -->
             <m:endButton>
                 <m:Button
                     id="_IDGenButton8"

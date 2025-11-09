@@ -192,7 +192,7 @@ sap.ui.define([
             // const oModel = this.getView().getModel("view");
             // oModel.setProperty("/ModelSpecRec", sModelSpecRec)
             // console.log("sModelSpecRec",sModelSpecRec);
-            
+
             console.log("Navigated with modelSpecCode:", sModelSpecCode);
             this.currentModelSpecCode = sModelSpecCode;
 
@@ -213,11 +213,22 @@ sap.ui.define([
                     // const aData = Array.isArray(data) ? data : [data];
                     oModel.setProperty("/ModelServices", data.modelSpecificationsDetails);
                     console.log("Fetched ModelServices for", sModelSpecCode, data.modelSpecificationsDetails);
+
+                    // NEW: Update total after loading data
+                    this.updateTotalValue();
                 })
                 .catch(err => {
                     console.error("Error fetching ModelSpecificationDetails:", err);
                     sap.m.MessageToast.show("Failed to load model details.");
                 });
+        },
+        // NEW: Method to calculate and update total sum of netValues
+        updateTotalValue: function () {
+            const oModel = this.getView().getModel(); // Default model (with /ModelServices)
+            const aServices = oModel.getProperty("/ModelServices") || [];
+            const iTotal = aServices.reduce((sum, row) => sum + (parseFloat(row.netValue) || 0), 0);
+            oModel.setProperty("/Total", parseFloat(iTotal.toFixed(3)));
+            console.log("Updated Total Value:", iTotal);
         },
         onServiceNumberChange: function (oEvent) {
             var oSelect = oEvent.getSource();
@@ -394,7 +405,7 @@ sap.ui.define([
         onAddModelSpecDetails: async function () {
             const oView = this.getView();
             const oModel = oView.getModel("view");
-            const modelSpecCode = this.currentModelSpecCode; 
+            const modelSpecCode = this.currentModelSpecCode;
             if (!modelSpecCode) {
                 sap.m.MessageBox.error("Model Specification Code not found! Cannot add detail.");
                 return;
@@ -470,7 +481,7 @@ sap.ui.define([
                 }
 
                 sap.m.MessageToast.show("Model Specification Detail added successfully!");
-                this._loadModelSpecificationDetails(modelSpecCode); 
+                this._loadModelSpecificationDetails(modelSpecCode);
 
                 const oDialog = oView.byId("addModelServiceDialog");
                 if (oDialog) oDialog.close();
@@ -531,13 +542,16 @@ sap.ui.define([
                                     aData.splice(iIndex, 1); // remove 1 element at index
                                     oModel.setProperty("/ModelServices", aData);
                                     sap.m.MessageToast.show("Record deleted successfully.");
+
+                                    // NEW: Update total after deletion
+                                    this.updateTotalValue();
                                 })
                                 .catch(err => {
                                     console.error("Error deleting Formula:", err);
                                     sap.m.MessageBox.error("Error: " + err.message);
                                 });
                         }
-                    }
+                    }.bind(this)  // Bind 'this' to controller
                 });
             }
         },
@@ -553,60 +567,468 @@ sap.ui.define([
                 console.error("Dialog not found");
             }
         },
-        
-        onAddRecord: function () {
+        onEditModelSpecDetails: function (oEvent) {
+            var oButton = oEvent.getSource();
+            var oContext = oButton.getBindingContext();
 
-            var shorttxt = this.byId("dialogShortText").getValue(); //For Example # Not Working
-
-            const oTable = this.byId("addServiceTable");
-            const aItems = oTable.getRows();   // rows of the table
-
-            if (aItems.length > 0) {
-                const oRow = aItems[0];        // since you only have one row
-                const aCells = oRow.getCells();
-                var newServiceModel = {
-                    serviceNumberCode: aCells[1].getValue(),
-                    shortText: aCells[2].getValue(),
-                    quantity: aCells[3].getValue(),
-                    formulaCode: aCells[4].getValue(),
-                    modelSpecifications: [
-                        {
-                            modelSpecCode: "01234567-89ab-cdef-0123-456789abcdef",
-                        }
-                    ]
-                }
-
-                //Check Mandatories before Posting in DB
-                //Post In DB
-                fetch("/odata/v4/sales-cloud/ModelSpecificationsDetails", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(newServiceModel)
-                })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error("Failed to save: " + response.statusText);
-                        }
-                        return response.json();
-                    })
-                    .then(savedItem => {
-                        var oModel = this.getView().getModel();
-                        var models = oModel.getProperty("/ModelSpecificationsDetails") || [];
-                        models.push(savedItem);
-                        oModel.setProperty("/ModelSpecificationsDetails", models);
-                        oModel.refresh(true);
-                    })
-                    .catch(err => {
-                        console.error("Error saving Model Service:", err);
-                        sap.m.MessageBox.error("Error: " + err.message);
-                        return;
-                    });
-                sap.m.MessageToast.show("Record added successfully!");
-                this.onCloseDialog();
+            if (!oContext) {
+                sap.m.MessageToast.show("No data found for editing.");
+                return;
             }
 
+            var oSelectedData = oContext.getObject();
+            var oView = this.getView();
+
+            // Create dialog dynamically if not already created
+            if (!this._oEditDialog) {
+                this._oEditDialog = new sap.m.Dialog({
+                    title: "Edit Model Service",
+                    contentWidth: "800px",
+                    contentHeight: "80%",
+                    resizable: true,
+                    draggable: true,
+                    content: new sap.ui.layout.form.SimpleForm({
+                        editable: true,
+                        layout: "ResponsiveGridLayout",
+                        class: "sapUiSmallMargin",
+                        content: [
+                            new sap.m.Label({ text: "Service.No" }),
+                            new sap.m.Input({ value: "{editModel>/serviceNumberCode}" }),
+
+                            new sap.m.Label({ text: "Short Text" }),
+                            new sap.m.Input({ value: "{editModel>/shortText}" }),
+
+                            new sap.m.Label({ text: "Quantity" }),
+                            new sap.m.Input({
+                                id: "qtyInput",  // Added ID for stable reference in onEditInputChange
+                                type: "Number", value: "{editModel>/quantity}", liveChange: this.onEditInputChange.bind(this), valueLiveUpdate: true
+                            }),
+
+                            new sap.m.Label({ text: "Gross Price" }),
+                            new sap.m.Input({
+                                id: "grossPriceInput",  // Added ID for stable reference
+                                type: "Number", value: "{editModel>/grossPrice}", liveChange: this.onEditInputChange.bind(this), valueLiveUpdate: true
+                            }),
+
+                            new sap.m.Label({ text: "Net Value" }),
+                            new sap.m.Input({ type: "Number", value: "{editModel>/netValue}", editable: false }),
+
+                            new sap.m.Label({ text: "Formula" }),
+                            new sap.m.Select({
+                                selectedKey: "{editModel>/formulaCode}",
+                                // Added change handler for consistency/fallback
+                                change: function (oEvent) {
+                                    console.log('Formula change fired');
+                                    var oModel = this._oEditDialog.getModel("editModel");
+                                    var oSelectedItem = oEvent.getParameter("selectedItem");
+                                    console.log('Formula selectedItem:', oSelectedItem);  // Debug: Full item
+                                    var key = oSelectedItem ? oSelectedItem.getKey() : "";
+                                    console.log('Setting formula key:', key);
+                                    oModel.setProperty("/formulaCode", key);
+                                    console.log('Model formula value:', oModel.getProperty("/formulaCode"));
+                                }.bind(this),
+                                items: { path: "/Formulas", template: new sap.ui.core.Item({ key: "{formulaCode}", text: "{description}" }) }
+                            }),
+                            new sap.m.Button({ text: "Enter Parameters", press: this.onOpenFormulaDialog.bind(this) }),
+
+                            // Added label for UOM
+                            new sap.m.Label({ text: "UOM" }),
+                            new sap.m.Select({
+                                selectedKey: "{editModel>/unitOfMeasurementCode}",
+                                change: function (oEvent) {
+                                    console.log('UOM change fired');
+                                    var oModel = this._oEditDialog.getModel("editModel");
+                                    var oSelectedItem = oEvent.getParameter("selectedItem");
+                                    console.log('UOM selectedItem:', oSelectedItem);
+                                    var key = oSelectedItem ? oSelectedItem.getKey() : "";
+                                    // NEW: Fallback if key still empty: use text as key (temp; remove once data fixed)
+                                    if (!key && oSelectedItem) {
+                                        key = oSelectedItem.getText();  // e.g., "Meter/Minute" as fallback key
+                                        console.log('Fallback UOM key from text:', key);
+                                    }
+                                    console.log('Setting UOM key:', key);
+                                    oModel.setProperty("/unitOfMeasurementCode", key);
+                                    console.log('Model UOM value:', oModel.getProperty("/unitOfMeasurementCode"));
+                                }.bind(this),
+                                items: { path: "/UOM", template: new sap.ui.core.Item({ key: "{code}", text: "{description}" }) }
+                            }),
+
+                            // Added label for Currency
+                            new sap.m.Label({ text: "Currency" }),
+                            new sap.m.Select({
+                                selectedKey: "{editModel>/currencyCode}",
+                                change: function (oEvent) {
+                                    console.log('Currency change fired');
+                                    var oModel = this._oEditDialog.getModel("editModel");
+                                    var oSelectedItem = oEvent.getParameter("selectedItem");
+                                    console.log('Currency selectedItem:', oSelectedItem);
+                                    var key = oSelectedItem ? oSelectedItem.getKey() : "";
+                                    console.log('Setting currency key:', key);
+                                    oModel.setProperty("/currencyCode", key);
+                                    console.log('Model currency value:', oModel.getProperty("/currencyCode"));
+                                }.bind(this),
+                                items: { path: "/Currency", template: new sap.ui.core.Item({ key: "{currencyCode}", text: "{description}" }) }
+                            }),
+
+                            new sap.m.Label({ text: "OverF.Percentage" }),
+                            new sap.m.Input({ type: "Number", value: "{editModel>/overFulfilmentPercentage}" }),
+
+                            new sap.m.Label({ text: "Price Change Allowed" }),
+                            new sap.m.CheckBox({ selected: "{editModel>/priceChangedAllowed}" }),
+
+                            new sap.m.Label({ text: "Unlimited OverFulfillment" }),
+                            new sap.m.CheckBox({ selected: "{editModel>/unlimitedOverFulfillment}" }),
+
+                            new sap.m.Label({ text: "Price Per Unit Of Measurement" }),
+                            new sap.m.Input({ type: "Number", value: "{editModel>/pricePerUnitOfMeasurement}" }),
+
+                            new sap.m.Label({ text: "Mat Group" }),
+                            new sap.m.Select({
+                                selectedKey: "{editModel>/materialGroupCode}",
+                                items: { path: "/MatGroups", template: new sap.ui.core.Item({ key: "{materialGroupCode}", text: "{description}" }) }
+                            }),
+
+                            new sap.m.Label({ text: "Service Type" }),
+                            new sap.m.Select({
+                                selectedKey: "{editModel>/serviceTypeCode}",
+                                items: { path: "/ServiceTypes", template: new sap.ui.core.Item({ key: "{serviceTypeCode}", text: "{description}" }) }
+                            }),
+
+                            new sap.m.Label({ text: "External Service No" }),
+                            new sap.m.Input({ value: "{editModel>/externalServiceNumber}" }),
+
+                            new sap.m.Label({ text: "Service Text" }),
+                            new sap.m.Input({ value: "{editModel>/serviceText}" }),
+
+                            new sap.m.Label({ text: "Line Text" }),
+                            new sap.m.Input({ value: "{editModel>/lineText}" }),
+
+                            new sap.m.Label({ text: "Personnel Number" }),
+                            new sap.m.Select({
+                                selectedKey: "{editModel>/personnelNumberCode}",
+                                items: { path: "/personnelNumbers", template: new sap.ui.core.Item({ key: "{personnelNumberCode}", text: "{description}" }) }
+                            }),
+
+                            new sap.m.Label({ text: "Line Types" }),
+                            new sap.m.Select({
+                                selectedKey: "{editModel>/lineTypeCode}",
+                                items: { path: "/LineTypes", template: new sap.ui.core.Item({ key: "{lineTypeCode}", text: "{description}" }) }
+                            }),
+
+                            new sap.m.Label({ text: "Line Number" }),
+                            new sap.m.Input({ value: "{editModel>/lineNumber}" }),
+
+                            new sap.m.Label({ text: "Alt" }),
+                            new sap.m.Input({ value: "{editModel>/alternatives}" }),
+
+                            new sap.m.Label({ text: "Bidder's Line" }),
+                            new sap.m.CheckBox({ selected: "{editModel>/biddersLine}" }),
+
+                            new sap.m.Label({ text: "Supp.Line" }),
+                            new sap.m.CheckBox({ selected: "{editModel>/supplementaryLine}" }),
+
+                            new sap.m.Label({ text: "Cstg_Ls" }),
+                            new sap.m.CheckBox({ selected: "{editModel>/lotSizeForCostingIsOne}" })
+                        ]
+                    }),
+                    buttons: [
+                        new sap.m.Button({
+                            text: "Save",
+                            type: "Emphasized",
+                            press: this.onSaveEditModelService.bind(this)
+                        }),
+                        new sap.m.Button({
+                            text: "Cancel",
+                            press: function () {
+                                this._oEditDialog.close();
+                            }.bind(this)
+                        })
+                    ]
+                });
+                oView.addDependent(this._oEditDialog);
+            }
+
+            // NEW: Explicitly set the view's unnamed model on dialog for items bindings (/UOM, etc.)
+            var oViewModel = oView.getModel();  // Assumes your lists (UOM, Currency, Formulas) are on the default model
+            if (oViewModel) {
+                this._oEditDialog.setModel(oViewModel);
+            }
+
+            // Bind selected row to dialog
+            var oEditModel = new sap.ui.model.json.JSONModel(Object.assign({}, oSelectedData));
+            this._oEditDialog.setModel(oEditModel, "editModel");
+
+            // Optional: Force refresh bindings after model set (if needed)
+            // this._oEditDialog.getContent()[0].getFormContainers()[0].getFormElements().forEach(function(oElement) { oElement.getFields().forEach(function(oField) { oField.getBinding("selectedKey").refresh(true); }); });
+
+            this._oEditDialog.open();
+        },
+        onSaveEditModelService: async function () {
+            var oDialog = this._oEditDialog;
+            var oData = oDialog.getModel("editModel").getData();
+
+            // Debug log
+            console.log('Saving data - Formula:', oData.formulaCode, 'UOM:', oData.unitOfMeasurementCode, 'Currency:', oData.currencyCode);
+
+            if (!oData || !oData.modelSpecDetailsCode) {
+                sap.m.MessageBox.warning("Missing Model Spec Details Code.");
+                return;
+            }
+
+            try {
+                // --- Prepare payload for backend (remove non-existent properties) ---
+                const { unitOfMeasurementDesc, formulaDesc, currencyDesc, ...payload } = oData;
+
+                // Call PATCH API
+                const response = await fetch(
+                    `/odata/v4/sales-cloud/ModelSpecificationsDetails(${oData.modelSpecDetailsCode})`,
+                    {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`Failed to update: ${response.statusText}`);
+                }
+
+                // --- Update table model locally with descriptions ---
+                var oTableModel = this.getView().getModel(); // /ModelServices model
+                var aRows = oTableModel.getProperty("/ModelServices");
+                var oRow = aRows.find(r => r.modelSpecDetailsCode === oData.modelSpecDetailsCode);
+
+                if (oRow) {
+                    var oViewModel = this.getView().getModel(); // model holding /UOM, /Currency, /Formulas
+
+                    // Map codes to descriptions
+                    oRow.unitOfMeasurementDesc = oViewModel.getProperty("/UOM")
+                        .find(u => u.code === oData.unitOfMeasurementCode)?.description || "";
+                    oRow.formulaDesc = oViewModel.getProperty("/Formulas")
+                        .find(f => f.code === oData.formulaCode)?.description || "";
+                    oRow.currencyDesc = oViewModel.getProperty("/Currency")
+                        .find(c => c.currencyCode === oData.currencyCode)?.description || "";
+
+                    // Update all other editable fields
+                    Object.assign(oRow, payload);
+                }
+
+                // Refresh table so new descriptions appear
+                oTableModel.refresh(true);
+
+                // NEW: Update total after edit
+                this.updateTotalValue();
+
+                sap.m.MessageToast.show("Model Specification updated successfully!");
+                oDialog.close();
+
+            } catch (error) {
+                sap.m.MessageBox.error("Error updating Model Specification: " + error.message);
+            }
+        },
+        onEditInputChange: function (oEvent) {
+            const oEditModel = this._oEditDialog.getModel("editModel");
+            if (!oEditModel) return;
+
+            // Use IDs instead of fragile find()
+            const oQuantityInput = this._oEditDialog.byId("qtyInput");
+            const oGrossPriceInput = this._oEditDialog.byId("grossPriceInput");
+
+            if (!oQuantityInput || !oGrossPriceInput) return;
+
+            const quantity = parseFloat(oQuantityInput.getValue()) || 0;
+            const grossPrice = parseFloat(oGrossPriceInput.getValue()) || 0;
+
+            const netValue = quantity * grossPrice;
+
+            // Update the model
+            oEditModel.setProperty("/netValue", netValue);
+        },
+        onCloseEditDialog: function () {
+            this.byId("editModelServiceDialog").close();
+        },
+        _openExcelUploadDialogModelSpec: function () {
+            var that = this;
+            var selectedFile;
+
+            var oFileUploader = new sap.ui.unified.FileUploader({
+                width: "100%",
+                fileType: ["xls", "xlsx"],
+                sameFilenameAllowed: true,
+                change: function (oEvent) {
+                    selectedFile = oEvent.getParameter("files")[0];
+                }
+            });
+
+            var oDialogContent = new sap.m.VBox({ items: [oFileUploader] });
+            var oExcelTable;
+
+            var oExcelDialog = new sap.m.Dialog({
+                title: "Import Model Spec from Excel",
+                contentWidth: "80%",
+                contentHeight: "70%",
+                content: [oDialogContent],
+                buttons: [
+                    new sap.m.Button({
+                        text: "Add Selected",
+                        type: "Emphasized",
+                        press: async function () {
+                            const oView = that.getView();
+                            const oModel = oView.getModel("view");
+                            const modelSpecCode = that.currentModelSpecCode;
+                            if (!modelSpecCode) {
+                                sap.m.MessageBox.error("Model Specification Code not found!");
+                                return;
+                            }
+
+                            const aDetails = oModel.getProperty("/ModelServices") || [];
+
+                            // Filter selected rows
+                            const aSelectedRows = oExcelTable.getModel().getProperty("/rows").filter(r => r.selected);
+                            if (aSelectedRows.length === 0) {
+                                sap.m.MessageToast.show("Please select at least one row!");
+                                return;
+                            }
+
+                            let maxId = aDetails.length > 0 ? Math.max(...aDetails.map(d => parseInt(d.modelSpecDetailsCode) || 0)) : 0;
+
+                            for (const row of aSelectedRows) {
+                                maxId += 1;
+
+                                const oPayload = {
+                                    modelSpecDetailsCode: maxId,
+                                    serviceNumberCode: parseInt(row.serviceNumberCode) || 0,
+                                    noServiceNumber: 0,
+                                    serviceTypeCode: row.serviceTypeCode || "",
+                                    materialGroupCode: row.materialGroupCode || "",
+                                    personnelNumberCode: row.personnelNumberCode || "",
+                                    unitOfMeasurementCode: row.unitOfMeasurementCode || "",
+                                    formulaCode: row.formulaCode || "",
+                                    currencyCode: row.currencyCode || "",
+                                    lineTypeCode: row.lineTypeCode || "",
+                                    selectionCheckBox: true,
+                                    lineIndex: "",
+                                    shortText: row.shortText || "",
+                                    quantity: parseFloat(row.quantity) || 0,
+                                    grossPrice: parseFloat(row.grossPrice) || 0,
+                                    overFulfilmentPercentage: parseFloat(row.overFulfilmentPercentage) || 0,
+                                    priceChangedAllowed: row.priceChangedAllowed || false,
+                                    unlimitedOverFulfillment: row.unlimitedOverFulfillment || false,
+                                    pricePerUnitOfMeasurement: parseFloat(row.pricePerUnitOfMeasurement) || 0,
+                                    externalServiceNumber: row.externalServiceNumber || "",
+                                    netValue: parseFloat(row.quantity * row.grossPrice) || 0,
+                                    serviceText: row.serviceText || "",
+                                    lineText: row.lineText || "",
+                                    lineNumber: row.lineNumber || "",
+                                    alternatives: row.alternatives || "",
+                                    biddersLine: row.biddersLine ? true : null,
+                                    supplementaryLine: row.supplementaryLine ? true : null,
+                                    lotSizeForCostingIsOne: row.lotCostOne ? true : null,
+
+                                    lastChangeDate: new Date().toISOString().split("T")[0],
+                                    modelSpecifications_modelSpecCode: parseInt(modelSpecCode),
+                                    serviceNumber_serviceNumberCode: row.serviceNumberCode || ""
+                                };
+
+                                // Post to API
+                                const sUrl = `/odata/v4/sales-cloud/ModelSpecifications(${modelSpecCode})/modelSpecificationsDetails`;
+                                try {
+                                    const response = await fetch(sUrl, {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify(oPayload)
+                                    });
+                                    if (!response.ok) {
+                                        const errorText = await response.text();
+                                        throw new Error(`HTTP ${response.status}: ${errorText}`);
+                                    }
+                                    aDetails.push(oPayload);
+                                } catch (err) {
+                                    console.error("Error adding row:", err);
+                                    sap.m.MessageToast.show("Failed to add a row: " + err.message);
+                                }
+                            }
+
+                            // Update model and total
+                            oModel.setProperty("/ModelServices", aDetails);
+                            const total = aDetails.reduce((sum, rec) => sum + (parseFloat(rec.netValue) || 0), 0);
+                            oModel.setProperty("/Total", total);
+                            that.getView().byId("modelServicesTable").getModel().refresh(true);
+
+                            sap.m.MessageToast.show("Selected rows added successfully!");
+                            oExcelDialog.close();
+                        }
+                    }),
+                    new sap.m.Button({
+                        text: "Add All",
+                        press: function () {
+                            // Select all rows
+                            const allRows = oExcelTable.getModel().getProperty("/rows");
+                            allRows.forEach(r => r.selected = true);
+                            oExcelTable.getModel().refresh();
+                            // Call "Add Selected" button
+                            oExcelDialog.getButtons()[0].firePress();
+                        }
+                    }),
+                    new sap.m.Button({
+                        text: "Cancel",
+                        press: function () {
+                            oExcelDialog.close();
+                        }
+                    })
+                ]
+            });
+
+            // Handle file reading
+            var handleFileRead = function () {
+                if (!selectedFile) return;
+
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var data = new Uint8Array(e.target.result);
+                    var workbook = XLSX.read(data, { type: "array" });
+                    var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    var jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+                    jsonData.forEach(r => r.selected = false); // Add checkbox property
+                    var oExcelDataModel = new sap.ui.model.json.JSONModel({ rows: jsonData });
+
+                    oExcelTable = new sap.m.Table({
+                        width: "100%",
+                        columns: [
+                            new sap.m.Column({ header: new sap.m.Text({ text: "Select" }) }),
+                            new sap.m.Column({ header: new sap.m.Text({ text: "Service Number" }) }),
+                            new sap.m.Column({ header: new sap.m.Text({ text: "Short Text" }) }),
+                            new sap.m.Column({ header: new sap.m.Text({ text: "Quantity" }) }),
+                            new sap.m.Column({ header: new sap.m.Text({ text: "Gross Price" }) }),
+                            new sap.m.Column({ header: new sap.m.Text({ text: "Currency" }) })
+                        ]
+                    });
+
+                    oExcelTable.setModel(oExcelDataModel);
+
+                    oExcelTable.bindItems({
+                        path: "/rows",
+                        template: new sap.m.ColumnListItem({
+                            type: "Inactive",
+                            cells: [
+                                new sap.m.CheckBox({ selected: "{selected}", select: function () { oExcelTable.getModel().refresh(); } }),
+                                new sap.m.Text({ text: "{serviceNumberCode}" }),
+                                new sap.m.Text({ text: "{shortText}" }),
+                                new sap.m.Text({ text: "{quantity}" }),
+                                new sap.m.Text({ text: "{grossPrice}" }),
+                                new sap.m.Text({ text: "{currencyCode}" })
+                            ]
+                        })
+                    });
+
+                    oDialogContent.addItem(oExcelTable);
+                };
+                reader.readAsArrayBuffer(selectedFile);
+            };
+
+            oFileUploader.attachChange(handleFileRead);
+            oExcelDialog.open();
         },
         onCloseDialog: function () {
             var oDialog = this.getView().byId("addModelServiceDialog");
@@ -656,21 +1078,59 @@ sap.ui.define([
             }
             //  MessageToast.show("Filtered by Line: " + (filterValue || "All"));
         },
-        onSearch: function () {
-            var oModel = this.getView().getModel();
-            var filterValue = this.getView().byId("filterLine").getValue();
+        onSearchModelServices: function (oEvent) {
+            const sQuery = oEvent.getParameter("query") || oEvent.getParameter("newValue");
+            const oTable = this.byId("modelServicesTable");
+            const oBinding = oTable.getBinding("rows"); // For sap.ui.table.Table
 
-            if (filterValue) {
-                // Filter the models based on the line value
-                var filteredModels = oModel.getProperty("/originalModels").filter(function (model) {
-                    return model.line.toLowerCase().includes(filterValue.toLowerCase());
-                });
-                oModel.setProperty("/Models", filteredModels);
-            } else {
-                // Reset to original models when filter is empty
-                oModel.setProperty("/Models", oModel.getProperty("/originalModels"));
+            if (!oBinding) {
+                console.warn("No binding found for table rows.");
+                return;
             }
-            MessageToast.show("Filtered by Line: " + (filterValue || "All"));
+
+            if (sQuery && sQuery.trim().length > 0) {
+                const aFilters = [];
+
+                // String field: shortText (Contains for partial match)
+                aFilters.push(
+                    new sap.ui.model.Filter("shortText", sap.ui.model.FilterOperator.Contains, sQuery)
+                );
+
+                // Numeric field: serviceNumberCode (EQ for exact match; parse query to number)
+                const iServiceNumQuery = parseInt(sQuery, 10);
+                if (!isNaN(iServiceNumQuery)) {
+                    aFilters.push(
+                        new sap.ui.model.Filter("serviceNumberCode", sap.ui.model.FilterOperator.EQ, iServiceNumQuery)
+                    );
+                } else {
+                    console.log("Query not numeric; skipping serviceNumberCode filter:", sQuery);
+                }
+
+                // Example for another numeric field: lineNumber (uncomment if needed)
+                // const iLineNumQuery = parseInt(sQuery, 10);
+                // if (!isNaN(iLineNumQuery)) {
+                //     aFilters.push(
+                //         new sap.ui.model.Filter("lineNumber", sap.ui.model.FilterOperator.EQ, iLineNumQuery)
+                //     );
+                // }
+
+                // Add more fields as needed (e.g., for other strings: Contains; numbers: EQ)
+
+                if (aFilters.length > 0) {
+                    const oFilter = new sap.ui.model.Filter({
+                        filters: aFilters,
+                        and: false  // OR logic: match any field
+                    });
+                    oBinding.filter(oFilter);
+                    console.log("Applied filter:", oFilter);  // Debug
+                } else {
+                    oBinding.filter([]);  // No valid filters
+                }
+            } else {
+                // Clear filters
+                oBinding.filter([]);
+                console.log("Cleared filters (empty query).");
+            }
         },
         onExportToExcel: function () {
             var oTable = this.byId("modelServicesTable"); // your table

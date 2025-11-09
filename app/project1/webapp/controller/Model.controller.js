@@ -56,6 +56,8 @@ sap.ui.define([
                 .then(response => response.json())
                 .then(data => {
                     oModel.setData({ Models: data.value });
+                    console.log("Models",data.value);
+                    
                     this.getView().byId("modelTable").setModel(oModel);
                 })
                 .catch(err => {
@@ -246,7 +248,5 @@ sap.ui.define([
                 Record: oData
             });
         }
-
-
     });
 });
