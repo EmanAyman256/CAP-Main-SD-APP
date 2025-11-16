@@ -618,6 +618,10 @@ sap.ui.define([
       var that = this;
       var selectedFile;
 
+      const oView = this.getView();
+      const oMainModel = oView.getModel(); // main model
+
+      // File uploader
       var oFileUploader = new sap.ui.unified.FileUploader({
         width: "100%",
         fileType: ["xls", "xlsx"],
@@ -627,79 +631,74 @@ sap.ui.define([
         }
       });
 
+      var oDialogContent = new sap.m.VBox({ items: [oFileUploader] });
+      var oExcelTable;
+
       var oExcelDialog = new sap.m.Dialog({
-        title: "Import from Excel",
-        contentWidth: "400px",
-        contentHeight: "200px",
-        content: [oFileUploader],
+        title: "Import Executions from Excel",
+        contentWidth: "80%",
+        contentHeight: "70%",
+        content: [oDialogContent],
         buttons: [
           new sap.m.Button({
-            text: "Upload",
+            text: "Add Selected",
             type: "Emphasized",
             press: function () {
-              if (!selectedFile) {
-                sap.m.MessageToast.show("Please select a file first!");
+              if (!oExcelTable) return;
+
+              const aMainItems = oMainModel.getProperty("/MainItems") || [];
+              const rows = oExcelTable.getModel().getProperty("/rows");
+              const selectedRows = rows.filter(r => r.selected);
+
+              if (selectedRows.length === 0) {
+                sap.m.MessageToast.show("Please select at least one row!");
                 return;
               }
 
-              var reader = new FileReader();
-              reader.onload = function (e) {
-                var data = new Uint8Array(e.target.result);
-                var workbook = XLSX.read(data, { type: "array" });
-                var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                var jsonData = XLSX.utils.sheet_to_json(firstSheet);
-
-                console.log("Excel Data:", jsonData);
-
-                var oModel = that.getView().getModel();
-                var aMainItems = oModel.getProperty("/MainItems") || [];
-
-                jsonData.forEach(function (row) {
-                  aMainItems.push({
-                    executionOrderMainCode: row.executionOrderMainCode || "",
-                    lineNumber: row.lineNumber || "",
-                    serviceNumberCode: row.serviceNumberCode || "",
-                    description: row.description || "",
-                    actualQuantity: row.actualQuantity || 0,
-                    unitOfMeasurementCode: row.unitOfMeasurementCode || "",
-                    amountPerUnit: row.amountPerUnit || 0,
-                    currencyCode: row.currencyCode || "",
-                    total: row.total || 0,
-                    actualPercentage: row.actualPercentage || 0,
-                    overFulfillmentPercent: row.overFulfillmentPercent || 0,
-                    unlimitedOverFulfillment: row.unlimitedOverFulfillment || false,
-                    manualPriceEntryAllowed: row.manualPriceEntryAllowed || false,
-                    materialGroupCode: row.materialGroupCode || "",
-                    serviceTypeCode: row.serviceTypeCode || "",
-                    externalServiceNumber: row.externalServiceNumber || "",
-                    serviceText: row.serviceText || "",
-                    lineText: row.lineText || "",
-                    personnelNumberCode: row.personnelNumberCode || "",
-                    lineTypeCode: row.lineTypeCode || "",
-                    biddersLine: row.biddersLine || false,
-                    supplementaryLine: row.supplementaryLine || false,
-                    lotCostOne: row.lotCostOne || false
-                  });
+              selectedRows.forEach(row => {
+                aMainItems.push({
+                  executionOrderMainCode: row.executionOrderMainCode || "",
+                  lineNumber: row.lineNumber || "",
+                  serviceNumberCode: row.serviceNumberCode || "",
+                  description: row.description || "",
+                  actualQuantity: row.actualQuantity || 0,
+                  unitOfMeasurementCode: row.unitOfMeasurementCode || "",
+                  amountPerUnit: row.amountPerUnit || 0,
+                  currencyCode: row.currencyCode || "",
+                  total: row.total || 0,
+                  actualPercentage: row.actualPercentage || 0,
+                  overFulfillmentPercent: row.overFulfillmentPercent || 0,
+                  unlimitedOverFulfillment: row.unlimitedOverFulfillment || false,
+                  manualPriceEntryAllowed: row.manualPriceEntryAllowed || false,
+                  materialGroupCode: row.materialGroupCode || "",
+                  serviceTypeCode: row.serviceTypeCode || "",
+                  externalServiceNumber: row.externalServiceNumber || "",
+                  serviceText: row.serviceText || "",
+                  lineText: row.lineText || "",
+                  personnelNumberCode: row.personnelNumberCode || "",
+                  lineTypeCode: row.lineTypeCode || "",
+                  biddersLine: row.biddersLine || false,
+                  supplementaryLine: row.supplementaryLine || false,
+                  lotCostOne: row.lotCostOne || false
                 });
+              });
 
-                // Update model
-                oModel.setProperty("/MainItems", aMainItems);
-                const mainItems = oModel.getProperty("/MainItems")
-                // Calculate the total sum
-                this.totalValue = mainItems.reduce(
-                  (sum, record) => sum + Number(record.total || 0),
-                  0
-                );
-                console.log(this.totalValue);
-                oModel.setProperty("/totalValue", this.totalValue);
+              oMainModel.setProperty("/MainItems", aMainItems);
+              oMainModel.refresh(true);
 
-                that.getView().byId("executionTable").getModel().refresh(true);
+              sap.m.MessageToast.show("Selected executions added successfully!");
+              oExcelDialog.close();
+            }
+          }),
+          new sap.m.Button({
+            text: "Add All",
+            press: function () {
+              if (!oExcelTable) return;
 
-                sap.m.MessageToast.show("Excel data imported successfully!");
-                oExcelDialog.close();
-              };
-
-              reader.readAsArrayBuffer(selectedFile);
+              const rows = oExcelTable.getModel().getProperty("/rows");
+              rows.forEach(r => r.selected = true);
+              oExcelTable.getModel().refresh();
+              oExcelDialog.getButtons()[0].firePress();
             }
           }),
           new sap.m.Button({
@@ -711,8 +710,81 @@ sap.ui.define([
         ]
       });
 
+      // Handle file read
+      var handleFileRead = function () {
+        if (!selectedFile) return;
+
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          var data = new Uint8Array(e.target.result);
+          var workbook = XLSX.read(data, { type: "array" });
+          var sheet = workbook.Sheets[workbook.SheetNames[0]];
+          var jsonData = XLSX.utils.sheet_to_json(sheet);
+
+          // Ensure booleans are correct
+          jsonData.forEach(r => {
+            r.selected = false;
+            r.unlimitedOverFulfillment = r.unlimitedOverFulfillment === true || r.unlimitedOverFulfillment === "true";
+            r.manualPriceEntryAllowed = r.manualPriceEntryAllowed === true || r.manualPriceEntryAllowed === "true";
+            r.biddersLine = r.biddersLine === true || r.biddersLine === "true";
+            r.supplementaryLine = r.supplementaryLine === true || r.supplementaryLine === "true";
+            r.lotCostOne = r.lotCostOne === true || r.lotCostOne === "true";
+          });
+
+          var oExcelDataModel = new sap.ui.model.json.JSONModel({ rows: jsonData });
+
+          // Render table
+          oExcelTable = new sap.m.Table({
+            width: "100%",
+            columns: [
+              new sap.m.Column({ header: new sap.m.Text({ text: "Select" }) }),
+              new sap.m.Column({ header: new sap.m.Text({ text: "Execution No" }) }),
+              new sap.m.Column({ header: new sap.m.Text({ text: "Line Number" }) }),
+              new sap.m.Column({ header: new sap.m.Text({ text: "Service Code" }) }),
+              new sap.m.Column({ header: new sap.m.Text({ text: "Description" }) }),
+              new sap.m.Column({ header: new sap.m.Text({ text: "Quantity" }) }),
+              new sap.m.Column({ header: new sap.m.Text({ text: "UOM" }) }),
+              new sap.m.Column({ header: new sap.m.Text({ text: "Amount Per Unit" }) }),
+              new sap.m.Column({ header: new sap.m.Text({ text: "Total" }) }),
+              new sap.m.Column({ header: new sap.m.Text({ text: "Currency" }) }),
+              new sap.m.Column({ header: new sap.m.Text({ text: "Unlimited Over Fulfillment" }) }),
+              new sap.m.Column({ header: new sap.m.Text({ text: "Manual Price Entry" }) })
+            ]
+          });
+
+          oExcelTable.setModel(oExcelDataModel);
+
+          oExcelTable.bindItems({
+            path: "/rows",
+            template: new sap.m.ColumnListItem({
+              type: "Inactive",
+              cells: [
+                new sap.m.CheckBox({ selected: "{selected}" }),
+                new sap.m.Text({ text: "{executionOrderMainCode}" }),
+                new sap.m.Text({ text: "{lineNumber}" }),
+                new sap.m.Text({ text: "{serviceNumberCode}" }),
+                new sap.m.Text({ text: "{description}" }),
+                new sap.m.Text({ text: "{actualQuantity}" }),
+                new sap.m.Text({ text: "{unitOfMeasurementCode}" }),
+                new sap.m.Text({ text: "{amountPerUnit}" }),
+                new sap.m.Text({ text: "{total}" }),
+                new sap.m.Text({ text: "{currencyCode}" }),
+                new sap.m.CheckBox({ selected: "{unlimitedOverFulfillment}" }),
+                new sap.m.CheckBox({ selected: "{manualPriceEntryAllowed}" })
+              ]
+            })
+          });
+
+          oDialogContent.addItem(oExcelTable);
+        };
+
+        reader.readAsArrayBuffer(selectedFile);
+      };
+
+      oFileUploader.attachChange(handleFileRead);
       oExcelDialog.open();
-    },
+    }
+    ,
     onEditItem: function (oEvent) {
       // Get the row context from the button's parent (the row)
       var oButton = oEvent.getSource();
@@ -952,7 +1024,7 @@ sap.ui.define([
                   );
                   console.log(this.totalValue);
                   oModel.setProperty("/totalValue", this.totalValue);
-                  
+
                   oModel.refresh(true);
                   sap.m.MessageToast.show("Item deleted successfully!");
                 }
