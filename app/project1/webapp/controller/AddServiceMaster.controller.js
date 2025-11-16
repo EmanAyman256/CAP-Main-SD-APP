@@ -167,13 +167,6 @@ sap.ui.define([
                             }
                         }.bind(this)
                     })
-                    // sap.m.MessageToast.show("Service Master created successfully!");
-                    // console.log("Server response:", savedItem);
-
-                    // // Navigate with the new item as a parameter
-                    // this.getOwnerComponent().getRouter().navTo("serviceMaster", {
-                    //     newItem: encodeURIComponent(JSON.stringify(savedItem))
-                    // });
                 })
                 .catch(err => {
                     console.error("Error saving ServiceMaster:", err);
@@ -182,9 +175,9 @@ sap.ui.define([
         },
      
         
-        onNavigateToServiceMaster() {
-            this.getOwnerComponent().getRouter().navTo("serviceMaster");
-        },
+        // onNavigateToServiceMaster() {
+        //     this.getOwnerComponent().getRouter().navTo("serviceMaster");
+        // },
        
     });
 });

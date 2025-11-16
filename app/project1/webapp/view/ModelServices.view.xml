@@ -46,12 +46,6 @@
                         text="Short Text:"
                         class="sapUiSmallMargin"
                     />
-                    <Input
-                        id="filterShortText"
-                        placeholder=" Short Text"
-                        width="200px"
-                        class="sapUiSmallMargin"
-                    />
                     
                     <Button
                         id="_IDGenButton41"
@@ -215,7 +209,7 @@
                     <table:template>
                         <Text
                             id="_IDGenText32"
-                            text="{formulaDesc}"
+                            text="{formulaDescription}"
                         />
                     </table:template>
                 </table:Column>
@@ -270,7 +264,7 @@
                     <table:template>
                         <Text
                             id="_IDGenText64"
-                            text="{unitOfMeasurementDesc}"
+                            text="{unitOfMeasurementDescription}"
                         />
                     </table:template>
                 </table:Column>
@@ -287,7 +281,7 @@
                     <table:template>
                         <Text
                             id="_IDGenText66"
-                            text="{currencyDesc}"
+                            text="{currencyDescription}"
                         />
                     </table:template>
                 </table:Column>

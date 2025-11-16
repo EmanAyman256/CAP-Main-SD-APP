@@ -1284,6 +1284,188 @@ sap.ui.define([
             this.byId("fileUploader").clear();
             this.getView().getModel().setProperty("/importReady", false);
         },
+        _openExcelUploadDialogTendering: function () {
+            var that = this;
+            var selectedFile;
+
+            const oView = this.getView();
+            const oMainModel = oView.getModel(); // main model
+
+            // Create file uploader
+            var oFileUploader = new sap.ui.unified.FileUploader({
+                width: "100%",
+                fileType: ["xls", "xlsx"],
+                sameFilenameAllowed: true,
+                change: function (oEvent) {
+                    selectedFile = oEvent.getParameter("files")[0];
+                }
+            });
+
+            var oDialogContent = new sap.m.VBox({ items: [oFileUploader] });
+            var oExcelTable;
+
+            var oExcelDialog = new sap.m.Dialog({
+                title: "Import Main Items from Excel",
+                contentWidth: "80%",
+                contentHeight: "70%",
+                content: [oDialogContent],
+                buttons: [
+                    // ----------------------------------------------------------
+                    // ADD SELECTED — SAME AS YOUR onAddMainItem LOGIC
+                    // ----------------------------------------------------------
+                    new sap.m.Button({
+                        text: "Add Selected",
+                        type: "Emphasized",
+                        press: function () {
+
+                            const aMainItems = oMainModel.getProperty("/MainItems") || [];
+
+                            const rows = oExcelTable.getModel().getProperty("/rows");
+
+                            const selectedRows = rows.filter(r => r.selected);
+
+                            if (selectedRows.length === 0) {
+                                sap.m.MessageToast.show("Please select at least one row!");
+                                return;
+                            }
+
+                            selectedRows.forEach(row => {
+
+                                const oNewMain = {
+                                    salesQuotation: oMainModel.getProperty("/docNumber"),
+                                    salesQuotationItem: oMainModel.getProperty("/itemNumber"),
+                                    pricingProcedureStep: "1",
+                                    pricingProcedureCounter: "10",
+                                    customerNumber: "120000",
+                                    invoiceMainItemCode: Date.now(),
+
+                                    // Excel Columns (MATCHED)
+                                    serviceNumberCode: row["Service No"] || "",
+                                    description: row["Description"] || "",
+                                    quantity: parseFloat(row["Quantity"]) || 0,
+                                    unitOfMeasurementCode: row["UOM"] || "",
+                                    formulaCode: row["Formula"] || "",
+                                    currencyCode: row["Currency"] || "",
+
+                                    amountPerUnit: parseFloat(row["Amount Per Unit"]) || 0,
+                                    total: parseFloat(row["Total"]) || 0,
+                                    profitMargin: parseFloat(row["Profit Margin"]) || 0,
+
+                                    amountPerUnitWithProfit: parseFloat(row["Amount Per Unit with Profit"]) || 0,
+                                    totalWithProfit: parseFloat(row["Total with Profit"]) || 0,
+
+                                    subItemList: []
+                                };
+
+
+                                aMainItems.push(oNewMain);
+                            });
+
+                            // Update Model
+                            oMainModel.setProperty("/MainItems", aMainItems);
+                            oMainModel.refresh(true);
+
+                            sap.m.MessageToast.show("Main items added successfully!");
+                            oExcelDialog.close();
+                        }
+                    }),
+
+                    new sap.m.Button({
+                        text: "Add All",
+                        press: function () {
+                            const rows = oExcelTable.getModel().getProperty("/rows");
+                            rows.forEach(r => r.selected = true);
+                            oExcelTable.getModel().refresh();
+                            oExcelDialog.getButtons()[0].firePress();
+                        }
+                    }),
+
+                    new sap.m.Button({
+                        text: "Cancel",
+                        press: function () {
+                            oExcelDialog.close();
+                        }
+                    })
+                ]
+            });
+
+            // ==============================
+            // HANDLE FILE READ
+            // ==============================
+            var handleFileRead = function () {
+                if (!selectedFile) return;
+
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var data = new Uint8Array(e.target.result);
+                    var workbook = XLSX.read(data, { type: "array" });
+                    var sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    var jsonData = XLSX.utils.sheet_to_json(sheet);
+
+                    jsonData.forEach(r => r.selected = false);
+
+                    var oExcelDataModel = new sap.ui.model.json.JSONModel({ rows: jsonData });
+
+                    // Render table
+                    oExcelTable = new sap.m.Table({
+                        width: "100%",
+                        columns: [
+                            new sap.m.Column({ header: new sap.m.Text({ text: "Select" }) }),
+                            // new sap.m.Column({ header: new sap.m.Text({ text: "Type" }) }),
+                            new sap.m.Column({ header: new sap.m.Text({ text: "Service No" }) }),
+                            new sap.m.Column({ header: new sap.m.Text({ text: "Description" }) }),
+                            new sap.m.Column({ header: new sap.m.Text({ text: "Quantity" }) }),
+                            new sap.m.Column({ header: new sap.m.Text({ text: "UOM" }) }),
+                            new sap.m.Column({ header: new sap.m.Text({ text: "Formula" }) }),
+                            new sap.m.Column({ header: new sap.m.Text({ text: "Parameters" }) }),
+                            new sap.m.Column({ header: new sap.m.Text({ text: "Currency" }) }),
+                            new sap.m.Column({ header: new sap.m.Text({ text: "Amount Per Unit" }) }),
+                            new sap.m.Column({ header: new sap.m.Text({ text: "Total" }) }),
+                            new sap.m.Column({ header: new sap.m.Text({ text: "Profit Margin" }) }),
+                            new sap.m.Column({ header: new sap.m.Text({ text: "Amount Per Unit with Profit" }) }),
+                            new sap.m.Column({ header: new sap.m.Text({ text: "Total with Profit" }) })
+                        ]
+                    });
+
+
+                    oExcelTable.setModel(oExcelDataModel);
+
+                    oExcelTable.bindItems({
+                        path: "/rows",
+                        template: new sap.m.ColumnListItem({
+                            type: "Inactive",
+                            cells: [
+                                new sap.m.CheckBox({ selected: "{selected}" }),
+
+                                // new sap.m.Text({ text: "{Type}" }),
+                                new sap.m.Text({ text: "{Service No}" }),
+                                new sap.m.Text({ text: "{Description}" }),
+                                new sap.m.Text({ text: "{Quantity}" }),
+                                new sap.m.Text({ text: "{UOM}" }),
+                                new sap.m.Text({ text: "{Formula}" }),
+                                new sap.m.Text({ text: "{Parameters}" }),
+                                new sap.m.Text({ text: "{Currency}" }),
+                                new sap.m.Text({ text: "{Amount Per Unit}" }),
+                                new sap.m.Text({ text: "{Total}" }),
+                                new sap.m.Text({ text: "{Profit Margin}" }),
+                                new sap.m.Text({ text: "{Amount Per Unit with Profit}" }),
+                                new sap.m.Text({ text: "{Total with Profit}" })
+                            ]
+                        })
+                    });
+
+
+
+                    oDialogContent.addItem(oExcelTable);
+                };
+
+                reader.readAsArrayBuffer(selectedFile);
+            };
+
+            oFileUploader.attachChange(handleFileRead);
+            oExcelDialog.open();
+        }
+        ,
         onFileChange: function (oEvent) {
             var oUploader = oEvent.getSource();
             var $fileInput = oUploader.$().find('input[type="file"]');
@@ -1291,7 +1473,7 @@ sap.ui.define([
                 sap.m.MessageToast.show("File input not found. Please try selecting again.");
                 return;
             }
-            var oFile = $fileInput[0].files[0];  
+            var oFile = $fileInput[0].files[0];
             if (!oFile || !oFile.name.endsWith('.xlsx')) {
                 sap.m.MessageToast.show("Please select a valid .xlsx file.");
                 return;
@@ -1300,10 +1482,10 @@ sap.ui.define([
             oReader.onload = function (e) {
                 var sData = new Uint8Array(e.target.result);
                 var oWorkbook = XLSX.read(sData, { type: 'array' });
-                var oSheet = oWorkbook.Sheets[oWorkbook.SheetNames[0]]; 
-                var aData = XLSX.utils.sheet_to_json(oSheet, { header: 1 });  
+                var oSheet = oWorkbook.Sheets[oWorkbook.SheetNames[0]];
+                var aData = XLSX.utils.sheet_to_json(oSheet, { header: 1 });
 
-                if (aData.length < 2) {  
+                if (aData.length < 2) {
                     sap.m.MessageToast.show("Excel file is empty or has no data rows.");
                     return;
                 }
@@ -1318,14 +1500,14 @@ sap.ui.define([
                     return;
                 }
 
-                var aRows = aData.slice(1).map(function (aRow, iIndex) {  
+                var aRows = aData.slice(1).map(function (aRow, iIndex) {
                     var oRow = {};
                     aHeaders.forEach(function (sHeader, iCol) {
-                        oRow[sHeader] = aRow[iCol] || "";  
+                        oRow[sHeader] = aRow[iCol] || "";
                     });
                     oRow.Quantity = parseFloat(oRow.Quantity) || 0;
                     oRow["Amount Per Unit"] = parseFloat(oRow["Amount Per Unit"]) || 0;
-                    oRow.Total = (oRow.Quantity * oRow["Amount Per Unit"]).toFixed(3);  
+                    oRow.Total = (oRow.Quantity * oRow["Amount Per Unit"]).toFixed(3);
                     return {
                         serviceNumberCode: oRow["Service No"] || "",
                         description: oRow.Description || "",
@@ -1341,7 +1523,7 @@ sap.ui.define([
                         subItemList: []  // New main item, no subs
                     };
                 }).filter(function (oRow) {  // Validate rows
-                    return oRow.description.trim() && oRow.quantity > 0;  
+                    return oRow.description.trim() && oRow.quantity > 0;
                 });
 
                 if (aRows.length === 0) {
@@ -1384,7 +1566,7 @@ sap.ui.define([
             this.byId("exportChoiceDialog").close();
         },
 
-        onExport: function () {  
+        onExport: function () {
             var aData = this._flattenDataForExport();
             if (aData.length === 0) {
                 sap.m.MessageToast.show("No data to export.");
@@ -1502,7 +1684,7 @@ sap.ui.define([
 
             return aFlatData;
         },
-      
+
         onCloseImportDialog: function () {
             this.byId("importDialog").close();
             this.getView().getModel().setProperty("/importReady", false);
@@ -1510,7 +1692,7 @@ sap.ui.define([
             this.byId("importStatus").setText("");
         },
 
-        
+
         onCancelSubDialog: function () {
             this.byId("addSubDialog").close();
         },

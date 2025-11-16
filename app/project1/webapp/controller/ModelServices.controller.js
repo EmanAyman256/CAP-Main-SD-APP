@@ -1,3 +1,4 @@
+
 sap.ui.define([
     "sap/ui/core/mvc/Controller",
     "sap/m/MessageToast",
@@ -222,7 +223,6 @@ sap.ui.define([
                     sap.m.MessageToast.show("Failed to load model details.");
                 });
         },
-        // NEW: Method to calculate and update total sum of netValues
         updateTotalValue: function () {
             const oModel = this.getView().getModel(); // Default model (with /ModelServices)
             const aServices = oModel.getProperty("/ModelServices") || [];
@@ -510,51 +510,90 @@ sap.ui.define([
             }
         },
         onDelete: function (oEvent) {
-
             var oBindingContext = oEvent.getSource().getBindingContext();
-            if (oBindingContext) {
-                var sPath = oBindingContext.getPath();
-                var oModel = this.getView().byId("modelServicesTable").getModel();
-                var oItem = oModel.getProperty(sPath);
-                console.log(oItem);
-                if (!oItem) {
-                    sap.m.MessageBox.error("Error: Could not determine the row to delete!");
-                    return;
-                }
-                sap.m.MessageBox.confirm("Are you sure you want to delete this record?", {
-                    title: "Confirm Deletion",
-                    icon: sap.m.MessageBox.Icon.WARNING,
-                    actions: [sap.m.MessageBox.Action.YES, sap.m.MessageBox.Action.NO],
-                    emphasizedAction: sap.m.MessageBox.Action.YES,
-                    onClose: function (sAction) {
-                        if (sAction === sap.m.MessageBox.Action.YES) {
-                            //Delete For DB 
-                            fetch(`/odata/v4/sales-cloud/ModelSpecificationsDetails('${oItem.modelSpecDetailsCode}')`, {
-                                method: "DELETE"
-                            })
-                                .then(response => {
-                                    if (!response.ok) {
-                                        throw new Error("Failed to delete: " + response.statusText);
-                                    }
-                                    // Remove the object from the model
-                                    var aData = oModel.getProperty("/ModelServices"); // Fixed path to /ModelServices
-                                    var iIndex = parseInt(sPath.split("/")[1]); // Adjusted for /ModelServices path
-                                    aData.splice(iIndex, 1); // remove 1 element at index
-                                    oModel.setProperty("/ModelServices", aData);
-                                    sap.m.MessageToast.show("Record deleted successfully.");
-
-                                    // NEW: Update total after deletion
-                                    this.updateTotalValue();
-                                })
-                                .catch(err => {
-                                    console.error("Error deleting Formula:", err);
-                                    sap.m.MessageBox.error("Error: " + err.message);
-                                });
-                        }
-                    }.bind(this)  // Bind 'this' to controller
-                });
+            if (!oBindingContext) {
+                sap.m.MessageBox.error("Error: Could not determine the row to delete!");
+                return;
             }
-        },
+
+            var sPath = oBindingContext.getPath(); // e.g. "/ModelServices/2" or "/ModelServices/123"
+            var oTable = this.getView().byId("modelServicesTable");
+            // Use the same model the table is bound to (named or default)
+            var oModel = oTable.getModel() || this.getView().getModel("view") || this.getView().getModel();
+
+            var oItem = oModel.getProperty(sPath);
+            if (!oItem) {
+                sap.m.MessageBox.error("Error: Could not determine the row to delete!");
+                return;
+            }
+
+            var sKey = oItem.modelSpecDetailsCode;
+            if (sKey === undefined || sKey === null) {
+                sap.m.MessageBox.error("Error: item has no modelSpecDetailsCode!");
+                return;
+            }
+
+            sap.m.MessageBox.confirm("Are you sure you want to delete this record?", {
+                title: "Confirm Deletion",
+                icon: sap.m.MessageBox.Icon.WARNING,
+                actions: [sap.m.MessageBox.Action.YES, sap.m.MessageBox.Action.NO],
+                emphasizedAction: sap.m.MessageBox.Action.YES,
+                onClose: async function (sAction) {
+                    if (sAction !== sap.m.MessageBox.Action.YES) return;
+
+                    try {
+                        // Build proper OData key depending on key type
+                        // If key is numeric -> no quotes; if string -> add quotes
+                        var keyIsNumeric = !isNaN(Number(sKey));
+                        var keySegment = keyIsNumeric ? sKey : `'${encodeURIComponent(String(sKey))}'`;
+                        var sUrl = `/odata/v4/sales-cloud/ModelSpecificationsDetails(${keySegment})`;
+
+                        // Optional: show busy indicator on table while deleting
+                        oTable.setBusy(true);
+
+                        const response = await fetch(sUrl, { method: "DELETE" });
+                        oTable.setBusy(false);
+
+                        if (!response.ok) {
+                            var txt = await response.text().catch(() => response.statusText);
+                            throw new Error("Failed to delete: " + (txt || response.statusText));
+                        }
+
+                        // Remove the item from the array by matching modelSpecDetailsCode (safe)
+                        var aData = oModel.getProperty("/ModelServices") || [];
+                        var iIndex = aData.findIndex(function (itm) {
+                            // compare numbers and strings robustly
+                            return String(itm.modelSpecDetailsCode) === String(sKey);
+                        });
+
+                        if (iIndex !== -1) {
+                            aData.splice(iIndex, 1);
+                            oModel.setProperty("/ModelServices", aData);
+                        } else {
+                            // fallback: try to remove by path if index extraction works
+                            var lastSeg = sPath.substring(sPath.lastIndexOf("/") + 1);
+                            var idx = parseInt(lastSeg);
+                            if (!isNaN(idx) && aData[idx]) {
+                                aData.splice(idx, 1);
+                                oModel.setProperty("/ModelServices", aData);
+                            } else {
+                                console.warn("Could not find deleted row in local model to remove; consider reloading server data.");
+                            }
+                        }
+
+                        sap.m.MessageToast.show("Record deleted successfully.");
+                        // Update totals after deletion
+                        this.updateTotalValue();
+
+                    } catch (err) {
+                        oTable.setBusy(false);
+                        console.error("Error deleting record:", err);
+                        sap.m.MessageBox.error("Error deleting record: " + err.message);
+                    }
+                }.bind(this)
+            });
+        }
+        ,
         onPress() {
             this.getOwnerComponent().getRouter().navTo("addModel");
         },
@@ -567,6 +606,98 @@ sap.ui.define([
                 console.error("Dialog not found");
             }
         },
+        _onEditFormulaSelected: function (oFormula, oContext) {
+            const oModel = this.getView().getModel();
+            const oData = oContext.getObject();
+
+            // Example: open a dialog for entering parameters (like r = 5)
+            const sParam = oFormula.parameterDescriptions[0];
+            const oInput = new sap.m.Input({ placeholder: `Enter value for ${sParam}` });
+
+            const oDialog = new sap.m.Dialog({
+                title: "Enter Parameters",
+                content: [oInput],
+                beginButton: new sap.m.Button({
+                    text: "OK",
+                    press: () => {
+                        const val = parseFloat(oInput.getValue());
+                        if (isNaN(val)) {
+                            sap.m.MessageToast.show("Please enter a valid number");
+                            return;
+                        }
+
+                        // Example calculation using formula logic (replace this with real parser)
+                        const result = (22 / 7) * (val * val); // for 22/7*r^2
+                        oData.result = result;
+                        oModel.refresh(true);
+                        oDialog.close();
+                    }
+                }),
+                endButton: new sap.m.Button({
+                    text: "Cancel",
+                    press: () => oDialog.close()
+                })
+            });
+
+            oDialog.open();
+        },
+        onOpenEditFormulaDialog: function () {
+            const oEditModel = this._oEditDialog.getModel("editModel"); // << correct model
+            const sFormulaCode = oEditModel.getProperty("/formulaCode");  // << path in editModel
+
+            if (!sFormulaCode) {
+                sap.m.MessageToast.show("Please select a formula first.");
+                return;
+            }
+
+            const oViewModel = this.getView().getModel(); // default model for master lists
+            const aFormulas = oViewModel.getProperty("/Formulas") || [];
+            const oFormula = aFormulas.find(f => f.formulaCode === sFormulaCode);
+
+            if (!oFormula) {
+                sap.m.MessageToast.show("Formula not found.");
+                return;
+            }
+
+            // Create a VBox with dynamic parameter inputs
+            const oVBox = new sap.m.VBox();
+            oFormula.parameterDescriptions.forEach((desc, i) => {
+                const paramId = oFormula.parameterIds[i];
+                oVBox.addItem(new sap.m.Label({ text: desc }));
+                oVBox.addItem(new sap.m.Input(this.createId("editParam_" + paramId), {
+                    placeholder: `Enter ${desc}`
+                }));
+            });
+
+            // Dialog for parameters
+            const oDialog = new sap.m.Dialog({
+                title: "Enter Formula Parameters",
+                content: [oVBox],
+                beginButton: new sap.m.Button({
+                    text: "OK",
+                    type: "Emphasized",
+                    press: () => {
+                        const oParams = {};
+                        oFormula.parameterIds.forEach(paramId => {
+                            oParams[paramId] = this.byId("editParam_" + paramId).getValue();
+                        });
+
+                        const result = this._calculateFormulaResult(oFormula, oParams);
+                        oEditModel.setProperty("/quantity", result); // update quantity
+                        sap.m.MessageToast.show("Quantity updated to " + result);
+                        oDialog.close();
+                    }
+                }),
+                endButton: new sap.m.Button({
+                    text: "Cancel",
+                    press: () => oDialog.close()
+                })
+            });
+
+            this.getView().addDependent(oDialog);
+            oDialog.open();
+        }
+        ,
         onEditModelSpecDetails: function (oEvent) {
             var oButton = oEvent.getSource();
             var oContext = oButton.getBindingContext();
@@ -579,7 +710,6 @@ sap.ui.define([
             var oSelectedData = oContext.getObject();
             var oView = this.getView();
 
-            // Create dialog dynamically if not already created
             if (!this._oEditDialog) {
                 this._oEditDialog = new sap.m.Dialog({
                     title: "Edit Model Service",
@@ -606,7 +736,7 @@ sap.ui.define([
 
                             new sap.m.Label({ text: "Gross Price" }),
                             new sap.m.Input({
-                                id: "grossPriceInput",  // Added ID for stable reference
+                                id: "grossPriceInput", 
                                 type: "Number", value: "{editModel>/grossPrice}", liveChange: this.onEditInputChange.bind(this), valueLiveUpdate: true
                             }),
 
@@ -614,9 +744,7 @@ sap.ui.define([
                             new sap.m.Input({ type: "Number", value: "{editModel>/netValue}", editable: false }),
 
                             new sap.m.Label({ text: "Formula" }),
-                            new sap.m.Select({
-                                selectedKey: "{editModel>/formulaCode}",
-                                // Added change handler for consistency/fallback
+                            new sap.m.Select({                                
                                 change: function (oEvent) {
                                     console.log('Formula change fired');
                                     var oModel = this._oEditDialog.getModel("editModel");
@@ -629,9 +757,12 @@ sap.ui.define([
                                 }.bind(this),
                                 items: { path: "/Formulas", template: new sap.ui.core.Item({ key: "{formulaCode}", text: "{description}" }) }
                             }),
-                            new sap.m.Button({ text: "Enter Parameters", press: this.onOpenFormulaDialog.bind(this) }),
+                            new sap.m.Button({
+                                text: "Enter Parameters", press: this.onOpenEditFormulaDialog.bind(this)
+                                ,
+                                //enabled: "{/HasSelectedFormula}"
+                            }),
 
-                            // Added label for UOM
                             new sap.m.Label({ text: "UOM" }),
                             new sap.m.Select({
                                 selectedKey: "{editModel>/unitOfMeasurementCode}",
@@ -641,9 +772,8 @@ sap.ui.define([
                                     var oSelectedItem = oEvent.getParameter("selectedItem");
                                     console.log('UOM selectedItem:', oSelectedItem);
                                     var key = oSelectedItem ? oSelectedItem.getKey() : "";
-                                    // NEW: Fallback if key still empty: use text as key (temp; remove once data fixed)
                                     if (!key && oSelectedItem) {
-                                        key = oSelectedItem.getText();  // e.g., "Meter/Minute" as fallback key
+                                        key = oSelectedItem.getText(); 
                                         console.log('Fallback UOM key from text:', key);
                                     }
                                     console.log('Setting UOM key:', key);
@@ -652,8 +782,6 @@ sap.ui.define([
                                 }.bind(this),
                                 items: { path: "/UOM", template: new sap.ui.core.Item({ key: "{code}", text: "{description}" }) }
                             }),
-
-                            // Added label for Currency
                             new sap.m.Label({ text: "Currency" }),
                             new sap.m.Select({
                                 selectedKey: "{editModel>/currencyCode}",
@@ -667,9 +795,8 @@ sap.ui.define([
                                     oModel.setProperty("/currencyCode", key);
                                     console.log('Model currency value:', oModel.getProperty("/currencyCode"));
                                 }.bind(this),
-                                items: { path: "/Currency", template: new sap.ui.core.Item({ key: "{currencyCode}", text: "{description}" }) }
+                                items: { path: "/Currency", template: new sap.ui.core.Item({ key: "{code}", text: "{description}" }) }
                             }),
-
                             new sap.m.Label({ text: "OverF.Percentage" }),
                             new sap.m.Input({ type: "Number", value: "{editModel>/overFulfilmentPercentage}" }),
 
@@ -747,27 +874,21 @@ sap.ui.define([
                 });
                 oView.addDependent(this._oEditDialog);
             }
-
-            // NEW: Explicitly set the view's unnamed model on dialog for items bindings (/UOM, etc.)
-            var oViewModel = oView.getModel();  // Assumes your lists (UOM, Currency, Formulas) are on the default model
+            var oViewModel = oView.getModel();
             if (oViewModel) {
                 this._oEditDialog.setModel(oViewModel);
             }
-
-            // Bind selected row to dialog
-            var oEditModel = new sap.ui.model.json.JSONModel(Object.assign({}, oSelectedData));
+            var oEditModelData = Object.assign({}, oSelectedData, {
+                formulaCode: ""
+            });
+            var oEditModel = new sap.ui.model.json.JSONModel(oEditModelData);
             this._oEditDialog.setModel(oEditModel, "editModel");
-
-            // Optional: Force refresh bindings after model set (if needed)
-            // this._oEditDialog.getContent()[0].getFormContainers()[0].getFormElements().forEach(function(oElement) { oElement.getFields().forEach(function(oField) { oField.getBinding("selectedKey").refresh(true); }); });
-
             this._oEditDialog.open();
         },
         onSaveEditModelService: async function () {
             var oDialog = this._oEditDialog;
             var oData = oDialog.getModel("editModel").getData();
 
-            // Debug log
             console.log('Saving data - Formula:', oData.formulaCode, 'UOM:', oData.unitOfMeasurementCode, 'Currency:', oData.currencyCode);
 
             if (!oData || !oData.modelSpecDetailsCode) {
@@ -776,10 +897,10 @@ sap.ui.define([
             }
 
             try {
-                // --- Prepare payload for backend (remove non-existent properties) ---
-                const { unitOfMeasurementDesc, formulaDesc, currencyDesc, ...payload } = oData;
+                // Remove local-only fields before sending PATCH
+                const { currencyDescription, unitOfMeasurementDescription, formulaDescription, ...payload } = oData;
 
-                // Call PATCH API
+                // --- API PATCH ---
                 const response = await fetch(
                     `/odata/v4/sales-cloud/ModelSpecificationsDetails(${oData.modelSpecDetailsCode})`,
                     {
@@ -793,30 +914,35 @@ sap.ui.define([
                     throw new Error(`Failed to update: ${response.statusText}`);
                 }
 
-                // --- Update table model locally with descriptions ---
-                var oTableModel = this.getView().getModel(); // /ModelServices model
+                // --- Update table model locally ---
+                var oTableModel = this.getView().getModel();
                 var aRows = oTableModel.getProperty("/ModelServices");
                 var oRow = aRows.find(r => r.modelSpecDetailsCode === oData.modelSpecDetailsCode);
 
                 if (oRow) {
-                    var oViewModel = this.getView().getModel(); // model holding /UOM, /Currency, /Formulas
+                    var oViewModel = this.getView().getModel();
 
-                    // Map codes to descriptions
-                    oRow.unitOfMeasurementDesc = oViewModel.getProperty("/UOM")
-                        .find(u => u.code === oData.unitOfMeasurementCode)?.description || "";
-                    oRow.formulaDesc = oViewModel.getProperty("/Formulas")
-                        .find(f => f.code === oData.formulaCode)?.description || "";
-                    oRow.currencyDesc = oViewModel.getProperty("/Currency")
-                        .find(c => c.currencyCode === oData.currencyCode)?.description || "";
+                    // Lookup descriptions from the master lists
+                    const uom = oViewModel.getProperty("/UOM").find(u => u.code === oData.unitOfMeasurementCode);
+                    const curr = oViewModel.getProperty("/Currency").find(c => c.currencyCode === oData.currencyCode);
+                    const formula = oViewModel.getProperty("/Formulas").find(f => f.formulaCode === oData.formulaCode);
 
-                    // Update all other editable fields
+                    oRow.unitOfMeasurementCode = oData.unitOfMeasurementCode;
+                    oRow.unitOfMeasurementDescription = uom ? uom.description : "";
+
+                    oRow.currencyCode = oData.currencyCode;
+                    oRow.currencyDescription = curr ? curr.description : "";
+
+                    oRow.formulaCode = oData.formulaCode;
+                    oRow.formulaDescription = formula ? formula.description : "";
+
+                    // Copy remaining edited fields
                     Object.assign(oRow, payload);
                 }
 
-                // Refresh table so new descriptions appear
                 oTableModel.refresh(true);
 
-                // NEW: Update total after edit
+                // Recalculate totals if needed
                 this.updateTotalValue();
 
                 sap.m.MessageToast.show("Model Specification updated successfully!");
@@ -825,25 +951,26 @@ sap.ui.define([
             } catch (error) {
                 sap.m.MessageBox.error("Error updating Model Specification: " + error.message);
             }
-        },
+        }
+        ,
         onEditInputChange: function (oEvent) {
             const oEditModel = this._oEditDialog.getModel("editModel");
             if (!oEditModel) return;
 
-            // Use IDs instead of fragile find()
-            const oQuantityInput = this._oEditDialog.byId("qtyInput");
-            const oGrossPriceInput = this._oEditDialog.byId("grossPriceInput");
+            const oSource = oEvent.getSource();
+            const sPath = oSource.getBinding("value").getPath();
 
-            if (!oQuantityInput || !oGrossPriceInput) return;
+            // Get current values directly from the model
+            const quantity = parseFloat(oEditModel.getProperty("/quantity")) || 0;
+            const grossPrice = parseFloat(oEditModel.getProperty("/grossPrice")) || 0;
 
-            const quantity = parseFloat(oQuantityInput.getValue()) || 0;
-            const grossPrice = parseFloat(oGrossPriceInput.getValue()) || 0;
-
+            // Compute new net value
             const netValue = quantity * grossPrice;
 
             // Update the model
             oEditModel.setProperty("/netValue", netValue);
-        },
+        }
+        ,
         onCloseEditDialog: function () {
             this.byId("editModelServiceDialog").close();
         },

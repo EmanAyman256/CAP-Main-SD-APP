@@ -65,7 +65,7 @@
                                     id="_IDGenMenuItem1"
                                     text="Import"
                                     icon="sap-icon://upload"
-                                    press=".onImport"
+                                    press="._openExcelUploadDialogTendering"
                                 />
                             </m:Menu>
                         </m:menu>

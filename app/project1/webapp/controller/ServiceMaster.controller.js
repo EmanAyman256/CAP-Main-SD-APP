@@ -16,6 +16,8 @@ sap.ui.define([
             this.getOwnerComponent().getRouter()
                 .getRoute("serviceMaster")
                 .attachPatternMatched(this._onRouteMatched, this);
+
+
             // Initialize the view model
             var oModel = new sap.ui.model.json.JSONModel({
                 ServiceNumbers: []
@@ -33,7 +35,7 @@ sap.ui.define([
             this.getView().setModel(oModel, "view");
 
             // Set the model on the table explicitly with the "view" name
-            this.getView().byId("serviceMaster").setModel(oModel, "view");
+            //this.getView().byId("serviceMaster").setModel(oModel, "view");
 
             // Fetch ServiceNumbers data
             fetch("/odata/v4/sales-cloud/ServiceNumbers")
@@ -86,6 +88,7 @@ sap.ui.define([
             this._loadModels();
         },
         _loadModels: function () {
+            const oViewModel = this.getView().getModel("view");
             var oModel = new sap.ui.model.json.JSONModel();
             fetch("/odata/v4/sales-cloud/ServiceNumbers")
                 .then(response => {
@@ -100,8 +103,12 @@ sap.ui.define([
                     const serviceNumbers = Array.isArray(data.value) ? data.value : [];
                     oModel.setData({ ServiceNumbers: serviceNumbers });
                     console.log("ServiceNumbers set in model:", oModel.getProperty("/ServiceNumbers")); // Log the model data
+                    this.getView().byId("serviceMaster").setModel(oModel);
+                     this.getView().setModel(oModel, "view");
+                    // ✅ Update bindings so the table refreshes immediately
+                    oViewModel.updateBindings(true);
                     // Refresh the model to ensure the table updates
-                    oModel.refresh(true);
+                    // oModel.refresh(true);
                 })
                 .catch(err => {
                     console.error("Error fetching ServiceNumbers:", err);
@@ -684,7 +691,8 @@ sap.ui.define([
             console.log("Copy Data:", oData);
 
             var oPayload = {
-                serviceNumberCode: oData.serviceNumberCode,
+                serviceNumberCode: this._generateUUID(),
+                //oData.serviceNumberCode,
                 searchTerm: oData.searchTerm,
                 description: oData.description,
                 serviceTypeCode: oData.serviceTypeCode,
@@ -709,38 +717,47 @@ sap.ui.define([
                     if (!res.ok) throw new Error(res.statusText);
                     return res.json();
                 })
-                .then(created => {
-                    sap.m.MessageToast.show("Service copied successfully");
-
-                    var oViewModel = this.getView().getModel("view");
-                    var aData = oViewModel.getProperty("/ServiceNumbers") || [];
-
-                    // ✅ Replace array to trigger re-render
-                    oViewModel.setProperty("/ServiceNumbers", [...aData, created]);
-                    var oTable = this.byId("serviceMaster");
-                    oTable.getBinding("items").refresh();
-
-
-                    // Close dialog
-                    this._oCopyDialog.close();
-                })
-
                 // .then(created => {
                 //     sap.m.MessageToast.show("Service copied successfully");
 
                 //     var oViewModel = this.getView().getModel("view");
                 //     var aData = oViewModel.getProperty("/ServiceNumbers") || [];
 
-                //     aData.push(created);
-                //     oViewModel.setProperty("/ServiceNumbers", aData);
-                //     console.log("Updated ServiceNumbers array:", oViewModel.getProperty("/ServiceNumbers")); 
-                //     oViewModel.refresh(true);
-
-                //        //  Verify table binding
+                //     // ✅ Replace array to trigger re-render
+                //     oViewModel.setProperty("/ServiceNumbers", [...aData, created]);
                 //     var oTable = this.byId("serviceMaster");
-                //     console.log("Table items binding:", oTable.getBinding("items")); // Debug: Log binding
+                //     oTable.getBinding("items").refresh();
+
+
+                //     // Close dialog
                 //     this._oCopyDialog.close();
                 // })
+
+                .then(created => {
+                    sap.m.MessageToast.show("Service copied successfully");
+
+                    var oViewModel = this.getView().getModel("view");
+                    var aData = oViewModel.getProperty("/ServiceNumbers") || [];
+
+                    aData.push(created);
+                    oViewModel.setProperty("/ServiceNumbers", aData);
+                    console.log("Updated ServiceNumbers array:", oViewModel.getProperty("/ServiceNumbers"));
+                    oViewModel.refresh(true);
+
+                    //  Verify table binding
+                    var oTable = this.byId("serviceMaster");
+                    console.log("Table items binding:", oTable.getBinding("items")); // Debug: Log binding
+                    this._loadModels();
+
+
+                    var oTableModel = this.getView().byId("serviceMaster").getModel("view");
+                    var aMasters = oTableModel.getProperty("/ServiceNumbers") || [];
+                    oTableModel.setProperty("/ServiceNumbers", aMasters);
+                    oTableModel.refresh(true);
+
+
+                    this._oCopyDialog.close();
+                })
                 .catch(err => {
                     console.error("Copy failed:", err);
                     sap.m.MessageBox.error("Copy failed: " + err.message);
@@ -787,6 +804,8 @@ sap.ui.define([
         onDeletePress: function () {
             var oTable = this.byId("serviceMaster");
             var oSelectedItem = oTable.getSelectedItem();
+            console.log(oSelectedItem);
+
 
             if (!oSelectedItem) {
                 MessageBox.warning("Please select a row to delete");
