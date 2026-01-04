@@ -52,7 +52,7 @@ sap.ui.define([
             oRouter.getRoute("tendering").attachPatternMatched(this._onRouteMatched, this);
 
             // Fetch Service Numbers
-            fetch("/odata/v4/sales-cloud/ServiceNumbers")
+            fetch("./odata/v4/sales-cloud/ServiceNumbers")
                 .then(response => {
                     if (!response.ok) throw new Error(response.statusText);
                     return response.json();
@@ -74,7 +74,7 @@ sap.ui.define([
                     console.error("Error fetching ServiceNumbers:", err);
                 });
             // Fetch Formulas
-            fetch("/odata/v4/sales-cloud/Formulas")
+            fetch("./odata/v4/sales-cloud/Formulas")
                 .then(r => r.json())
                 .then(data => {
                     const formulas = Array.isArray(data.value) ? data.value : [];
@@ -86,7 +86,7 @@ sap.ui.define([
                     console.error("Error fetching Formulas:", err);
                     sap.m.MessageToast.show("Failed to load formulas.");
                 });
-            fetch("/odata/v4/sales-cloud/UnitOfMeasurements")
+            fetch("./odata/v4/sales-cloud/UnitOfMeasurements")
                 .then(r => r.json())
                 .then(data => {
                     const uom = Array.isArray(data.value) ? data.value : [];
@@ -95,7 +95,7 @@ sap.ui.define([
                 });
 
             // Fetch Currencies
-            fetch("/odata/v4/sales-cloud/Currencies")
+            fetch("./odata/v4/sales-cloud/Currencies")
                 .then(r => r.json())
                 .then(data => {
                     const currency = Array.isArray(data.value) ? data.value : [];
@@ -117,7 +117,7 @@ sap.ui.define([
 
             // OData request URL
             //var sUrl = `/odata/v4/sales-cloud/getInvoiceMainItemByReferenceIdAndItemNumber(SalesQuotation='${docNumber}',SalesQuotationItem='${itemNumber}')`;
-            var sUrl = `/odata/v4/sales-cloud/getInvoiceMainItemByReferenceIdAndItemNumber`;
+            var sUrl = `./odata/v4/sales-cloud/getInvoiceMainItemByReferenceIdAndItemNumber`;
 
             // Fetch the data
             fetch(sUrl, {
@@ -495,7 +495,7 @@ sap.ui.define([
             console.log("📦 Final payload sent to backend:", JSON.stringify(body, null, 2));
 
             // ✅ Send to backend
-            fetch("/odata/v4/sales-cloud/saveOrUpdateMainItems", {
+            fetch("./odata/v4/sales-cloud/saveOrUpdateMainItems", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(body)

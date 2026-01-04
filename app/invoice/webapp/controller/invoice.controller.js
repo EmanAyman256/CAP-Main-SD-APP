@@ -54,7 +54,7 @@ sap.ui.define([
       }
       // OData request URL
       // var sUrl = `/odata/v4/sales-cloud/findByDebitMemoRequestAndItem?debitMemoRequest='${docNumber}'&debitMemoRequestItem='${itemNumber}'`;
-      var sUrl = "/odata/v4/sales-cloud/getServiceInvoiceByReferenceId"
+      var sUrl = "./odata/v4/sales-cloud/getServiceInvoiceByReferenceId"
       // Fetch the data
       fetch(sUrl, {
         method: "POST",
@@ -230,7 +230,7 @@ sap.ui.define([
 
       // Fetch orders data
       $.ajax({
-        url: `/odata/v4/sales-cloud/fetchExecutionOrderMainByDebitMemo?debitMemoRequest='${docNumber}'&debitMemoRequestItem='${itemNumber}'`,
+        url: `./odata/v4/sales-cloud/fetchExecutionOrderMainByDebitMemo?debitMemoRequest='${docNumber}'&debitMemoRequestItem='${itemNumber}'`,
         method: "GET",
         success: function (data) {
           var oModel = new sap.ui.model.json.JSONModel(data.value || data);
@@ -348,7 +348,7 @@ sap.ui.define([
 
       console.log("Payload sent to API:", body);
 
-      fetch("/odata/v4/sales-cloud/saveOrUpdateServiceInvoices", {
+      fetch("./odata/v4/sales-cloud/saveOrUpdateServiceInvoices", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
@@ -607,7 +607,7 @@ sap.ui.define([
 
       console.log("Payload sent to /calculateQuantities:", payload);
 
-      fetch("/odata/v4/sales-cloud/calculateQuantitiesWithoutAccumulation", {
+      fetch("./odata/v4/sales-cloud/calculateQuantitiesWithoutAccumulation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)

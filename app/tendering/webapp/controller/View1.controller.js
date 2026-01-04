@@ -76,7 +76,7 @@ sap.ui.define([
                                 const docNumber = this.getView().getModel().getProperty("/DocumentNumber");
                                 console.log(docNumber);
 
-                                fetch(`/odata/v4/sales-cloud/SalesQuotation('${docNumber}')/items`, {
+                                fetch(`./odata/v4/sales-cloud/SalesQuotation('${docNumber}')/items`, {
                                     method: "GET",
                                     headers: {
                                         "Content-Type": "application/json"

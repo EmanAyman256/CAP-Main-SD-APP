@@ -34,7 +34,7 @@ sap.ui.define([
 
       });
       this.getView().setModel(oModel);
-      fetch("/odata/v4/sales-cloud/ServiceNumbers")
+      fetch("./odata/v4/sales-cloud/ServiceNumbers")
         .then(response => {
           if (!response.ok) throw new Error(response.statusText);
           return response.json();
@@ -55,7 +55,7 @@ sap.ui.define([
         .catch(err => {
           console.error("Error fetching ServiceNumbers:", err);
         });
-      fetch("/odata/v4/sales-cloud/UnitOfMeasurements")
+      fetch("./odata/v4/sales-cloud/UnitOfMeasurements")
         .then(r => r.json())
         .then(data => {
           console.log("Fetched UnitOfMeasurements:", data.value);
@@ -70,7 +70,7 @@ sap.ui.define([
             console.log("UnitOfMeasurements:", UOM);
           }
         });
-      fetch("/odata/v4/sales-cloud/ServiceTypes")
+      fetch("./odata/v4/sales-cloud/ServiceTypes")
         .then(response => {
           if (!response.ok) throw new Error(response.statusText);
           return response.json();
@@ -91,7 +91,7 @@ sap.ui.define([
         .catch(err => {
           console.error("Error fetching ServiceTypes:", err);
         });
-      fetch("/odata/v4/sales-cloud/MaterialGroups")
+      fetch("./odata/v4/sales-cloud/MaterialGroups")
         .then(response => {
           if (!response.ok) throw new Error(response.statusText);
           return response.json();
@@ -129,7 +129,7 @@ sap.ui.define([
 
       // OData request URL
       //var sUrl = `/odata/v4/sales-cloud/getExecutionOrderMainByReferenceId(SalesOrder='${docNumber}',SalesOrderItem='${itemNumber}')`;
-      var sUrl = `/odata/v4/sales-cloud/getExecutionOrderMainByReferenceId?referenceId='${docNumber}'&salesOrderItem='${itemNumber}'`;
+      var sUrl = `./odata/v4/sales-cloud/getExecutionOrderMainByReferenceId?referenceId='${docNumber}'&salesOrderItem='${itemNumber}'`;
 
       // Fetch the data
       fetch(sUrl, {
@@ -406,7 +406,7 @@ sap.ui.define([
 
       // Fetch quotation data
       $.ajax({
-        url: "/odata/v4/sales-cloud/InvoiceMainItems",
+        url: "./odata/v4/sales-cloud/InvoiceMainItems",
         method: "GET",
         success: function (data) {
           var oModel = new sap.ui.model.json.JSONModel(data.value || data);
@@ -464,7 +464,7 @@ sap.ui.define([
       oDialog.addContent(oTable);
 
       $.ajax({
-        url: "/odata/v4/sales-cloud/ModelSpecifications",
+        url: "./odata/v4/sales-cloud/ModelSpecifications",
         method: "GET",
         success: function (data) {
           console.log("Data:", data);
@@ -589,7 +589,7 @@ sap.ui.define([
       oDialog.addContent(oTable);
       $.ajax({
         //url: `/odata/v4/sales-cloud/ModelSpecificationsDetails?$filter=modelSpecCode eq '${modelSpecCode}'`,
-        url: `/odata/v4/sales-cloud/ModelSpecificationsDetails`,
+        url: `./odata/v4/sales-cloud/ModelSpecificationsDetails`,
         method: "GET",
         success: function (data) {
           var oModel = new sap.ui.model.json.JSONModel(data);
@@ -1073,7 +1073,7 @@ sap.ui.define([
 
       console.log("Payload sent to API:", body);
 
-      fetch("/odata/v4/sales-cloud/saveOrUpdateExecutionOrders", {
+      fetch("./odata/v4/sales-cloud/saveOrUpdateExecutionOrders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
