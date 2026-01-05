@@ -22,7 +22,7 @@ modules:
     type: nodejs
     path: gen/srv
     requires:
-      - name: Maramer-App-db
+      - name: hdi-shared-realestate
       - name: Maramer-auth
     provides:
       - name: srv-api
@@ -43,7 +43,7 @@ modules:
     type: hdb
     path: gen/db
     requires:
-      - name: Maramer-App-db
+      - name: hdi-shared-realestate
     parameters:
       memory: 256M
 
@@ -118,7 +118,7 @@ resources:
   # =========================
   # HANA HDI CONTAINER
   # =========================
-  - name: Maramer-App-db
+  - name: hdi-shared-realestate
     type: com.sap.xs.hdi-container
     parameters:
       service: hana
@@ -133,7 +133,7 @@ resources:
       service: xsuaa
       service-plan: application
       config:
-        xsappname: Maramer-App
+        xsappname: MaramerApp
         tenant-mode: dedicated
 
   # =========================
@@ -156,7 +156,7 @@ resources:
     parameters:
       service: destination
       service-plan: lite
-      service-name: Maramer-App-destination-service
+      service-name: Maramer-App-destination
       config:
         HTML5Runtime_enabled: true
         init_data:
@@ -167,10 +167,10 @@ resources:
                 URL: https://ui5.sap.com
                 Authentication: NoAuthentication
                 ProxyType: Internet
-
+                
               - Name: Maramer-srv-api
                 Type: HTTP
-                Authentication: OAuth2UserTokenExchange
+                Authentication: NoAuthentication
                 ProxyType: Internet
                 HTML5.DynamicDestination: true
                 HTML5.ForwardAuthToken: true

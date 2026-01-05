@@ -47,7 +47,7 @@ sap.ui.define([
                     // lastChangeDate will be handled by CAP if you use managed
                 };
 
-                fetch("/odata/v4/sales-cloud/ServiceTypes", {
+                fetch("./odata/v4/sales-cloud/ServiceTypes", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -109,7 +109,7 @@ sap.ui.define([
                             var sNewDescription = aContent[3].getValue();
 
                             // Call CAP OData UPDATE (PATCH is recommended)
-                            fetch(`/odata/v4/sales-cloud/ServiceTypes('${oSelectedData.serviceTypeCode}')`, {
+                            fetch(`./odata/v4/sales-cloud/ServiceTypes('${oSelectedData.serviceTypeCode}')`, {
                                 method: "PATCH",
                                 headers: {
                                     "Content-Type": "application/json"
@@ -183,7 +183,7 @@ sap.ui.define([
                     onClose: function (oAction) {
                         if (oAction === MessageBox.Action.OK) {
                             // 🔥 Call CAP backend DELETE
-                            fetch(`/odata/v4/sales-cloud/ServiceTypes('${oItem.serviceTypeCode}')`, {
+                            fetch(`./odata/v4/sales-cloud/ServiceTypes('${oItem.serviceTypeCode}')`, {
                                 method: "DELETE"
                             })
                                 .then(response => {
@@ -239,7 +239,7 @@ sap.ui.define([
                                 description: newDescription
                             };
 
-                            fetch("/odata/v4/sales-cloud/ServiceTypes", {
+                            fetch("./odata/v4/sales-cloud/ServiceTypes", {
                                 method: "POST",
                                 headers: {
                                     "Content-Type": "application/json"

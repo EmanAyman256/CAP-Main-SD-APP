@@ -1,7 +1,5 @@
 {
-  "xsappname": "Maramer-App",
-  "tenant-mode": "dedicated",
-  "description": "Security profile of called application",
-  "scopes": [],
-  "role-templates": []
+  "xsappname": "MaramerApp",
+  "tenant-mode": "dedicated"
+  
 }

@@ -68,7 +68,7 @@ sap.ui.define([
                 });
 
             // Material Groups
-            fetch("./odata/v4/sales-cloud/MaterialGroups")
+            fetch("./odata/v4/sales-cloud/ServiceTypesMaterialGroups")
                 .then(res => res.json())
                 .then(data => {
                     var oModel = new sap.ui.model.json.JSONModel(data.value);
