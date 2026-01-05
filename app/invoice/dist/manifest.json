@@ -22,7 +22,7 @@
     },
     "dataSources": {
       "mainService": {
-        "uri": "/odata/v4/sales-cloud/",
+        "uri": "odata/v4/sales-cloud/",
         "type": "OData",
         "settings": {
           "annotations": [],
@@ -130,5 +130,9 @@
       "id": "App",
       "async": true
     }
+  },
+  "sap.cloud": {
+    "public": true,
+    "service": "Maramer-approuter"
   }
 }

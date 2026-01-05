@@ -133,7 +133,7 @@ resources:
       service: xsuaa
       service-plan: application
       config:
-        xsappname: Maramer-${org}-${space}
+        xsappname: Maramer-App
         tenant-mode: dedicated
 
   # =========================
