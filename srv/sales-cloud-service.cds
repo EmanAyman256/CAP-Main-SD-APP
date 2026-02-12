@@ -18,11 +18,11 @@ service SalesCloudService {
   entity ServiceInvoiceMains        as projection on salesdb.ServiceInvoiceMain;
   entity InvoiceSubItems            as projection on salesdb.InvoiceSubItem;
 
-  entity UnitOfMeasurements @readonly @(path: '/UnitOfMeasurements') {
-    key code        : String(8);
-        description : String;
-  }
-
+  entity UnitOfMeasurements         as
+    projection on salesdb.UnitOfMeasurement {
+      key code,
+          description
+    }
 
   /**
        * External projection of Sales Quotation Header
@@ -139,6 +139,10 @@ service SalesCloudService {
   action   postSalesOrder(body: LargeString)                                               returns String;
   action   postSalesQuotation(body: LargeString)                                           returns String;
 
+  @(Capabilities.SearchRestrictions.Searchable: true)
+  action   postUnitOfMeasurement(code: String(8),
+                                 description: String(60))                                  returns UnitOfMeasurements;
+
   action   postSalesOrderItemPricing(SalesOrder: String,
                                      SalesOrderItem: String,
                                      body: LargeString)                                    returns String;
@@ -216,7 +220,7 @@ service SalesCloudService {
                                  customerNumber: String,
                                  invoiceMainItemCommands: array of InvoiceMainItemCommand) returns array of InvoiceMainItemCommand;
 
- 
+
   @Core.LongDescription: 'Fetches InvoiceMainItems by referenceId and salesQuotationItem'
   action   getInvoiceMainItemByReferenceIdAndItemNumber(referenceId: String  @mandatory  @title: 'Reference ID',
                                                         salesQuotationItem: String  @mandatory  @title: 'Sales Quotation Item'
@@ -487,7 +491,7 @@ service SalesCloudService {
 // }
 
 
-  // action getModelSpecificationsDetailsByModelSpecCode(modelSpecCode: UUID)
-  //   returns array of ModelSpecificationsDetails;
-    
+// action getModelSpecificationsDetailsByModelSpecCode(modelSpecCode: UUID)
+//   returns array of ModelSpecificationsDetails;
+
 }

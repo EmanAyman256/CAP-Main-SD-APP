@@ -46,6 +46,7 @@ module.exports = cds.service.impl(async function () {
     {
       Currency, LineType,
       MaterialGroup, Formulas,
+      UnitOfMeasurement,
       PersonnelNumber, InvoiceMainItems,
       ServiceNumbers, ServiceType, InvoiceSubItems,
       ModelSpecifications, ModelSpecificationsDetails,
@@ -263,7 +264,7 @@ module.exports = cds.service.impl(async function () {
   async function deleteByReferenceIdAndSalesQuotationItem(referenceId, salesQuotationItem) {
     return await DELETE.from(InvoiceMainItems).where({ referenceId, salesQuotationItem });
   }
-  
+
 
   /*-------------------------- First App -------------------------------------*/
 
@@ -645,7 +646,7 @@ module.exports = cds.service.impl(async function () {
     });
   }
 
-  
+
   // --- ServiceType Handlers ---
   if (ServiceType) {
     this.on('READ', ServiceType, async (req) => {
@@ -770,153 +771,153 @@ module.exports = cds.service.impl(async function () {
     })
   })
   // === GET /ModelSpecifications (all or by ID)
-this.on('READ', ModelSpecifications, async (req) => {
-  const { modelSpecCode } = req.data;
+  this.on('READ', ModelSpecifications, async (req) => {
+    const { modelSpecCode } = req.data;
 
-  if (modelSpecCode) {
+    if (modelSpecCode) {
+      return await SELECT
+        .from(ModelSpecifications, s => {
+          s('*', s.modelSpecificationsDetails('*'));
+        })
+        .where({ modelSpecCode });
+    }
+
+    return await SELECT
+      .from(ModelSpecifications, s => {
+        s('*', s.modelSpecificationsDetails('*'));
+      });
+  });
+  // === POST /ModelSpecifications
+  this.on('CREATE', ModelSpecifications, async (req) => {
+    const data = req.data;
+
+    try {
+      // 1️⃣ Extract child records (details)
+      const { modelSpecificationsDetails, ...parentData } = data;
+
+      // 2️⃣ Insert parent record
+      const insertedParent = await INSERT.into(ModelSpecifications).entries(parentData);
+
+      // 3️⃣ Insert details if provided
+      if (Array.isArray(modelSpecificationsDetails) && modelSpecificationsDetails.length > 0) {
+        for (const detail of modelSpecificationsDetails) {
+          detail.modelSpecifications_modelSpecCode = parentData.modelSpecCode; // FK reference
+          await INSERT.into(ModelSpecificationsDetails).entries(detail);
+        }
+      }
+
+      // 4️⃣ Query full record back (with children)
+      const result = await SELECT
+        .from(ModelSpecifications, s => {
+          s('*', s.modelSpecificationsDetails('*'));
+        })
+        .where({ modelSpecCode: parentData.modelSpecCode });
+
+      return result;
+
+    } catch (err) {
+      console.error('Error creating ModelSpecifications:', err);
+      req.error(500, err.message);
+    }
+  });
+  this.on('UPDATE', ModelSpecifications, async (req) => {
+    const { modelSpecCode, ...rest } = req.data;
+    return await UPDATE(ModelSpecifications).set(rest).where({ modelSpecCode });
+  });
+  this.on('DELETE', ModelSpecifications, async (req) => {
+    const { modelSpecCode } = req.data;
+
+    await DELETE.from(ModelSpecificationsDetails).where({
+      modelSpecifications_modelSpecCode: modelSpecCode
+    });
+
+    return await DELETE.from(ModelSpecifications).where({ modelSpecCode });
+  });
+  this.on('searchModelSpecifications', async (req) => {
+    const { keyword } = req.data;
+
     return await SELECT
       .from(ModelSpecifications, s => {
         s('*', s.modelSpecificationsDetails('*'));
       })
-      .where({ modelSpecCode });
-  }
-
-  return await SELECT
-    .from(ModelSpecifications, s => {
-      s('*', s.modelSpecificationsDetails('*'));
-    });
-});
-// === POST /ModelSpecifications
-this.on('CREATE', ModelSpecifications, async (req) => {
-  const data = req.data;
-
-  try {
-    // 1️⃣ Extract child records (details)
-    const { modelSpecificationsDetails, ...parentData } = data;
-
-    // 2️⃣ Insert parent record
-    const insertedParent = await INSERT.into(ModelSpecifications).entries(parentData);
-
-    // 3️⃣ Insert details if provided
-    if (Array.isArray(modelSpecificationsDetails) && modelSpecificationsDetails.length > 0) {
-      for (const detail of modelSpecificationsDetails) {
-        detail.modelSpecifications_modelSpecCode = parentData.modelSpecCode; // FK reference
-        await INSERT.into(ModelSpecificationsDetails).entries(detail);
-      }
-    }
-
-    // 4️⃣ Query full record back (with children)
-    const result = await SELECT
-      .from(ModelSpecifications, s => {
-        s('*', s.modelSpecificationsDetails('*'));
-      })
-      .where({ modelSpecCode: parentData.modelSpecCode });
-
-    return result;
-
-  } catch (err) {
-    console.error('Error creating ModelSpecifications:', err);
-    req.error(500, err.message);
-  }
-});
-this.on('UPDATE', ModelSpecifications, async (req) => {
-  const { modelSpecCode, ...rest } = req.data;
-  return await UPDATE(ModelSpecifications).set(rest).where({ modelSpecCode });
-});
-this.on('DELETE', ModelSpecifications, async (req) => {
-  const { modelSpecCode } = req.data;
-
-  await DELETE.from(ModelSpecificationsDetails).where({
-    modelSpecifications_modelSpecCode: modelSpecCode
+      .where({ description: { like: `%${keyword}%` } });
   });
 
-  return await DELETE.from(ModelSpecifications).where({ modelSpecCode });
-});
-this.on('searchModelSpecifications', async (req) => {
-  const { keyword } = req.data;
 
-  return await SELECT
-    .from(ModelSpecifications, s => {
-      s('*', s.modelSpecificationsDetails('*'));
-    })
-    .where({ description: { like: `%${keyword}%` } });
-});
+  // === READ /ModelSpecificationsDetails (All or by ID)
+  this.on('READ', ModelSpecificationsDetails, async (req) => {
+    const { modelSpecDetailsCode } = req.data;
 
+    if (modelSpecDetailsCode) {
+      // Single record with parent
+      return await SELECT
+        .from(ModelSpecificationsDetails, d => {
+          d('*', d.modelSpecifications('*'));
+        })
+        .where({ modelSpecDetailsCode });
+    }
 
-// === READ /ModelSpecificationsDetails (All or by ID)
-this.on('READ', ModelSpecificationsDetails, async (req) => {
-  const { modelSpecDetailsCode } = req.data;
+    // All records with parent
+    return await SELECT
+      .from(ModelSpecificationsDetails, d => {
+        d('*', d.modelSpecifications('*'));
+      });
+  });
+  // === CREATE /ModelSpecificationsDetails
+  this.on('CREATE', ModelSpecificationsDetails, async (req) => {
+    const data = req.data;
 
-  if (modelSpecDetailsCode) {
-    // Single record with parent
+    try {
+      // 1️⃣ Ensure parent key exists
+      if (!data.modelSpecifications_modelSpecCode) {
+        return req.error(400, 'Parent modelSpecifications_modelSpecCode is required.');
+      }
+
+      // 2️⃣ Insert child record
+      const inserted = await INSERT.into(ModelSpecificationsDetails).entries(data);
+
+      // 3️⃣ Return full record (with parent info)
+      const result = await SELECT
+        .from(ModelSpecificationsDetails, d => {
+          d('*', d.modelSpecifications('*'));
+        })
+        .where({ modelSpecDetailsCode: data.modelSpecDetailsCode });
+
+      return result;
+
+    } catch (err) {
+      console.error("❌ Error creating ModelSpecificationsDetails:", err);
+      req.error(500, err.message);
+    }
+  });
+  // === UPDATE /ModelSpecificationsDetails/{modelSpecDetailsCode}
+  this.on('UPDATE', ModelSpecificationsDetails, async (req) => {
+    const { modelSpecDetailsCode, ...rest } = req.data;
+    return await UPDATE(ModelSpecificationsDetails).set(rest).where({ modelSpecDetailsCode });
+  });
+  // === DELETE /ModelSpecificationsDetails/{modelSpecDetailsCode}
+  this.on('DELETE', ModelSpecificationsDetails, async (req) => {
+    const { modelSpecDetailsCode } = req.data;
+    return await DELETE.from(ModelSpecificationsDetails).where({ modelSpecDetailsCode });
+  });
+  // === SEARCH /ModelSpecificationsDetails/search
+  this.on('searchModelSpecDetails', async (req) => {
+    const { keyword } = req.data;
+
     return await SELECT
       .from(ModelSpecificationsDetails, d => {
         d('*', d.modelSpecifications('*'));
       })
-      .where({ modelSpecDetailsCode });
-  }
-
-  // All records with parent
-  return await SELECT
-    .from(ModelSpecificationsDetails, d => {
-      d('*', d.modelSpecifications('*'));
-    });
-});
-// === CREATE /ModelSpecificationsDetails
-this.on('CREATE', ModelSpecificationsDetails, async (req) => {
-  const data = req.data;
-
-  try {
-    // 1️⃣ Ensure parent key exists
-    if (!data.modelSpecifications_modelSpecCode) {
-      return req.error(400, 'Parent modelSpecifications_modelSpecCode is required.');
-    }
-
-    // 2️⃣ Insert child record
-    const inserted = await INSERT.into(ModelSpecificationsDetails).entries(data);
-
-    // 3️⃣ Return full record (with parent info)
-    const result = await SELECT
-      .from(ModelSpecificationsDetails, d => {
-        d('*', d.modelSpecifications('*'));
-      })
-      .where({ modelSpecDetailsCode: data.modelSpecDetailsCode });
-
-    return result;
-
-  } catch (err) {
-    console.error("❌ Error creating ModelSpecificationsDetails:", err);
-    req.error(500, err.message);
-  }
-});
-// === UPDATE /ModelSpecificationsDetails/{modelSpecDetailsCode}
-this.on('UPDATE', ModelSpecificationsDetails, async (req) => {
-  const { modelSpecDetailsCode, ...rest } = req.data;
-  return await UPDATE(ModelSpecificationsDetails).set(rest).where({ modelSpecDetailsCode });
-});
-// === DELETE /ModelSpecificationsDetails/{modelSpecDetailsCode}
-this.on('DELETE', ModelSpecificationsDetails, async (req) => {
-  const { modelSpecDetailsCode } = req.data;
-  return await DELETE.from(ModelSpecificationsDetails).where({ modelSpecDetailsCode });
-});
-// === SEARCH /ModelSpecificationsDetails/search
-this.on('searchModelSpecDetails', async (req) => {
-  const { keyword } = req.data;
-
-  return await SELECT
-    .from(ModelSpecificationsDetails, d => {
-      d('*', d.modelSpecifications('*'));
-    })
-    .where({
-      or: [
-        { shortText: { like: `%${keyword}%` } },
-        { serviceText: { like: `%${keyword}%` } }
-      ]
-    });
-});
+      .where({
+        or: [
+          { shortText: { like: `%${keyword}%` } },
+          { serviceText: { like: `%${keyword}%` } }
+        ]
+      });
+  });
 
 
-  
+
 
   // Get all
   this.on('READ', 'InvoiceMainItem', async (req) => {
@@ -1860,45 +1861,147 @@ this.on('searchModelSpecDetails', async (req) => {
   });
 
 
-  // Unit Of Measurement Cloud
-  this.on('READ', 'UnitOfMeasurements', async (req) => {
-    console.log("Fetching UnitOfMeasurements from S/4...")
+  // // Unit Of Measurement Cloud
+  // this.on('READ', 'UnitOfMeasurements', async (req) => {
+  //   console.log("Fetching UnitOfMeasurements from S/4...")
 
-    const url = "https://my405604-api.s4hana.cloud.sap/sap/opu/odata/sap/YY1_UOM4_CDS/YY1_UOM4?$format=json"
+  //   const url = "https://my405604-api.s4hana.cloud.sap/sap/opu/odata/sap/YY1_UOM4_CDS/YY1_UOM4?$format=json"
 
-    try {
-      const user = process.env.UOM_USER || "UOM_USER4"
-      const password = process.env.UOM_PASS || "s3ZhGnQXEymrUcgCPXR\\ZBPgDAeKYbxLEaozZQPv"
+  //   try {
+  //     const user = process.env.UOM_USER || "UOM_USER4"
+  //     const password = process.env.UOM_PASS || "s3ZhGnQXEymrUcgCPXR\\ZBPgDAeKYbxLEaozZQPv"
 
-      const response = await axios.get(url, {
-        auth: { username: user, password: password },
-        headers: { Accept: "application/json" }
-      })
+  //     const response = await axios.get(url, {
+  //       auth: { username: user, password: password },
+  //       headers: { Accept: "application/json" }
+  //     })
 
-      const results = response.data.d?.results || []
+  //     const results = response.data.d?.results || []
 
-      // filter to English
-      const filtered = results.filter(r => r.LanguageISOCode === 'EN')
+  //     // filter to English
+  //     const filtered = results.filter(r => r.LanguageISOCode === 'EN')
 
-      // make unique by UnitOfMeasure
-      const uniqueMap = new Map()
-      filtered.forEach(r => {
-        if (!uniqueMap.has(r.UnitOfMeasure)) {
-          uniqueMap.set(r.UnitOfMeasure, {
-            code: r.UnitOfMeasure,
-            description: r.UnitOfMeasureLongName || r.UnitOfMeasureName
-          })
+  //     // make unique by UnitOfMeasure
+  //     const uniqueMap = new Map()
+  //     filtered.forEach(r => {
+  //       if (!uniqueMap.has(r.UnitOfMeasure)) {
+  //         uniqueMap.set(r.UnitOfMeasure, {
+  //           code: r.UnitOfMeasure,
+  //           description: r.UnitOfMeasureLongName || r.UnitOfMeasureName
+  //         })
+  //       }
+  //     })
+
+  //     // return as array
+  //     return Array.from(uniqueMap.values())
+
+  //   } catch (e) {
+  //     console.error("Failed to fetch UOM data:", e)
+  //     req.error(500, `Failed to fetch UOM data: ${e.message}`)
+  //   }
+  // })
+
+ // ==================== READ - UnitOfMeasurements ====================
+    this.on('READ', 'UnitOfMeasurements', async (req) => {
+        console.log("✅ Fetching UnitOfMeasurements from local DB...");
+        
+        try {
+            const tx = cds.transaction(req);
+            
+            // Use full qualified name
+            const result = await tx.run(
+                SELECT.from('salesdb.UnitOfMeasurement')
+                    .columns('code', 'description')
+            );
+            
+            console.log(`✅ Fetched ${result.length} UnitOfMeasurements`);
+            return result;
+            
+        } catch (error) {
+            console.error("❌ Error fetching UnitOfMeasurements:", error);
+            req.error(500, `Failed to fetch UnitOfMeasurements: ${error.message}`);
         }
-      })
-
-      // return as array
-      return Array.from(uniqueMap.values())
-
-    } catch (e) {
-      console.error("Failed to fetch UOM data:", e)
-      req.error(500, `Failed to fetch UOM data: ${e.message}`)
-    }
-  })
+    });
+    
+    // ==================== CREATE - Standard POST ====================
+    this.before('CREATE', 'UnitOfMeasurements', async (req) => {
+        const { code, description } = req.data;
+        
+        // Validations
+        if (!code || !description) {
+            req.error(400, 'Code and Description are mandatory');
+        }
+        
+        // Normalize code to uppercase
+        const normalizedCode = code.trim().toUpperCase();
+        req.data.code = normalizedCode;
+        req.data.description = description.trim();
+        
+        const tx = cds.transaction(req);
+        
+        // Check for duplicates
+        const existing = await tx.run(
+            SELECT.one.from('salesdb.UnitOfMeasurement').where({ code: normalizedCode })
+        );
+        
+        if (existing) {
+            req.error(409, `Unit of Measurement '${normalizedCode}' already exists`);
+        }
+        
+        // Add UUID for DB entity
+        req.data.unitOfMeasurementCode = cds.utils.uuid();
+    });
+    
+    this.after('CREATE', 'UnitOfMeasurements', (data) => {
+        console.log(`✅ Created UoM: ${data.code} - ${data.description}`);
+    });
+    
+    // ==================== Action: postUnitOfMeasurement ====================
+    this.on('postUnitOfMeasurement', async (req) => {
+        const { code, description } = req.data;
+        
+        if (!code || !description) {
+            return req.error(400, 'Code and Description are mandatory');
+        }
+        
+        const normalizedCode = code.trim().toUpperCase();
+        const tx = cds.transaction(req);
+        
+        try {
+            // Check for duplicates
+            const existing = await tx.run(
+                SELECT.one.from('salesdb.UnitOfMeasurement').where({ code: normalizedCode })
+            );
+            
+            if (existing) {
+                return req.error(409, `Unit of Measurement '${normalizedCode}' already exists`);
+            }
+            
+            // Create the record with UUID
+            const newUoM = {
+                unitOfMeasurementCode: cds.utils.uuid(),
+                code: normalizedCode,
+                description: description.trim()
+            };
+            
+            const inserted = await tx.run(
+                INSERT.into('salesdb.UnitOfMeasurement').entries(newUoM)
+            );
+            
+            // Fetch the created record
+            const created = await tx.run(
+                SELECT.from('salesdb.UnitOfMeasurement')
+                    .columns('code', 'description')
+                    .where({ code: normalizedCode })
+            );
+            
+            console.log(`✅ Created UoM via action: ${created[0].code}`);
+            return created[0];
+            
+        } catch (err) {
+            return req.error(500, `Error creating UnitOfMeasurement: ${err.message}`);
+        }
+    });
 
   // -------------------------------- Third App - Execution order main ------------------------------ //
   //GET all

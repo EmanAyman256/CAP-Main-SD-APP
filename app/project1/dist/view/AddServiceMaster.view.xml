@@ -134,7 +134,7 @@
                     >
                         <core:Item
                             id="_IDGenItem6"
-                            key="{unitsOfMeasurement>unitOfMeasurementCode}"
+                            key="{unitsOfMeasurement>code}"
                             text="{unitsOfMeasurement>description}"
                         />
                     </Select>
@@ -185,7 +185,7 @@
                     >
                         <core:Item
                             id="_IDGenItem3"
-                             key="{unitsOfMeasurement>unitOfMeasurementCode}"
+                             key="{unitsOfMeasurement>code}"
                             text="{unitsOfMeasurement>description}"
                         />
                     </Select>
@@ -227,7 +227,7 @@
                     >
                         <core:Item
                             id="_IDGenItem4"
-                           key="{unitsOfMeasurement>unitOfMeasurementCode}"
+                           key="{unitsOfMeasurement>code}"
                             text="{unitsOfMeasurement>description}"
                         />
                     </Select>
