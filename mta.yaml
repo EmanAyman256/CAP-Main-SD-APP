@@ -99,13 +99,58 @@ modules:
           artifacts:
             - project1.zip
           target-path: resources/
+        - name: tendering
+          artifacts:
+            - tendering.zip
+          target-path: resources/
+        - name: execution
+          artifacts:
+            - execution.zip
+          target-path: resources/
+        - name: invoice
+          artifacts:
+            - invoice.zip
+          target-path: resources/
 
   # =========================
-  # HTML5 UI MODULE (KEEP ONE FOR TRIAL)
+  # HTML5 UI MODULES (ALL 4 APPS)
   # =========================
   - name: project1
     type: html5
     path: app/project1
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms: []
+
+  - name: tendering
+    type: html5
+    path: app/tendering
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms: []
+
+  - name: execution
+    type: html5
+    path: app/execution
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms: []
+
+  - name: invoice
+    type: html5
+    path: app/invoice
     build-parameters:
       build-result: dist
       builder: custom

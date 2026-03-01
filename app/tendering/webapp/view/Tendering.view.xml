@@ -159,7 +159,7 @@
             path: '/MainItems',
             parameters: { arrayNames: ['subItemList'] }
         }"
-                    selectionMode="Single"
+                    selectionMode="MultiToggle"
                     rowHeight="40"
                     width="2000px"
                     enableColumnReordering="false"
@@ -183,27 +183,26 @@
                             <m:Button
                                 id="_IDGenButton6"
                                 text="Collapse all"
-                                press="onCollapseAll"
+                                press=".onCollapseAll"
                             />
                             <m:Button
                                 id="_IDGenButton7"
                                 text="Collapse selection"
-                                press="onCollapseSelection"
+                                press=".onCollapseSelection"
                             />
                             <m:Button
                                 id="_IDGenButton10"
                                 text="Expand first level"
-                                press="onExpandFirstLevel"
+                                press=".onExpandFirstLevel"
                             />
                             <m:Button
                                 id="_IDGenButton11"
                                 text="Expand selection"
-                                press="onExpandSelection"
+                                press=".onExpandSelection"
                             />
                         </m:OverflowToolbar>
                     </extension>
 
-                    <!-- Keep your columns exactly as they are -->
                     <columns>
                         <Column
                             id="_IDGenColumn1"
@@ -657,7 +656,6 @@
             class="sapUiContentPadding"
         >
             <m:VBox id="formulaParamContainer" />
-            <!-- This is the missing piece! -->
             <m:endButton>
                 <m:Button
                     id="_IDGenButton21"
@@ -898,34 +896,34 @@
             </m:buttons>
         </m:Dialog>
         <!-- Export Choice Dialog -->
-<m:Dialog
-    id="exportChoiceDialog"
-    title="Export Format"
-    contentWidth="300px"
-    class="sapUiContentPadding"
->
-    <m:VBox id="_IDGenVBox8" class="sapUiSmallMargin" alignItems="Center">
-        <m:Label id="_IDGenLabel27" text="Choose export format:" />
-        <m:Button
-            id="btnExportPDF"
-            text="PDF"
-            type="Emphasized"
-            icon="sap-icon://pdf-attachment"
-            width="100%"
-            press=".onExportPDF"
-            class="sapUiMediumMarginBottom"
-        />
-        <m:Button
-            id="btnExportExcel"
-            text="Excel (.xlsx)"
-            icon="sap-icon://excel-attachment"
-            width="100%"
-            press=".onExport"
-        />
-    </m:VBox>
-    <m:buttons>
-        <m:Button id="_IDGenButton18" text="Cancel" press=".onCloseExportDialog" />
-    </m:buttons>
-</m:Dialog>
+        <m:Dialog
+            id="exportChoiceDialog"
+            title="Export Format"
+            contentWidth="300px"
+            class="sapUiContentPadding"
+        >
+            <m:VBox id="_IDGenVBox8" class="sapUiSmallMargin" alignItems="Center">
+                <m:Label id="_IDGenLabel27" text="Choose export format:" />
+                <m:Button
+                    id="btnExportPDF"
+                    text="PDF"
+                    type="Emphasized"
+                    icon="sap-icon://pdf-attachment"
+                    width="100%"
+                    press=".onExportPDF"
+                    class="sapUiMediumMarginBottom"
+                />
+                <m:Button
+                    id="btnExportExcel"
+                    text="Excel (.xlsx)"
+                    icon="sap-icon://excel-attachment"
+                    width="100%"
+                    press=".onExport"
+                />
+            </m:VBox>
+            <m:buttons>
+                <m:Button id="_IDGenButton18" text="Cancel" press=".onCloseExportDialog" />
+            </m:buttons>
+        </m:Dialog>
     </m:Page>
 </mvc:View>
