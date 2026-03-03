@@ -88,10 +88,10 @@ module.exports = cds.service.impl(async function () {
         const subItems = mainItem.subItemList || [];
         delete mainItem.subItemList;
 
-        // 🔹 fetch quotation details
+        // 🔹 fetch quotation details (Authorization required for S4HANA cloud)
         const response = await axios.get(
           'https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_QUOTATION_SRV/A_SalesQuotation?$top=50',
-          { headers: { Accept: 'application/json' } }
+          { headers: { Accept: 'application/json', Authorization: authHeader } }
         );
 
         const quotations = response?.data?.d?.results || [];
@@ -114,10 +114,11 @@ module.exports = cds.service.impl(async function () {
           await tx.run(INSERT.into(InvoiceSubItems).entries(sub));
         }
 
-        // calculate total header
+        // calculate total header — wrap with Number() to prevent string concatenation
+        // (totalWithProfit arrives as a formatted string e.g. "150.000" from the frontend)
         const totalHeader =
-          (savedMain.totalWithProfit || 0) +
-          subItems.reduce((sum, s) => sum + (s.total || 0), 0);
+          Number(savedMain.totalWithProfit || 0) +
+          subItems.reduce((sum, s) => sum + Number(s.total || 0), 0);
 
         await tx.run(
           UPDATE(InvoiceMainItems)
@@ -142,7 +143,7 @@ module.exports = cds.service.impl(async function () {
       // Step 3: Call external pricing API (like in your Java code)
       try {
         const totalHeaderSum = savedItems.reduce(
-          (sum, item) => sum + (item.totalHeader || 0),
+          (sum, item) => sum + Number(item.totalHeader || 0),
           0
         );
 
@@ -2615,6 +2616,3 @@ async function callDebitMemoPricingAPI(
     }
   );
 }
-
-
-
