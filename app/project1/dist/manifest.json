@@ -30,7 +30,7 @@
         }
       },
       "iconService": {
-        "uri": "/odata/v4/sales-cloud/",
+        "uri": "odata/v4/sales-cloud/",
         "type": "OData",
         "settings": {
           "annotations": [],

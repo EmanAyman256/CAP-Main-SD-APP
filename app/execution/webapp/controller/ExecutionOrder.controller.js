@@ -31,88 +31,70 @@ sap.ui.define([
         ServiceTypes: [],
         MaterialGroup: [],
         ServiceNumbers: []
-
       });
       this.getView().setModel(oModel);
+
+      // FIX: absolute paths so cds-plugin-ui5 mount prefix doesn't interfere
       fetch("./odata/v4/sales-cloud/ServiceNumbers")
         .then(response => {
           if (!response.ok) throw new Error(response.statusText);
           return response.json();
         })
         .then(data => {
-          console.log("Fetched ServiceNumbers:", data.value);
-
           if (data && data.value) {
             const ServiceNumbers = data.value.map(item => ({
               serviceNumberCode: item.serviceNumberCode,
               description: item.description
             }));
             this.getView().getModel().setProperty("/ServiceNumbers", ServiceNumbers);
-
-            console.log("ServiceNumbers:", ServiceNumbers);
           }
         })
-        .catch(err => {
-          console.error("Error fetching ServiceNumbers:", err);
-        });
+        .catch(err => console.error("Error fetching ServiceNumbers:", err));
+
       fetch("./odata/v4/sales-cloud/UnitOfMeasurements")
         .then(r => r.json())
         .then(data => {
-          console.log("Fetched UnitOfMeasurements:", data.value);
-
           if (data && data.value) {
+            // FIX: store as {code, description} — that's what the entity exposes
             const UOM = data.value.map(item => ({
               code: item.code,
               description: item.description
             }));
             this.getView().getModel().setProperty("/Uom", UOM);
-
-            console.log("UnitOfMeasurements:", UOM);
           }
         });
+
       fetch("./odata/v4/sales-cloud/ServiceTypes")
         .then(response => {
           if (!response.ok) throw new Error(response.statusText);
           return response.json();
         })
         .then(data => {
-          console.log("Fetched ServiceTypes:", data.value);
-
           if (data && data.value) {
             const ServiceTypes = data.value.map(item => ({
               serviceTypeCode: item.serviceTypeCode,
               description: item.description
             }));
             this.getView().getModel().setProperty("/ServiceTypes", ServiceTypes);
-
-            console.log("ServiceTypes:", ServiceTypes);
           }
         })
-        .catch(err => {
-          console.error("Error fetching ServiceTypes:", err);
-        });
+        .catch(err => console.error("Error fetching ServiceTypes:", err));
+
       fetch("./odata/v4/sales-cloud/MaterialGroups")
         .then(response => {
           if (!response.ok) throw new Error(response.statusText);
           return response.json();
         })
         .then(data => {
-          console.log("Fetched MaterialGroups:", data.value);
-
           if (data && data.value) {
             const MaterialGroups = data.value.map(item => ({
               materialGroupCode: item.materialGroupCode,
               description: item.description
             }));
             this.getView().getModel().setProperty("/MaterialGroup", MaterialGroups);
-
-            console.log("MaterialGroups:", MaterialGroups);
           }
         })
-        .catch(err => {
-          console.error("Error fetching MaterialGroups:", err);
-        });
-
+        .catch(err => console.error("Error fetching MaterialGroups:", err));
     },
 
     _onRouteMatched: function (oEvent) {
@@ -127,111 +109,53 @@ sap.ui.define([
       oModel.setProperty("/docNumber", docNumber);
       oModel.setProperty("/itemNumber", itemNumber);
 
-      // OData request URL
-      //var sUrl = `/odata/v4/sales-cloud/getExecutionOrderMainByReferenceId(SalesOrder='${docNumber}',SalesOrderItem='${itemNumber}')`;
+      // FIX: absolute path
       var sUrl = `./odata/v4/sales-cloud/getExecutionOrderMainByReferenceId?referenceId='${docNumber}'&salesOrderItem='${itemNumber}'`;
 
-      // Fetch the data
       fetch(sUrl, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        // body: JSON.stringify({
-        //   referenceId: docNumber,
-        //   salesOrderItem: itemNumber
-        // })
+        headers: { "Content-Type": "application/json" }
       })
         .then(response => response.json())
         .then(data => {
-          console.log(data.value);
           const mainItems = Array.isArray(data.value) ? data.value : [];
-          // Calculate the total sum
-          const totalValue = mainItems.reduce(
-            (sum, record) => sum + Number(record.total || 0),
-            0
-          );
-          //totalWithProfit
-
-          console.log("Total Value:", totalValue);
+          const totalValue = mainItems.reduce((sum, record) => sum + Number(record.total || 0), 0);
           oModel.setProperty("/MainItems", data.value);
           oModel.setProperty("/totalValue", totalValue);
-
-          // if it's an array, do:
-          // oModel.setProperty("/MainItems", data.value);
           oView.byId("executionTable").setModel(oModel);
         })
-        .catch(err => {
-          console.error("Error fetching MainItems", err);
-        });
-
+        .catch(err => console.error("Error fetching MainItems", err));
     },
-    onSearchItem: function (oEvent) {
-      // Get the search query
-      var sQuery = oEvent.getSource().getValue();
-      // Get the table binding
-      var oTable = this.byId("_IDGenTable");
-      var oBinding = oTable.getBinding("rows"); //as we use sap.ui.table not sap.m.table so aggregation rows instead of items
 
-      // Create a filter for MainItemNo
+    onSearchItem: function (oEvent) {
+      var sQuery = oEvent.getSource().getValue();
+      var oTable = this.byId("_IDGenTable");
+      var oBinding = oTable.getBinding("rows");
       var aFilters = [];
       if (sQuery && sQuery.length > 0) {
-
         new sap.ui.model.Filter("MainItemNo", sap.ui.model.FilterOperator.EQ, sQuery);
-
-        var oFinalFilter = new sap.ui.model.Filter({
-          filters: aFilters,
-          and: false
-        });
+        var oFinalFilter = new sap.ui.model.Filter({ filters: aFilters, and: false });
         oBinding.filter([oFinalFilter]);
-      }
-      else {
-        // Clear filter if empty search
+      } else {
         oBinding.filter([]);
       }
-
     },
-    onSaveDocument: function () {
 
-      //Calc total Amount  = QTY * Amount Per Unit 
-      //Re-Render
-      this.byId("_IDGenText1").setText();
+    onPrint: function () { },
 
-      var oModel = this.getView().getModel();
-      var oData = oModel.getProperty("/Items");
-      var total = 0;
-      oData.forEach(oRow => {
-        var price = oRow.AmountPerUnit;
-        var qty = oRow.QTY;
-        var multiply = price * qty;
-        //Set Value in total Col.
-        oRow.Total = multiply;
-        total += multiply;
-      });
-      //Update Model with Calculated Total
-      oModel.setProperty("/Items", oData);
-      if (total) {
-        //Set Value
-        this.byId("_IDGenText1").setText(total);
-      }
-    },
-    onPrint: function () {
-    },
     onExport: function () {
-
       var oModel = this.getView().getModel();
-      // build column config (headers + property bindings)
       var aCols = [
         { label: "executionOrderMainCode.", property: "executionOrderMainCode" },
         { label: "lineNumber", property: "lineNumber" },
         { label: "serviceNumberCode", property: "serviceNumberCode" },
         { label: "description", property: "description" },
+        { label: "quantity", property: "totalQuantity" },
         { label: "actualQuantity", property: "actualQuantity" },
         { label: "unitOfMeasurementCode", property: "unitOfMeasurementCode" },
         { label: "amountPerUnit", property: "amountPerUnit" },
         { label: "currencyCode", property: "currencyCode" },
         { label: "total", property: "total" },
-        { label: "actualQuantity", property: "actualQuantity" },
         { label: "actualPercentage", property: "actualPercentage" },
         { label: "overFulfillmentPercent", property: "overFulfillmentPercent" },
         { label: "unlimitedOverFulfillment", property: "unlimitedOverFulfillment" },
@@ -252,15 +176,12 @@ sap.ui.define([
         dataSource: oModel.getProperty("/MainItems"),
         fileName: "Execution Order Items.xlsx"
       };
-
       var oSpreadsheet = new sap.ui.export.Spreadsheet(oSettings);
-      oSpreadsheet.build().finally(function () {
-        oSpreadsheet.destroy();
-      });
+      oSpreadsheet.build().finally(function () { oSpreadsheet.destroy(); });
     },
+
     onImport: function () {
       var that = this;
-
       if (!this._oValueHelpDialog) {
         this._oValueHelpDialog = new sap.m.Dialog({
           title: "Import From:",
@@ -299,17 +220,13 @@ sap.ui.define([
               })
             ]
           }),
-
           beginButton: new sap.m.Button({
             text: "Cancel",
             type: "Reject",
-            press: function () {
-              that._oValueHelpDialog.close();
-            }
+            press: function () { that._oValueHelpDialog.close(); }
           })
         });
       }
-
       this._oValueHelpDialog.open();
     },
 
@@ -335,21 +252,20 @@ sap.ui.define([
                 return;
               }
 
-              var oView = that.getView();
               var oMainModel = oView.getModel();
-
               var aMainItems = oMainModel.getProperty("/MainItems") || [];
 
               aSelectedItems.forEach(function (oItem) {
                 var oData = oItem.getBindingContext().getObject();
 
-                // Map fields properly to match your table’s bindings
+                // FIX 1: quantity goes to totalQuantity (the QTY column), NOT actualQuantity
                 aMainItems.push({
                   executionOrderMainCode: oData.invoiceMainItemCode,
-                  lineNumber: "", // if you want to auto-generate, use aMainItems.length + 1
+                  lineNumber: "",
                   serviceNumberCode: oData.serviceNumberCode,
                   description: oData.description,
-                  actualQuantity: oData.quantity,
+                  totalQuantity: oData.quantity,       // FIX: was actualQuantity — wrong field
+                  actualQuantity: 0,                   // starts at 0; user fills in during execution
                   unitOfMeasurementCode: oData.unitOfMeasurementCode,
                   amountPerUnit: oData.amountPerUnit,
                   currencyCode: oData.currencyCode,
@@ -363,16 +279,12 @@ sap.ui.define([
               if (oExecTable && oExecTable.getBinding("rows")) {
                 oExecTable.getBinding("rows").refresh();
               }
-              const mainItems = oMainModel.getProperty("/MainItems")
-              // Calculate the total sum
-              this.totalValue = mainItems.reduce(
-                (sum, record) => sum + Number(record.total || 0),
-                0
-              );
-              console.log(this.totalValue);
-              oModel.setProperty("/totalValue", this.totalValue);
 
-              console.log(" MainItems after copy:", oMainModel.getProperty("/MainItems"));
+              var totalValue = (oMainModel.getProperty("/MainItems") || []).reduce(
+                (sum, record) => sum + Number(record.total || 0), 0
+              );
+              oMainModel.setProperty("/totalValue", totalValue);
+
               sap.m.MessageToast.show("Selected rows copied to Main Items table!");
               oDialog.close();
             }
@@ -380,14 +292,11 @@ sap.ui.define([
           new sap.m.Button({
             text: "Cancel",
             type: "Reject",
-            press: function () {
-              oDialog.close();
-            }
+            press: function () { oDialog.close(); }
           })
         ]
       });
 
-      // Create quotations list
       var oTable = new sap.m.Table({
         mode: "MultiSelect",
         inset: false,
@@ -404,13 +313,11 @@ sap.ui.define([
 
       oDialog.addContent(oTable);
 
-      // Fetch quotation data
-      $.ajax({
-        url: "./odata/v4/sales-cloud/InvoiceMainItems",
-        method: "GET",
-        success: function (data) {
-          var oModel = new sap.ui.model.json.JSONModel(data.value || data);
-          oTable.setModel(oModel);
+      fetch("./odata/v4/sales-cloud/InvoiceMainItems", { method: "GET" })
+        .then(response => response.json())
+        .then(data => {
+          var oTableModel = new sap.ui.model.json.JSONModel(data.value || []);
+          oTable.setModel(oTableModel);
           oTable.bindItems("/", new sap.m.ColumnListItem({
             cells: [
               new sap.m.Text({ text: "{invoiceMainItemCode}" }),
@@ -422,11 +329,10 @@ sap.ui.define([
               new sap.m.Text({ text: "{currencyCode}" })
             ]
           }));
-        },
-        error: function () {
+        })
+        .catch(function () {
           sap.m.MessageToast.show("Failed to fetch quotations data.");
-        }
-      });
+        });
 
       oDialog.open();
     },
@@ -443,9 +349,7 @@ sap.ui.define([
         buttons: [
           new sap.m.Button({
             text: "Close",
-            press: function () {
-              oDialog.close();
-            }
+            press: function () { oDialog.close(); }
           })
         ]
       });
@@ -457,17 +361,16 @@ sap.ui.define([
           new sap.m.Column({ header: new sap.m.Label({ text: "Model Spec" }) }),
           new sap.m.Column({ header: new sap.m.Label({ text: "Model Description" }) }),
           new sap.m.Column({ header: new sap.m.Label({ text: "Currency" }) }),
-          new sap.m.Column({ header: new sap.m.Label({ text: "Services" }) }),
+          new sap.m.Column({ header: new sap.m.Label({ text: "Services" }) })
         ]
       });
 
       oDialog.addContent(oTable);
 
-      $.ajax({
-        url: "./odata/v4/sales-cloud/ModelSpecifications",
-        method: "GET",
-        success: function (data) {
-          console.log("Data:", data);
+      // FIX: absolute path
+      fetch("./odata/v4/sales-cloud/ModelSpecifications")
+        .then(response => response.json())
+        .then(data => {
           var oModel = new sap.ui.model.json.JSONModel(data);
           oTable.setModel(oModel);
           oTable.bindItems("/value", new sap.m.ColumnListItem({
@@ -486,11 +389,10 @@ sap.ui.define([
               })
             ]
           }));
-        },
-        error: function () {
+        })
+        .catch(function () {
           sap.m.MessageToast.show("Failed to fetch models data.");
-        }
-      });
+        });
 
       oDialog.open();
     },
@@ -498,7 +400,6 @@ sap.ui.define([
     _getModelServices: function (modelSpecCode) {
       var that = this;
 
-      // Create dialog for services
       var oDialog = new sap.m.Dialog({
         title: "Services for Model: " + modelSpecCode,
         contentWidth: "70%",
@@ -521,8 +422,6 @@ sap.ui.define([
               aSelectedItems.forEach(function (oItem) {
                 var oServiceData = oItem.getBindingContext().getObject();
                 aMainItems.push({
-                  //invoiceMainItemCode: oServiceData.modelSpecDetailsCode,
-                  //
                   serviceNumberCode: oServiceData.serviceNumberCode,
                   unitOfMeasurementCode: oServiceData.unitOfMeasurementCode,
                   currencyCode: oServiceData.currencyCode,
@@ -545,18 +444,15 @@ sap.ui.define([
                   lineNumber: oServiceData.lineNumber,
                   biddersLine: oServiceData.biddersLine,
                   supplementaryLine: oServiceData.supplementaryLine,
-                  lotCostOne: oServiceData.lotSizeForCostingIsOne,
+                  lotCostOne: oServiceData.lotSizeForCostingIsOne
                 });
               });
               oMainModel.setProperty("/MainItems", aMainItems);
-              const mainItems = oMainModel.getProperty("/MainItems")
-              // Calculate the total sum
-              this.totalValue = mainItems.reduce(
-                (sum, record) => sum + Number(record.total || 0),
-                0
+
+              var totalValue = (oMainModel.getProperty("/MainItems") || []).reduce(
+                (sum, record) => sum + Number(record.total || 0), 0
               );
-              console.log(this.totalValue);
-              oModel.setProperty("/totalValue", this.totalValue);
+              oMainModel.setProperty("/totalValue", totalValue);
 
               oView.byId("executionTable").getBinding("rows").refresh();
               sap.m.MessageToast.show("Selected services copied to Main Items table.");
@@ -565,9 +461,7 @@ sap.ui.define([
           }),
           new sap.m.Button({
             text: "Close",
-            press: function () {
-              oDialog.close();
-            }
+            press: function () { oDialog.close(); }
           })
         ]
       });
@@ -582,16 +476,16 @@ sap.ui.define([
           new sap.m.Column({ header: new sap.m.Label({ text: "UOM" }) }),
           new sap.m.Column({ header: new sap.m.Label({ text: "Quantity" }) }),
           new sap.m.Column({ header: new sap.m.Label({ text: "Amount/Unit" }) }),
-          new sap.m.Column({ header: new sap.m.Label({ text: "Currency" }) }),
+          new sap.m.Column({ header: new sap.m.Label({ text: "Currency" }) })
         ]
       });
 
       oDialog.addContent(oTable);
-      $.ajax({
-        //url: `/odata/v4/sales-cloud/ModelSpecificationsDetails?$filter=modelSpecCode eq '${modelSpecCode}'`,
-        url: `./odata/v4/sales-cloud/ModelSpecificationsDetails`,
-        method: "GET",
-        success: function (data) {
+
+      // FIX: absolute path
+      fetch(`./odata/v4/sales-cloud/ModelSpecificationsDetails`)
+        .then(response => response.json())
+        .then(data => {
           var oModel = new sap.ui.model.json.JSONModel(data);
           oTable.setModel(oModel);
           oTable.bindItems("/value", new sap.m.ColumnListItem({
@@ -606,22 +500,20 @@ sap.ui.define([
               new sap.m.Text({ text: "{currencyCode}" })
             ]
           }));
-        },
-        error: function () {
+        })
+        .catch(function () {
           sap.m.MessageToast.show("Failed to fetch services for this model.");
-        }
-      });
+        });
 
       oDialog.open();
     },
+
     _openExcelUploadDialog: function () {
       var that = this;
       var selectedFile;
-
       const oView = this.getView();
-      const oMainModel = oView.getModel(); // main model
+      const oMainModel = oView.getModel();
 
-      // File uploader
       var oFileUploader = new sap.ui.unified.FileUploader({
         width: "100%",
         fileType: ["xls", "xlsx"],
@@ -645,22 +537,20 @@ sap.ui.define([
             type: "Emphasized",
             press: function () {
               if (!oExcelTable) return;
-
               const aMainItems = oMainModel.getProperty("/MainItems") || [];
               const rows = oExcelTable.getModel().getProperty("/rows");
               const selectedRows = rows.filter(r => r.selected);
-
               if (selectedRows.length === 0) {
                 sap.m.MessageToast.show("Please select at least one row!");
                 return;
               }
-
               selectedRows.forEach(row => {
                 aMainItems.push({
                   executionOrderMainCode: row.executionOrderMainCode || "",
                   lineNumber: row.lineNumber || "",
                   serviceNumberCode: row.serviceNumberCode || "",
                   description: row.description || "",
+                  totalQuantity: row.totalQuantity || 0,
                   actualQuantity: row.actualQuantity || 0,
                   unitOfMeasurementCode: row.unitOfMeasurementCode || "",
                   amountPerUnit: row.amountPerUnit || 0,
@@ -682,10 +572,8 @@ sap.ui.define([
                   lotCostOne: row.lotCostOne || false
                 });
               });
-
               oMainModel.setProperty("/MainItems", aMainItems);
               oMainModel.refresh(true);
-
               sap.m.MessageToast.show("Selected executions added successfully!");
               oExcelDialog.close();
             }
@@ -694,7 +582,6 @@ sap.ui.define([
             text: "Add All",
             press: function () {
               if (!oExcelTable) return;
-
               const rows = oExcelTable.getModel().getProperty("/rows");
               rows.forEach(r => r.selected = true);
               oExcelTable.getModel().refresh();
@@ -703,25 +590,19 @@ sap.ui.define([
           }),
           new sap.m.Button({
             text: "Cancel",
-            press: function () {
-              oExcelDialog.close();
-            }
+            press: function () { oExcelDialog.close(); }
           })
         ]
       });
 
-      // Handle file read
       var handleFileRead = function () {
         if (!selectedFile) return;
-
         var reader = new FileReader();
         reader.onload = function (e) {
           var data = new Uint8Array(e.target.result);
           var workbook = XLSX.read(data, { type: "array" });
           var sheet = workbook.Sheets[workbook.SheetNames[0]];
           var jsonData = XLSX.utils.sheet_to_json(sheet);
-
-          // Ensure booleans are correct
           jsonData.forEach(r => {
             r.selected = false;
             r.unlimitedOverFulfillment = r.unlimitedOverFulfillment === true || r.unlimitedOverFulfillment === "true";
@@ -732,8 +613,6 @@ sap.ui.define([
           });
 
           var oExcelDataModel = new sap.ui.model.json.JSONModel({ rows: jsonData });
-
-          // Render table
           oExcelTable = new sap.m.Table({
             width: "100%",
             columns: [
@@ -753,7 +632,6 @@ sap.ui.define([
           });
 
           oExcelTable.setModel(oExcelDataModel);
-
           oExcelTable.bindItems({
             path: "/rows",
             template: new sap.m.ColumnListItem({
@@ -764,7 +642,7 @@ sap.ui.define([
                 new sap.m.Text({ text: "{lineNumber}" }),
                 new sap.m.Text({ text: "{serviceNumberCode}" }),
                 new sap.m.Text({ text: "{description}" }),
-                new sap.m.Text({ text: "{actualQuantity}" }),
+                new sap.m.Text({ text: "{totalQuantity}" }),
                 new sap.m.Text({ text: "{unitOfMeasurementCode}" }),
                 new sap.m.Text({ text: "{amountPerUnit}" }),
                 new sap.m.Text({ text: "{total}" }),
@@ -777,45 +655,33 @@ sap.ui.define([
 
           oDialogContent.addItem(oExcelTable);
         };
-
         reader.readAsArrayBuffer(selectedFile);
       };
 
       oFileUploader.attachChange(handleFileRead);
       oExcelDialog.open();
-    }
-    ,
+    },
+
     onEditItem: function (oEvent) {
-      // Get the row context from the button's parent (the row)
       var oButton = oEvent.getSource();
-      var oContext = oButton.getBindingContext(); // Simplified: button has the context directly
+      var oContext = oButton.getBindingContext();
       if (!oContext) {
         sap.m.MessageToast.show("No item context found.");
         return;
       }
       var oData = oContext.getObject();
       var oModel = this.getView().getModel();
-      // keep the edit path for saving later
       this._editPath = oContext.getPath();
-      // copy the row data to a temp model property
       oModel.setProperty("/editRow", Object.assign({}, oData));
-      console.log("Editing item:", oData); // Debug: remove after testing
+
       if (!this._EditItemDialog) {
         var oForm = new sap.ui.layout.form.SimpleForm({
           layout: "ResponsiveGridLayout",
           editable: true,
-          labelSpanXL: 4,
-          labelSpanL: 4,
-          labelSpanM: 4,
-          labelSpanS: 12,
+          labelSpanXL: 4, labelSpanL: 4, labelSpanM: 4, labelSpanS: 12,
           adjustLabelSpan: false,
-          emptySpanXL: 1,
-          emptySpanL: 1,
-          emptySpanM: 1,
-          emptySpanS: 0,
-          columnsXL: 1,
-          columnsL: 1,
-          columnsM: 1,
+          emptySpanXL: 1, emptySpanL: 1, emptySpanM: 1, emptySpanS: 0,
+          columnsXL: 1, columnsL: 1, columnsM: 1,
           content: [
             new sap.m.Label({ text: "Service No" }),
             new sap.m.Input({ value: "{/editRow/serviceNumberCode}" }),
@@ -827,14 +693,19 @@ sap.ui.define([
             new sap.m.Input({ value: "{/editRow/totalQuantity}", type: "Number", liveChange: this._onValueChange.bind(this) }),
 
             new sap.m.Label({ text: "UOM" }),
+            // FIX 3: items template key must use {code} — that's what we store in /Uom array
             new sap.m.Select(this.createId("editUOM"), {
               selectedKey: "{/editRow/unitOfMeasurementCode}",
               forceSelection: false,
+              change: function (oEvt) {
+                // Explicitly write selected key back to model to survive re-render
+                var sKey = oEvt.getParameter("selectedItem").getKey();
+                oModel.setProperty("/editRow/unitOfMeasurementCode", sKey);
+              },
               items: {
                 path: "/Uom",
-                forceSelection: false,
                 template: new sap.ui.core.Item({
-                  key: "{unitOfMeasurementCode}",
+                  key: "{code}",          // FIX: was {unitOfMeasurementCode} — entity exposes {code}
                   text: "{description}"
                 })
               }
@@ -903,7 +774,7 @@ sap.ui.define([
             new sap.m.CheckBox({ selected: "{/editRow/lotCostOne}" }),
 
             new sap.m.Label({ text: "Total" }),
-            new sap.m.Input({ value: "{/editRow/total}", liveChange: this._onValueChange.bind(this), editable: false })
+            new sap.m.Input({ value: "{/editRow/total}", editable: false })
           ]
         });
 
@@ -938,65 +809,38 @@ sap.ui.define([
       var oModel = this.getView().getModel();
       var oInput = oEvent.getSource();
       var sValue = oEvent.getParameter("value");
-
-      // Get the binding path of the input value (this will be like "/editRow/actualQuantity")
       var sBindingPath = oInput.getBinding("value") && oInput.getBinding("value").getPath();
-
-      if (!sBindingPath) {
-        return;
-      }
-
-      // Write the new value directly to the exact binding path
-      // (do NOT prepend "/editRow" again — sBindingPath already contains it)
+      if (!sBindingPath) return;
       oModel.setProperty(sBindingPath, sValue);
-
-      // Re-read updated editRow and recalc total
       var oEditRow = oModel.getProperty("/editRow") || {};
       var qty = parseFloat(oEditRow.totalQuantity) || 0;
       var amount = parseFloat(oEditRow.amountPerUnit) || 0;
-      var total = qty * amount;
-
-      // Keep total numeric (use formatting on display if required)
-      oModel.setProperty("/editRow/total", total);
+      oModel.setProperty("/editRow/total", qty * amount);
     },
-
 
     onSaveEdit: function () {
       var oModel = this.getView().getModel();
       var oEditRow = oModel.getProperty("/editRow");
-
-      // Ensure numeric values
       var qty = parseFloat(oEditRow.totalQuantity) || 0;
       var amount = parseFloat(oEditRow.amountPerUnit) || 0;
+      oEditRow.total = qty * amount;
 
-      // ✅ Always recalculate total right before saving
-      var total = qty * amount;
-      oEditRow.total = total;
-
-      // ✅ Write the updated row back to its original path in the table
       if (this._editPath) {
         oModel.setProperty(this._editPath, oEditRow);
       }
-      const mainItems = oModel.getProperty("/MainItems")
-      // Calculate the total sum
-      this.totalValue = mainItems.reduce(
-        (sum, record) => sum + Number(record.total || 0),
-        0
-      );
-      console.log(this.totalValue);
-      oModel.setProperty("/totalValue", this.totalValue);
 
-      // ✅ Refresh model to update table view
+      var totalValue = (oModel.getProperty("/MainItems") || []).reduce(
+        (sum, record) => sum + Number(record.total || 0), 0
+      );
+      oModel.setProperty("/totalValue", totalValue);
       oModel.refresh(true);
 
-      // Close dialog
       this._EditItemDialog.close();
       this._EditItemDialog.destroy();
       this._EditItemDialog = null;
-
       sap.m.MessageToast.show("Item updated successfully!");
-    }
-    ,
+    },
+
     onDeleteItem: function (oEvent) {
       var oBindingContext = oEvent.getSource().getBindingContext();
       if (oBindingContext) {
@@ -1015,16 +859,8 @@ sap.ui.define([
                 if (iIndex > -1) {
                   aItems.splice(iIndex, 1);
                   oModel.setProperty("/MainItems", aItems);
-
-                  const mainItems = oModel.getProperty("/MainItems")
-                  // Calculate the total sum
-                  this.totalValue = mainItems.reduce(
-                    (sum, record) => sum + Number(record.total || 0),
-                    0
-                  );
-                  console.log(this.totalValue);
-                  oModel.setProperty("/totalValue", this.totalValue);
-
+                  var totalValue = aItems.reduce((sum, record) => sum + Number(record.total || 0), 0);
+                  oModel.setProperty("/totalValue", totalValue);
                   oModel.refresh(true);
                   sap.m.MessageToast.show("Item deleted successfully!");
                 }
@@ -1034,69 +870,91 @@ sap.ui.define([
         );
       }
     },
+
     onSaveDocument: function () {
       const oModel = this.getView().getModel();
       const MainItems = oModel.getProperty("/MainItems") || [];
 
-      // ✅ Ensure totals are calculated before sending
+      // Recalculate totals before sending
       MainItems.forEach(item => {
         const qty = parseFloat(item.totalQuantity) || 0;
         const amount = parseFloat(item.amountPerUnit) || 0;
         item.total = qty * amount;
       });
 
+      // FIX 4: Build executionOrders array matching ExecutionOrderMainCommand type in CDS
+      // Mirror the Spring Boot controller: list of commands + salesOrder/salesOrderItem/pricing as top-level params
       const executionOrders = MainItems.map(item => ({
-        referenceId: oModel.getProperty("/docNumber") || "",
-        serviceNumberCode: parseInt(item.serviceNumberCode) || 0,
-        description: item.description || "",
-        unitOfMeasurementCode: item.unitOfMeasurementCode || "",
-        currencyCode: item.currencyCode || "",
-        totalQuantity: item.totalQuantity || 0,
-        remainingQuantity: item.remainingQuantity || 0,
-        amountPerUnit: item.amountPerUnit || 0,
-        total: item.total || 0,
-        actualQuantity: item.actualQuantity || 0,
-        actualPercentage: item.actualPercentage || 0,
-        overFulfillmentPercent: item.overFulfillmentPercent || 0,
-        unlimitedOverFulfillment: item.unlimitedOverFulfillment ?? true,
-        manualPriceEntryAllowed: item.manualPriceEntryAllowed ?? true
+        referenceId:               oModel.getProperty("/docNumber") || "",
+        salesOrderItem:            oModel.getProperty("/itemNumber") || "",
+        serviceNumberCode:         parseInt(item.serviceNumberCode) || 0,
+        description:               item.description || "",
+        unitOfMeasurementCode:     item.unitOfMeasurementCode || "",
+        currencyCode:              item.currencyCode || "",
+        materialGroupCode:         item.materialGroupCode || "",
+        personnelNumberCode:       item.personnelNumberCode || "",
+        lineTypeCode:              item.lineTypeCode || "",
+        serviceTypeCode:           item.serviceTypeCode || "",
+        externalServiceNumber:     item.externalServiceNumber || "",
+        serviceText:               item.serviceText || "",
+        lineText:                  item.lineText || "",
+        biddersLine:               item.biddersLine ?? false,
+        supplementaryLine:         item.supplementaryLine ?? false,
+        lotCostOne:                item.lotCostOne ?? false,
+        totalQuantity:             parseFloat(item.totalQuantity) || 0,
+        remainingQuantity:         parseFloat(item.remainingQuantity) || 0,
+        actualQuantity:            parseFloat(item.actualQuantity) || 0,
+        actualPercentage:          parseFloat(item.actualPercentage) || 0,
+        overFulfillmentPercent:    parseFloat(item.overFulfillmentPercent) || 0,
+        unlimitedOverFulfillment:  item.unlimitedOverFulfillment ?? false,
+        manualPriceEntryAllowed:   item.manualPriceEntryAllowed ?? false,
+        amountPerUnit:             parseFloat(item.amountPerUnit) || 0,
+        total:                     parseFloat(item.total) || 0
       }));
 
+      // FIX 4 continued: body structure must match the CDS action signature exactly.
+      // CAP OData actions receive all params as a flat JSON body.
       const body = {
-        executionOrders,
-        salesOrder: oModel.getProperty("/docNumber") || "",
-        salesOrderItem: oModel.getProperty("/itemNumber") || "",
-        pricingProcedureStep: 10,
-        pricingProcedureCounter: 1,
-        customerNumber: "120000"
+        executionOrders:          executionOrders,
+        salesOrder:               oModel.getProperty("/docNumber") || "",
+        salesOrderItem:           oModel.getProperty("/itemNumber") || "",
+        pricingProcedureStep:     10,
+        pricingProcedureCounter:  1,
+        customerNumber:           "120000"
       };
 
-      console.log("Payload sent to API:", body);
+      console.log("Payload sent to API:", JSON.stringify(body, null, 2));
 
+      // FIX: absolute path — remove leading ./ to avoid /execution/ prefix being prepended
       fetch("./odata/v4/sales-cloud/saveOrUpdateExecutionOrders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
       })
         .then(response => {
-          if (!response.ok) throw new Error("Failed to save: " + response.statusText);
+          if (!response.ok) {
+            return response.text().then(t => { throw new Error(t || response.statusText); });
+          }
           return response.json();
         })
-        .then(savedItem => {
-          console.log(savedItem);
-          // ✅ Don’t overwrite your current data with backend response unless needed
+        .then(result => {
+          console.log("Save result:", result);
+          // Refresh table with returned data if available
+          if (result && result.value && Array.isArray(result.value)) {
+            oModel.setProperty("/MainItems", result.value);
+            var totalValue = result.value.reduce((sum, r) => sum + Number(r.total || 0), 0);
+            oModel.setProperty("/totalValue", totalValue);
+            oModel.refresh(true);
+          }
           sap.m.MessageToast.show("Document saved successfully!");
         })
         .catch(err => {
           console.error("Error saving document:", err);
-          sap.m.MessageBox.error("Error: " + err.message);
+          sap.m.MessageBox.error("Save failed: " + err.message);
         });
-    }
-    ,
+    },
 
     onAddMianItem: function () {
-
-      //Open Custom Dialog 
       if (!this._AddItemDialog) {
         this._AddItemDialog = new sap.m.Dialog({
           title: "Add New Item",
@@ -1116,13 +974,13 @@ sap.ui.define([
               new sap.m.Input(this.createId("itemOverFulf")),
               new sap.m.Label({ text: "Unlimited Over Fulfillment %" }),
               new sap.m.CheckBox(this.createId("itemUlimitedOFul")),
-              new sap.m.Label({ text: "Manual Price Entery Allowd" }),
+              new sap.m.Label({ text: "Manual Price Entry Allowed" }),
               new sap.m.CheckBox(this.createId("itemManualPrice")),
               new sap.m.Label({ text: "Select Material Grp" }),
               new sap.m.Input(this.createId("itemMaterialGrp")),
               new sap.m.Label({ text: "Service Type" }),
               new sap.m.Input(this.createId("itemSrvType")),
-              new sap.m.Label({ text: "Excternal Service Number" }),
+              new sap.m.Label({ text: "External Service Number" }),
               new sap.m.Input(this.createId("itemExtSrvNo")),
               new sap.m.Label({ text: "Service Text" }),
               new sap.m.Input(this.createId("itemSrvText")),
@@ -1136,47 +994,47 @@ sap.ui.define([
               new sap.m.CheckBox(this.createId("itemBiddersLine")),
               new sap.m.Label({ text: "Supplementary Line" }),
               new sap.m.CheckBox(this.createId("itemSuppLine")),
-              new sap.m.Label({ text: "Lost Cost one" }),
-              new sap.m.CheckBox(this.createId("itemLCO")),
+              new sap.m.Label({ text: "Lot Cost One" }),
+              new sap.m.CheckBox(this.createId("itemLCO"))
             ]
           }),
           beginButton: new sap.m.Button({
             text: "Add",
             type: "Emphasized",
             press: function () {
-              //Create New Line in Table
-              var oItem = this.getView().getModel().getProperty("/Items");
+              var qty = parseFloat(this.byId("itemQTY").getValue()) || 0;
+              var amt = parseFloat(this.byId("itemAmountPerUnit").getValue()) || 0;
+              var oMainModel = this.getView().getModel();
+              var aItems = oMainModel.getProperty("/MainItems") || [];
               var newItem = {
-                MainItemNo: 55,
-                ServiceNo: this.byId("itemServiceNo").getValue(),
-                Description: this.byId("itemDescription").getValue(),
-                QTY: this.byId("itemQTY").getValue(),
-                UOM: this.byId("itemUOM").getValue(),
-                AmountPerUnit: this.byId("itemAmountPerUnit").getValue(),
-                Total: this.byId("itemAmountPerUnit").getValue() * this.byId("itemQTY").getValue(),
-                OverFulfillment: this.byId("itemOverFulf").getValue(),
-                UnlimitedOverFulfillment: this.byId("itemUlimitedOFul").getSelected(),
-                ManualPriceEnteryAllowd: this.byId("itemManualPrice").getSelected(),
-                MaterialGrp: this.byId("itemMaterialGrp").getValue(),
-                ServiceType: this.byId("itemSrvType").getValue(),
-                ExternalServiceNumber: this.byId("itemExtSrvNo").getValue(),
-                ServiceText: this.byId("itemSrvText").getValue(),
-                LineText: this.byId("itemLineText").getValue(),
-                PersonnelNR: this.byId("itemPersoNr").getValue(),
-                LineType: this.byId("itemLineType").getValue(),
-                Biddersline: this.byId("itemBiddersLine").getSelected(),
-                Supplementaryline: this.byId("itemSuppLine").getSelected(),
-                LotCostOne: this.byId("itemLCO").getSelected()
+                serviceNumberCode:       this.byId("itemServiceNo").getValue(),
+                description:             this.byId("itemDescription").getValue(),
+                totalQuantity:           qty,
+                actualQuantity:          0,
+                unitOfMeasurementCode:   this.byId("itemUOM").getValue(),
+                amountPerUnit:           amt,
+                total:                   qty * amt,
+                overFulfillmentPercent:  parseFloat(this.byId("itemOverFulf").getValue()) || 0,
+                unlimitedOverFulfillment: this.byId("itemUlimitedOFul").getSelected(),
+                manualPriceEntryAllowed: this.byId("itemManualPrice").getSelected(),
+                materialGroupCode:       this.byId("itemMaterialGrp").getValue(),
+                serviceTypeCode:         this.byId("itemSrvType").getValue(),
+                externalServiceNumber:   this.byId("itemExtSrvNo").getValue(),
+                serviceText:             this.byId("itemSrvText").getValue(),
+                lineText:                this.byId("itemLineText").getValue(),
+                personnelNumberCode:     this.byId("itemPersoNr").getValue(),
+                lineTypeCode:            this.byId("itemLineType").getValue(),
+                biddersLine:             this.byId("itemBiddersLine").getSelected(),
+                supplementaryLine:       this.byId("itemSuppLine").getSelected(),
+                lotCostOne:              this.byId("itemLCO").getSelected()
               };
-              oItem.push(newItem);
-              var oModel = this.getView().getModel();
-              var oItemCreated = oModel.setProperty("/Items", oItem);
-              //Show Message
-              if (oItemCreated) {
-                sap.m.MessageToast.show("New line has been created successfully!");
-              }
+              aItems.push(newItem);
+              oMainModel.setProperty("/MainItems", aItems);
+              var totalValue = aItems.reduce((sum, r) => sum + Number(r.total || 0), 0);
+              oMainModel.setProperty("/totalValue", totalValue);
+              oMainModel.refresh(true);
+              sap.m.MessageToast.show("New line has been created successfully!");
               this._AddItemDialog.close();
-              //For re-render when i open again
               this._AddItemDialog.destroy();
               this._AddItemDialog = null;
             }.bind(this)
@@ -1187,12 +1045,10 @@ sap.ui.define([
               this._AddItemDialog.close();
             }.bind(this)
           })
-
-        })
+        });
         this.getView().addDependent(this._AddItemDialog);
       }
       this._AddItemDialog.open();
-    },
-
+    }
   });
 });

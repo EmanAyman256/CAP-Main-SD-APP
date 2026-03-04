@@ -10,15 +10,13 @@ sap.ui.define([
     "sap/m/MessageBox",
     "sap/ui/layout/form/SimpleForm",
     "sap/ui/layout/form/ResponsiveGridLayout"
-// FIX 2: Callback order MUST match the define array order above.
-// Previously MessageBox was at position 11 in callback but position 9 in define array,
-// so MessageBox variable was actually receiving ResponsiveGridLayout → .error() didn't exist.
 ], (Controller, JSONModel, Dialog, Button, Input, Label, VBox, MessageToast, MessageBox, SimpleForm, ResponsiveGridLayout) => {
     "use strict";
 
     return Controller.extend("tendering.controller.Tendering", {
 
         onInit: function () {
+            // ── Main application model ──────────────────────────────────────────
             var oModel = new sap.ui.model.json.JSONModel({
                 totalValue: 0,
                 docNumber: "",
@@ -50,9 +48,27 @@ sap.ui.define([
             });
             this.getView().setModel(oModel);
 
+            // ── Cost / Simulation model ─────────────────────────────────────────
+            // Mirrors the "viewModel" from the reference mainPage app.
+            // Holds all state for the Cost dialog (category data, totals, button state).
+            var oCostModel = new sap.ui.model.json.JSONModel({
+                costButtonEnabled: false,         // enabled when ≥1 row selected
+                selectedCostCategory: "EAndD",    // active category in the cost dialog
+                selectedItemDescription: "",      // description of first selected item
+                totalAmount: "0.00",              // running total across all cost rows
+                // Per-category data arrays
+                simulationData:  [],  // EAndD rows
+                indirectCostData: [], // IndirectCost rows
+                materialData:    [],  // Material rows
+                cablesData:      []   // Cables rows
+            });
+            this.getView().setModel(oCostModel, "costModel");
+
+            // ── Routing ────────────────────────────────────────────────────────
             var oRouter = sap.ui.core.UIComponent.getRouterFor(this);
             oRouter.getRoute("tendering").attachPatternMatched(this._onRouteMatched, this);
 
+            // ── Reference data fetches ──────────────────────────────────────────
             fetch("./odata/v4/sales-cloud/ServiceNumbers")
                 .then(r => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
                 .then(data => {
@@ -92,7 +108,6 @@ sap.ui.define([
             })
                 .then(r => r.json())
                 .then(data => {
-                    // Normalize subItemList to [] so tree arrows always show
                     const mainItems = Array.isArray(data.value) ? data.value.map(item => ({
                         ...item,
                         subItemList: Array.isArray(item.subItemList) ? item.subItemList : []
@@ -105,7 +120,7 @@ sap.ui.define([
                 .catch(err => console.error("Error fetching MainItems:", err));
         },
 
-        // ─── CORE CALCULATION (matches Spring Boot logic) ─────────────────────────
+        // ─── CORE CALCULATION ─────────────────────────────────────────────────
         _applyProfitToItem: function (oItem) {
             const qty = parseFloat(oItem.quantity) || 0;
             const amt = parseFloat(oItem.amountPerUnit) || 0;
@@ -135,7 +150,16 @@ sap.ui.define([
             this._applyProfitToItem(oMainItem);
         },
 
-        // ─── INPUT CHANGE ─────────────────────────────────────────────────────────
+        // ─── ROW SELECTION ────────────────────────────────────────────────────
+        // Fires when the tree table selection changes.
+        // Enables / disables the Cost button via the costModel.
+        onRowSelectionChange: function () {
+            var oTable = this.byId("treeTable");
+            var aSelected = oTable.getSelectedIndices().filter(function (i) { return i >= 0; });
+            this.getView().getModel("costModel").setProperty("/costButtonEnabled", aSelected.length > 0);
+        },
+
+        // ─── INPUT CHANGE ─────────────────────────────────────────────────────
         onInputChange: function (oEvent) {
             var oModel = this.getView().getModel();
             var sId = oEvent.getSource().getId();
@@ -172,7 +196,7 @@ sap.ui.define([
             this.getView().getModel().setProperty("/SubTotal", (qty * amt).toFixed(3));
         },
 
-        // ─── SERVICE NUMBER CHANGE ────────────────────────────────────────────────
+        // ─── SERVICE NUMBER CHANGE ────────────────────────────────────────────
         onServiceNumberChange: function (oEvent) {
             var oSel   = oEvent.getSource().getSelectedItem();
             var oDesc  = this.byId("mainDescriptionInput");
@@ -209,7 +233,7 @@ sap.ui.define([
             }
         },
 
-        // ─── FORMULA SELECTION ────────────────────────────────────────────────────
+        // ─── FORMULA SELECTION ────────────────────────────────────────────────
         onFormulaSelected: function (oEvent) {
             var oSelect   = oEvent.getSource();
             var sId       = oSelect.getId();
@@ -232,42 +256,31 @@ sap.ui.define([
                 oModel.setProperty("/SelectedFormula", oFormula || null);
                 oModel.setProperty("/HasSelectedFormula", !!oFormula);
                 if (!oFormula) {
-                    // FIX 1 (part): Clearing formula unlocks & resets quantity and totals
                     this._clearMainFormula();
                 }
             }
         },
 
-        // FIX 1: Dedicated clear formula handler — called by the "Clear Formula" button in the view
         onClearFormula: function () {
-            var oModel = this.getView().getModel();
-            // Reset the select back to empty
             var oFormulaSelect = this.byId("formulaSelect");
             if (oFormulaSelect) oFormulaSelect.setSelectedKey("");
             this._clearMainFormula();
             MessageToast.show("Formula cleared. You can now enter quantity manually.");
         },
 
-        // Shared helper — resets all formula-related state for main item dialog
         _clearMainFormula: function () {
             var oModel = this.getView().getModel();
             oModel.setProperty("/SelectedFormula", null);
             oModel.setProperty("/HasSelectedFormula", false);
             oModel.setProperty("/FormulaParameters", {});
             oModel.setProperty("/IsFormulaBasedQuantity", false);
-            // Unlock and clear quantity so user can type manually
             var oQty = this.byId("mainQuantityInput");
-            if (oQty) {
-                oQty.setValue("");
-                oQty.setEditable(true);
-            }
-            // Reset calculated fields
+            if (oQty) { oQty.setValue(""); oQty.setEditable(true); }
             oModel.setProperty("/Total", "0.000");
             oModel.setProperty("/totalWithProfit", "0.000");
             oModel.setProperty("/amountPerUnitWithProfit", "0.000");
         },
 
-        // FIX 1: Same for sub item formula
         onClearSubFormula: function () {
             var oModel = this.getView().getModel();
             var oFormulaSelect = this.byId("subFormulaSelect");
@@ -276,15 +289,12 @@ sap.ui.define([
             oModel.setProperty("/HasSelectedSubFormula", false);
             oModel.setProperty("/SubFormulaParameters", {});
             var oQty = this.byId("subQuantityInput");
-            if (oQty) {
-                oQty.setValue("");
-                oQty.setEditable(true);
-            }
+            if (oQty) { oQty.setValue(""); oQty.setEditable(true); }
             oModel.setProperty("/SubTotal", "0.000");
             MessageToast.show("Formula cleared. You can now enter quantity manually.");
         },
 
-        // ─── FORMULA DIALOGS ──────────────────────────────────────────────────────
+        // ─── FORMULA DIALOGS ──────────────────────────────────────────────────
         _calculateFormulaResult: function (oFormula, oParams) {
             if (!oFormula || !oParams) return 0;
             try {
@@ -334,7 +344,6 @@ sap.ui.define([
             oQty.setValue(result);
             oQty.setEditable(false);
             oModel.setProperty("/IsFormulaBasedQuantity", true);
-            // Trigger recalculation
             var amt = parseFloat(this.byId("mainAmountPerUnitInput").getValue()) || 0;
             var pm  = parseFloat(this.byId("mainProfitMarginInput").getValue()) || 0;
             var total = result * amt;
@@ -356,7 +365,7 @@ sap.ui.define([
             oModel.setProperty("/SubTotal", (result * amt).toFixed(3));
         },
 
-        // ─── ADD MAIN ITEM DIALOG ─────────────────────────────────────────────────
+        // ─── ADD MAIN ITEM DIALOG ─────────────────────────────────────────────
         onOpenMainDialog: function () {
             var oView  = this.getView();
             var oModel = oView.getModel();
@@ -421,7 +430,6 @@ sap.ui.define([
                 quantity: qty,
                 unitOfMeasurementCode: oUOM ? oUOM.getKey() : "",
                 formulaCode: oFormula ? oFormula.getKey() : "",
-                // NOTE: no "parameters" field — not in CAP entity schema
                 currencyCode: oCurrency ? oCurrency.getKey() : "",
                 amountPerUnit: amt,
                 total: total.toFixed(3),
@@ -440,7 +448,7 @@ sap.ui.define([
             MessageToast.show("Main item added successfully!");
         },
 
-        // ─── ADD SUB ITEM DIALOG ──────────────────────────────────────────────────
+        // ─── ADD SUB ITEM DIALOG ──────────────────────────────────────────────
         onOpenSubDialogForRow: function (oEvent) {
             var oContext = oEvent.getSource().getBindingContext();
             var oObject  = oContext.getObject();
@@ -509,7 +517,6 @@ sap.ui.define([
                 quantity: qty,
                 unitOfMeasurementCode: oUOMItem ? oUOMItem.getKey() : "",
                 formulaCode: sFormKey,
-                // NOTE: no "parameters" field
                 amountPerUnit: amt,
                 currencyCode: oCurItem ? oCurItem.getKey() : "",
                 total: (qty * amt).toFixed(3)
@@ -526,7 +533,7 @@ sap.ui.define([
             MessageToast.show("Sub item added successfully!");
         },
 
-        // ─── APPLY PROFIT MARGIN ─────────────────────────────────────────────────
+        // ─── APPLY PROFIT MARGIN ──────────────────────────────────────────────
         onApplyProfitMargin: function () {
             var oTable   = this.byId("treeTable");
             var oModel   = this.getView().getModel();
@@ -559,7 +566,483 @@ sap.ui.define([
             }
         },
 
-        // ─── SAVE DOCUMENT ────────────────────────────────────────────────────────
+        // ═══════════════════════════════════════════════════════════════════════
+        // COST BUTTON — Full simulation/cost logic ported from mainPage app
+        // ═══════════════════════════════════════════════════════════════════════
+
+        /**
+         * Called when the "Cost" button is pressed.
+         * Mirrors onOpenSimulation from mainPage_controller.js, adapted to:
+         *   - use the default JSONModel instead of named "viewModel"
+         *   - use the "costModel" (named) for cost-dialog state
+         *   - get selected item info from the tree table
+         *   - use a category selector tab at the top of the dialog
+         */
+        onOpenCost: function () {
+            var oTable     = this.byId("treeTable");
+            var oModel     = this.getView().getModel();
+            var oCostModel = this.getView().getModel("costModel");
+
+            // Validate that at least one row is selected
+            var aIndices = oTable.getSelectedIndices().filter(function (i) { return i >= 0; });
+            if (aIndices.length === 0) {
+                MessageToast.show("Please select at least one item from the table.");
+                return;
+            }
+
+            // Gather selected item info (use first selected for context)
+            var oContext = oTable.getContextByIndex(aIndices[0]);
+            var oItem    = oContext ? oContext.getObject() : {};
+
+            // Initialise costModel state — mirrors viewModel setup in reference app
+            oCostModel.setProperty("/selectedItemDescription", oItem.description || "");
+            oCostModel.setProperty("/selectedCostCategory",    "EAndD");
+            oCostModel.setProperty("/totalAmount",             "0.00");
+            oCostModel.setProperty("/simulationData",  [{ description: "", Salary: "", Months: "", NoOfPersons: "", Amount: "", __isNew: true }]);
+            oCostModel.setProperty("/indirectCostData",[{ Description: "", Unit: "", Qty: "", Cost: "", Labour: "", Total: "", __isNew: true }]);
+            oCostModel.setProperty("/materialData",    [{ Description: "", Vendor_Details: "", Quotation_Date: "", Quotation_Price: "", Payment_Terms: "", Freight_Clearance_Charges_Percentage: "", Freight_Clearance_Charges: "", Transportation_Charges: "", SABER: "", Total_Sub_Charges: "", Total_Price: "", __isNew: true }]);
+            oCostModel.setProperty("/cablesData",      [{ Description: "", Circuit: "", Runs: "", No_of_ph: "", Approximate_Meter: "", Total: "", Unit_Price: "", Total_Price: "", __isNew: true }]);
+
+            // Store selected row paths for saving cost back to items
+            this._costSelectedIndices = aIndices;
+
+            // Destroy any previous cost dialog
+            if (this._oCostDialog) {
+                this._oCostDialog.destroy();
+                this._oCostDialog = null;
+            }
+
+            // ── Category selector (SegmentedButton, mirrors TabContainer in reference) ──
+            var oCategoryBar = new sap.m.SegmentedButton({
+                selectedKey: "EAndD",
+                items: [
+                    new sap.m.SegmentedButtonItem({ key: "EAndD",        text: "E & D" }),
+                    new sap.m.SegmentedButtonItem({ key: "IndirectCost", text: "Indirect Cost" }),
+                    new sap.m.SegmentedButtonItem({ key: "Material",     text: "Material" }),
+                    new sap.m.SegmentedButtonItem({ key: "Cables",       text: "Cables" })
+                ],
+                selectionChange: this._onCostCategoryChange.bind(this)
+            }).addStyleClass("sapUiSmallMarginBottom");
+
+            // ── Total amount footer strip ──
+            var oTotalStrip = new sap.m.HBox({
+                justifyContent: "End",
+                alignItems: "Center",
+                items: [
+                    new sap.m.Label({ text: "Total Amount (SAR):" }).addStyleClass("sapUiSmallMarginEnd"),
+                    new sap.m.Input({
+                        value: "{costModel>/totalAmount}",
+                        editable: false,
+                        width: "140px"
+                    })
+                ]
+            }).addStyleClass("sapUiSmallMarginTop");
+
+            // ── E & D Table (mirrors oEDTable in reference app) ──────────────
+            var oEDTable = new sap.m.Table({
+                id: this.createId("costEDTable"),
+                visible: true,
+                columns: [
+                    new sap.m.Column({ header: new sap.m.Text({ text: "Design and Engineering" }) }),
+                    new sap.m.Column({ header: new sap.m.Text({ text: "Salary" }) }),
+                    new sap.m.Column({ header: new sap.m.Text({ text: "Months" }) }),
+                    new sap.m.Column({ header: new sap.m.Text({ text: "No. of Persons" }) }),
+                    new sap.m.Column({ header: new sap.m.Text({ text: "Amount (SAR)" }) })
+                ],
+                items: {
+                    path: "costModel>/simulationData",
+                    template: new sap.m.ColumnListItem({
+                        cells: [
+                            new sap.m.Input({ value: "{costModel>description}", editable: "{= ${costModel>__isNew} === true }", change: this.onCostSimulationInputChange.bind(this) }),
+                            new sap.m.Input({ value: "{costModel>Salary}",      editable: "{= ${costModel>__isNew} === true }", type: "Number", change: this.onCostSimulationInputChange.bind(this) }),
+                            new sap.m.Input({ value: "{costModel>Months}",      editable: "{= ${costModel>__isNew} === true }", type: "Number", change: this.onCostSimulationInputChange.bind(this) }),
+                            new sap.m.Input({ value: "{costModel>NoOfPersons}", editable: "{= ${costModel>__isNew} === true }", type: "Number", change: this.onCostSimulationInputChange.bind(this) }),
+                            new sap.m.Input({ value: "{costModel>Amount}",      editable: "{= ${costModel>__isNew} === true }", type: "Number", change: this.onCostAmountDirectChange.bind(this) })
+                        ]
+                    })
+                }
+            });
+
+            // ── Indirect Cost Table ───────────────────────────────────────────
+            var oIndirectTable = new sap.m.Table({
+                id: this.createId("costIndirectTable"),
+                visible: false,
+                columns: [
+                    new sap.m.Column({ header: new sap.m.Text({ text: "Description" }) }),
+                    new sap.m.Column({ header: new sap.m.Text({ text: "Unit" }) }),
+                    new sap.m.Column({ header: new sap.m.Text({ text: "Qty" }) }),
+                    new sap.m.Column({ header: new sap.m.Text({ text: "Cost" }) }),
+                    new sap.m.Column({ header: new sap.m.Text({ text: "Labour" }) }),
+                    new sap.m.Column({ header: new sap.m.Text({ text: "Total (SAR)" }) })
+                ],
+                items: {
+                    path: "costModel>/indirectCostData",
+                    template: new sap.m.ColumnListItem({
+                        cells: [
+                            new sap.m.Input({ value: "{costModel>Description}", editable: "{= ${costModel>__isNew} === true }", change: this.onCostIndirectInputChange.bind(this) }),
+                            new sap.m.Input({ value: "{costModel>Unit}",        editable: "{= ${costModel>__isNew} === true }", change: this.onCostIndirectInputChange.bind(this) }),
+                            new sap.m.Input({ value: "{costModel>Qty}",         editable: "{= ${costModel>__isNew} === true }", type: "Number", change: this.onCostIndirectInputChange.bind(this) }),
+                            new sap.m.Input({ value: "{costModel>Cost}",        editable: "{= ${costModel>__isNew} === true }", type: "Number", change: this.onCostIndirectInputChange.bind(this) }),
+                            new sap.m.Input({ value: "{costModel>Labour}",      editable: "{= ${costModel>__isNew} === true }", change: this.onCostIndirectInputChange.bind(this) }),
+                            new sap.m.Input({ value: "{costModel>Total}",       editable: false, type: "Number", change: this.onCostTotalDirectChange.bind(this) })
+                        ]
+                    })
+                }
+            });
+
+            // ── Material Table ────────────────────────────────────────────────
+            var oMaterialTable = new sap.m.Table({
+                id: this.createId("costMaterialTable"),
+                visible: false,
+                columns: [
+                    "Material", "Vendor Details", "Quotation Date", "Quotation Price",
+                    "Payment Terms", "Freight & Clearance (%)", "Freight & Clearance",
+                    "Transportation Charges", "SABER", "Total Sub-Charges", "Total Price"
+                ].map(function (t) { return new sap.m.Column({ header: new sap.m.Text({ text: t }) }); }),
+                items: {
+                    path: "costModel>/materialData",
+                    template: new sap.m.ColumnListItem({
+                        cells: [
+                            new sap.m.Input({ value: "{costModel>Description}",                          editable: "{= ${costModel>__isNew} === true }" }),
+                            new sap.m.Input({ value: "{costModel>Vendor_Details}",                       editable: "{= ${costModel>__isNew} === true }" }),
+                            new sap.m.Input({ value: "{costModel>Quotation_Date}",                       editable: "{= ${costModel>__isNew} === true }" }),
+                            new sap.m.Input({ value: "{costModel>Quotation_Price}",                      editable: "{= ${costModel>__isNew} === true }", type: "Number", change: this.onCostMaterialInputChange.bind(this) }),
+                            new sap.m.Input({ value: "{costModel>Payment_Terms}",                        editable: "{= ${costModel>__isNew} === true }" }),
+                            new sap.m.Input({ value: "{costModel>Freight_Clearance_Charges_Percentage}", editable: "{= ${costModel>__isNew} === true }", type: "Number", change: this.onCostMaterialInputChange.bind(this) }),
+                            new sap.m.Input({ value: "{costModel>Freight_Clearance_Charges}",            editable: false }),
+                            new sap.m.Input({ value: "{costModel>Transportation_Charges}",               editable: "{= ${costModel>__isNew} === true }", type: "Number", change: this.onCostMaterialInputChange.bind(this) }),
+                            new sap.m.Input({ value: "{costModel>SABER}",                                editable: "{= ${costModel>__isNew} === true }", type: "Number", change: this.onCostMaterialInputChange.bind(this) }),
+                            new sap.m.Input({ value: "{costModel>Total_Sub_Charges}",                   editable: false }),
+                            new sap.m.Input({ value: "{costModel>Total_Price}",                         editable: false })
+                        ]
+                    })
+                }
+            });
+
+            // ── Cables Table ──────────────────────────────────────────────────
+            var oCablesTable = new sap.m.Table({
+                id: this.createId("costCablesTable"),
+                visible: false,
+                columns: [
+                    "Description", "Circuit", "Runs", "No of ph",
+                    "Approx. Meter", "Total", "Unit Price", "Total Price (SAR)"
+                ].map(function (t) { return new sap.m.Column({ header: new sap.m.Text({ text: t }) }); }),
+                items: {
+                    path: "costModel>/cablesData",
+                    template: new sap.m.ColumnListItem({
+                        cells: [
+                            new sap.m.Input({ value: "{costModel>Description}",      editable: "{= ${costModel>__isNew} === true }", change: this.onCostCablesInputChange.bind(this) }),
+                            new sap.m.Input({ value: "{costModel>Circuit}",          editable: "{= ${costModel>__isNew} === true }", type: "Number", change: this.onCostCablesInputChange.bind(this) }),
+                            new sap.m.Input({ value: "{costModel>Runs}",             editable: "{= ${costModel>__isNew} === true }", type: "Number", change: this.onCostCablesInputChange.bind(this) }),
+                            new sap.m.Input({ value: "{costModel>No_of_ph}",         editable: "{= ${costModel>__isNew} === true }", type: "Number", change: this.onCostCablesInputChange.bind(this) }),
+                            new sap.m.Input({ value: "{costModel>Approximate_Meter}",editable: "{= ${costModel>__isNew} === true }", type: "Number", change: this.onCostCablesInputChange.bind(this) }),
+                            new sap.m.Input({ value: "{costModel>Total}",            editable: false }),
+                            new sap.m.Input({ value: "{costModel>Unit_Price}",       editable: "{= ${costModel>__isNew} === true }", type: "Number", change: this.onCostCablesInputChange.bind(this) }),
+                            new sap.m.Input({ value: "{costModel>Total_Price}",      editable: false })
+                        ]
+                    })
+                }
+            });
+
+            // Store table references for category switching
+            this._costTables = {
+                EAndD:        oEDTable,
+                IndirectCost: oIndirectTable,
+                Material:     oMaterialTable,
+                Cables:       oCablesTable
+            };
+
+            // ── Dialog container ──────────────────────────────────────────────
+            this._oCostDialog = new sap.m.Dialog({
+                title: "Cost Simulation — " + (oItem.description || "Selected Item"),
+                contentWidth: "90%",
+                contentHeight: "80%",
+                resizable: true,
+                draggable: true,
+                content: new sap.m.VBox({
+                    items: [
+                        oCategoryBar,
+                        oEDTable,
+                        oIndirectTable,
+                        oMaterialTable,
+                        oCablesTable,
+                        oTotalStrip
+                    ]
+                }),
+                buttons: [
+                    new sap.m.Button({
+                        text: "Save Cost to Items",
+                        type: "Emphasized",
+                        press: this.onSaveCost.bind(this)
+                    }),
+                    new sap.m.Button({
+                        text: "Add New Line",
+                        press: this.onAddNewCostLine.bind(this)
+                    }),
+                    new sap.m.Button({
+                        text: "Close",
+                        press: function () { this._oCostDialog.close(); }.bind(this)
+                    })
+                ]
+            });
+
+            this.getView().addDependent(this._oCostDialog);
+            this._oCostDialog.setModel(oCostModel, "costModel");
+            this._oCostDialog.open();
+        },
+
+        /**
+         * Fires when the user switches category tabs inside the Cost dialog.
+         * Shows only the relevant table, mirrors the category logic in reference app.
+         */
+        _onCostCategoryChange: function (oEvent) {
+            var sKey       = oEvent.getParameter("item").getKey();
+            var oCostModel = this.getView().getModel("costModel");
+            oCostModel.setProperty("/selectedCostCategory", sKey);
+
+            // Show only the active table
+            Object.keys(this._costTables).forEach(function (k) {
+                this._costTables[k].setVisible(k === sKey);
+            }.bind(this));
+
+            this._updateCostTotalAmount();
+        },
+
+        // ─── COST INPUT CHANGE HANDLERS ───────────────────────────────────────
+        // These mirror onSimulationInputChange, onIndirectCostInputChange, etc.
+        // from the reference mainPage_controller.js, using "costModel" instead of "viewModel".
+
+        onCostSimulationInputChange: function (oEvent) {
+            var oContext = oEvent.getSource().getBindingContext("costModel");
+            if (!oContext) return;
+            var iIndex   = parseInt(oContext.getPath().split("/").pop(), 10);
+            var oCostModel = this.getView().getModel("costModel");
+            var aData      = oCostModel.getProperty("/simulationData");
+
+            var salary      = parseFloat(aData[iIndex].Salary) || 0;
+            var months      = parseFloat(aData[iIndex].Months) || 0;
+            var noOfPersons = parseFloat(aData[iIndex].NoOfPersons) || 0;
+
+            aData[iIndex].Amount = (salary && months && noOfPersons)
+                ? (salary * months * noOfPersons).toFixed(2)
+                : "";
+
+            oCostModel.setProperty("/simulationData", aData);
+            this._updateCostTotalAmount();
+        },
+
+        onCostAmountDirectChange: function (oEvent) {
+            var oContext   = oEvent.getSource().getBindingContext("costModel");
+            if (!oContext) return;
+            var iIndex     = parseInt(oContext.getPath().split("/").pop(), 10);
+            var oCostModel = this.getView().getModel("costModel");
+            var aData      = oCostModel.getProperty("/simulationData");
+            // User typed amount directly — clear formula fields
+            aData[iIndex].Salary      = "";
+            aData[iIndex].Months      = "";
+            aData[iIndex].NoOfPersons = "";
+            oCostModel.setProperty("/simulationData", aData);
+            this._updateCostTotalAmount();
+        },
+
+        onCostIndirectInputChange: function (oEvent) {
+            var oContext   = oEvent.getSource().getBindingContext("costModel");
+            if (!oContext) return;
+            var iIndex     = parseInt(oContext.getPath().split("/").pop(), 10);
+            var oCostModel = this.getView().getModel("costModel");
+            var aData      = oCostModel.getProperty("/indirectCostData");
+
+            var qty  = parseFloat(aData[iIndex].Qty)  || 0;
+            var cost = parseFloat(aData[iIndex].Cost) || 0;
+            aData[iIndex].Total = (qty && cost) ? (qty * cost).toFixed(2) : "";
+
+            oCostModel.setProperty("/indirectCostData", aData);
+            this._updateCostTotalAmount();
+        },
+
+        onCostTotalDirectChange: function (oEvent) {
+            var oContext   = oEvent.getSource().getBindingContext("costModel");
+            if (!oContext) return;
+            var iIndex     = parseInt(oContext.getPath().split("/").pop(), 10);
+            var oCostModel = this.getView().getModel("costModel");
+            var aData      = oCostModel.getProperty("/indirectCostData");
+            aData[iIndex].Qty  = "";
+            aData[iIndex].Cost = "";
+            oCostModel.setProperty("/indirectCostData", aData);
+            this._updateCostTotalAmount();
+        },
+
+        onCostMaterialInputChange: function (oEvent) {
+            var oContext   = oEvent.getSource().getBindingContext("costModel");
+            if (!oContext) return;
+            var iIndex     = parseInt(oContext.getPath().split("/").pop(), 10);
+            var oCostModel = this.getView().getModel("costModel");
+            var aData      = oCostModel.getProperty("/materialData");
+
+            var quotationPrice = parseFloat(aData[iIndex].Quotation_Price) || 0;
+            var freightPct     = parseFloat(aData[iIndex].Freight_Clearance_Charges_Percentage) || 0;
+            var transport      = parseFloat(aData[iIndex].Transportation_Charges) || 0;
+            var saber          = parseFloat(aData[iIndex].SABER) || 0;
+
+            var freightAmt = (quotationPrice * freightPct / 100);
+            aData[iIndex].Freight_Clearance_Charges = freightAmt.toFixed(2);
+
+            var totalSub = freightAmt + transport + saber;
+            aData[iIndex].Total_Sub_Charges = totalSub.toFixed(2);
+            aData[iIndex].Total_Price = (quotationPrice + totalSub).toFixed(2);
+
+            oCostModel.setProperty("/materialData", aData);
+            this._updateCostTotalAmount();
+        },
+
+        onCostCablesInputChange: function (oEvent) {
+            var oContext   = oEvent.getSource().getBindingContext("costModel");
+            if (!oContext) return;
+            var iIndex     = parseInt(oContext.getPath().split("/").pop(), 10);
+            var oCostModel = this.getView().getModel("costModel");
+            var aData      = oCostModel.getProperty("/cablesData");
+
+            var circuit    = parseFloat(aData[iIndex].Circuit) || 0;
+            var runs       = parseFloat(aData[iIndex].Runs) || 0;
+            var noOfPh     = parseFloat(aData[iIndex].No_of_ph) || 0;
+            var approxMtr  = parseFloat(aData[iIndex].Approximate_Meter) || 0;
+            var unitPrice  = parseFloat(aData[iIndex].Unit_Price) || 0;
+
+            if (circuit && runs && noOfPh && approxMtr) {
+                aData[iIndex].Total = (circuit * runs * noOfPh * approxMtr).toFixed(2);
+                aData[iIndex].Total_Price = unitPrice
+                    ? (circuit * runs * noOfPh * approxMtr * unitPrice).toFixed(2)
+                    : "";
+            } else {
+                aData[iIndex].Total       = "";
+                aData[iIndex].Total_Price = "";
+            }
+
+            oCostModel.setProperty("/cablesData", aData);
+            this._updateCostTotalAmount();
+        },
+
+        /**
+         * Recalculates the running totalAmount for the active category.
+         * Mirrors updateTotalAmount() from reference app.
+         */
+        _updateCostTotalAmount: function () {
+            var oCostModel = this.getView().getModel("costModel");
+            var sCategory  = oCostModel.getProperty("/selectedCostCategory");
+            var totalAmount = 0;
+
+            if (sCategory === "EAndD") {
+                totalAmount = (oCostModel.getProperty("/simulationData") || [])
+                    .reduce(function (s, r) { return s + (parseFloat(r.Amount) || 0); }, 0);
+            } else if (sCategory === "IndirectCost") {
+                totalAmount = (oCostModel.getProperty("/indirectCostData") || [])
+                    .reduce(function (s, r) { return s + (parseFloat(r.Total) || 0); }, 0);
+            } else if (sCategory === "Material") {
+                totalAmount = (oCostModel.getProperty("/materialData") || [])
+                    .reduce(function (s, r) { return s + (parseFloat(r.Total_Price) || 0); }, 0);
+            } else if (sCategory === "Cables") {
+                totalAmount = (oCostModel.getProperty("/cablesData") || [])
+                    .reduce(function (s, r) { return s + (parseFloat(r.Total_Price) || 0); }, 0);
+            }
+
+            oCostModel.setProperty("/totalAmount", totalAmount.toFixed(2));
+        },
+
+        /**
+         * Adds a new editable row to the active category table.
+         * Mirrors onAddNewLine() from reference app.
+         */
+        onAddNewCostLine: function () {
+            var oCostModel = this.getView().getModel("costModel");
+            var sCategory  = oCostModel.getProperty("/selectedCostCategory");
+            var sPath, oNewRow;
+
+            switch (sCategory) {
+                case "EAndD":
+                    sPath   = "/simulationData";
+                    oNewRow = { description: "", Salary: "", Months: "", NoOfPersons: "", Amount: "", __isNew: true };
+                    break;
+                case "IndirectCost":
+                    sPath   = "/indirectCostData";
+                    oNewRow = { Description: "", Unit: "", Qty: "", Cost: "", Labour: "", Total: "", __isNew: true };
+                    break;
+                case "Material":
+                    sPath   = "/materialData";
+                    oNewRow = { Description: "", Vendor_Details: "", Quotation_Date: "", Quotation_Price: "", Payment_Terms: "", Freight_Clearance_Charges_Percentage: "", Freight_Clearance_Charges: "", Transportation_Charges: "", SABER: "", Total_Sub_Charges: "", Total_Price: "", __isNew: true };
+                    break;
+                case "Cables":
+                    sPath   = "/cablesData";
+                    oNewRow = { Description: "", Circuit: "", Runs: "", No_of_ph: "", Approximate_Meter: "", Total: "", Unit_Price: "", Total_Price: "", __isNew: true };
+                    break;
+                default:
+                    MessageToast.show("Please select a cost category first.");
+                    return;
+            }
+
+            var aData = oCostModel.getProperty(sPath) || [];
+            if (aData.some(function (r) { return r.__isNew; })) {
+                MessageToast.show("Please fill in the existing new row before adding another.");
+                return;
+            }
+            aData.push(oNewRow);
+            oCostModel.setProperty(sPath, aData);
+            oCostModel.refresh(true);
+        },
+
+        /**
+         * Saves the calculated cost total back to the selected tendering item(s).
+         * The totalAmount is applied to amountPerUnit of each selected main item,
+         * then totals are recalculated — seamlessly integrating cost into the BoQ.
+         * Mirrors onSaveSimulation() flow from reference app.
+         */
+        onSaveCost: function () {
+            var oTable     = this.byId("treeTable");
+            var oModel     = this.getView().getModel();
+            var oCostModel = this.getView().getModel("costModel");
+
+            this._updateCostTotalAmount();  // ensure up to date
+            var sTotalAmount = oCostModel.getProperty("/totalAmount");
+            var fTotal       = parseFloat(sTotalAmount) || 0;
+
+            if (fTotal <= 0) {
+                MessageBox.warning("The calculated cost total is 0. Please enter cost data before saving.");
+                return;
+            }
+
+            var aIndices = this._costSelectedIndices || [];
+            if (aIndices.length === 0) {
+                MessageToast.show("No items were selected.");
+                return;
+            }
+
+            var bChanged = false;
+            aIndices.forEach(function (iIndex) {
+                var oContext = oTable.getContextByIndex(iIndex);
+                if (!oContext) return;
+                var sPath = oContext.getPath();
+                // Only apply to main items (not sub-items)
+                if (sPath.includes("/subItemList/")) return;
+                var oItem = oModel.getProperty(sPath);
+                // Distribute total evenly across selected items
+                oItem.amountPerUnit = (fTotal / aIndices.length).toFixed(3);
+                this._applyProfitToItem(oItem);
+                oModel.setProperty(sPath, oItem);
+                bChanged = true;
+            }.bind(this));
+
+            if (bChanged) {
+                this._recalculateTotalValue();
+                oModel.refresh(true);
+                MessageToast.show("Cost of " + fTotal.toFixed(2) + " SAR applied to " + aIndices.length + " item(s). Remember to Save Document.");
+                this._oCostDialog.close();
+            } else {
+                MessageToast.show("No main items were updated (sub-items cannot receive direct cost).");
+            }
+        },
+
+        // ─── END COST LOGIC ───────────────────────────────────────────────────
+
+        // ─── SAVE DOCUMENT ────────────────────────────────────────────────────
         onSaveDocument: function () {
             var oModel = this.getView().getModel();
             var aItems = oModel.getProperty("/MainItems") || [];
@@ -574,13 +1057,12 @@ sap.ui.define([
             this._recalculateTotalValue();
 
             var cleanedItems = aItems.map(item => {
-                // Destructure to strip fields the CAP entity doesn't know
                 const {
                     createdAt, modifiedAt, createdBy, modifiedBy, invoiceMainItemCode,
                     serviceNumber_serviceNumberCode, currencyText, formulaText, unitOfMeasurementText,
                     salesQuotation, salesQuotationItem, pricingProcedureCounter, pricingProcedureStep,
                     customerNumber,
-                    parameters,          // FIX 2: strip — CAP entity has no "parameters" column → causes 400
+                    parameters,
                     ...rest
                 } = item;
                 rest.totalHeader = parseFloat(Number(rest.totalHeader || 0).toFixed(3));
@@ -592,7 +1074,7 @@ sap.ui.define([
                             invoiceMainItemCode, createdAt, createdBy, modifiedAt, modifiedBy,
                             invoiceSubItemCode, mainItem_invoiceMainItemCode,
                             serviceNumber_serviceNumberCode,
-                            parameters,  // FIX 2: strip from subitems too
+                            parameters,
                             ...subRest
                         } = sub;
                         return {
@@ -620,7 +1102,6 @@ sap.ui.define([
             })
                 .then(r => { if (!r.ok) throw new Error("Save failed: " + r.statusText); return r.json(); })
                 .then(saved => {
-                    // Normalize subItemList in response to keep tree arrows
                     var updated = Array.isArray(saved.value) ? saved.value.map(item => ({
                         ...item,
                         subItemList: Array.isArray(item.subItemList) ? item.subItemList : []
@@ -633,7 +1114,6 @@ sap.ui.define([
                 })
                 .catch(err => {
                     console.error("Error saving:", err);
-                    // FIX 2: Use MessageToast as fallback — avoids crash if MessageBox somehow unavailable
                     try {
                         MessageBox.error("Save failed: " + err.message);
                     } catch (e) {
@@ -642,7 +1122,7 @@ sap.ui.define([
                 });
         },
 
-        // ─── EDIT ROW ─────────────────────────────────────────────────────────────
+        // ─── EDIT ROW ─────────────────────────────────────────────────────────
         onEditRow: function (oEvent) {
             var oContext = oEvent.getSource().getBindingContext();
             if (!oContext) { MessageToast.show("No item context found."); return; }
@@ -742,7 +1222,7 @@ sap.ui.define([
             oModel.setProperty("/editRow", oEditRow);
         },
 
-        _onEditFormulaSelected: function () { /* formula change in edit dialog — Enter Parameters button handles param entry */ },
+        _onEditFormulaSelected: function () { /* formula change in edit dialog */ },
 
         onOpenEditFormulaDialog: function () {
             var oModel       = this.getView().getModel();
@@ -817,7 +1297,7 @@ sap.ui.define([
             if (this._oEditMainDialog && this._oEditMainDialog.isOpen()) { this._oEditMainDialog.close(); this._oEditMainDialog.destroy(); this._oEditMainDialog = null; }
         },
 
-        // ─── DELETE ───────────────────────────────────────────────────────────────
+        // ─── DELETE ───────────────────────────────────────────────────────────
         onDeleteRow: function (oEvent) {
             var oModel   = this.getView().getModel();
             var oContext = oEvent.getSource().getBindingContext();
@@ -847,7 +1327,7 @@ sap.ui.define([
             });
         },
 
-        // ─── SEARCH ───────────────────────────────────────────────────────────────
+        // ─── SEARCH ───────────────────────────────────────────────────────────
         onSearch: function (oEvent) {
             var oBinding = this.byId("treeTable").getBinding("rows");
             if (!oBinding) return;
@@ -864,7 +1344,7 @@ sap.ui.define([
             }));
         },
 
-        // ─── IMPORT / EXPORT ──────────────────────────────────────────────────────
+        // ─── IMPORT / EXPORT ──────────────────────────────────────────────────
         _openExcelUploadDialogTendering: function () {
             var selectedFile;
             var oMainModel = this.getView().getModel();

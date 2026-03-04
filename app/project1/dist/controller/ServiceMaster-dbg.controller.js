@@ -835,7 +835,7 @@ sap.ui.define([
                 onClose: function (sAction) {
                     if (sAction === MessageBox.Action.OK) {
                         // Send DELETE request
-                        fetch(`/odata/v4/sales-cloud/ServiceNumbers('${(sServiceNumberCode)}')`, {
+                        fetch(`./odata/v4/sales-cloud/ServiceNumbers('${(sServiceNumberCode)}')`, {
                             method: "DELETE",
                             headers: { "Content-Type": "application/json" }
                         })

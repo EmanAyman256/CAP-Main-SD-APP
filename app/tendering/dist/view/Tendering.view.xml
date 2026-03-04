@@ -68,6 +68,7 @@
                     class="sapUiSizeCompact"
                     visibleRowCountMode="Auto"
                     expandFirstLevel="true"
+                    rowSelectionChange=".onRowSelectionChange"
                 >
                     <extension>
                         <m:OverflowToolbar id="_IDGenOverflowToolbar1" style="Clear" class="sapUiMediumMargin">
@@ -77,6 +78,19 @@
                             <m:Button id="_IDGenButton7"  text="Collapse selection"  press=".onCollapseSelection"/>
                             <m:Button id="_IDGenButton10" text="Expand first level"  press=".onExpandFirstLevel"/>
                             <m:Button id="_IDGenButton11" text="Expand selection"    press=".onExpandSelection"/>
+                            <!-- ═══════════════════════════════════════════
+                                 COST BUTTON — beside collapse/expand buttons
+                                 Enabled only when rows are selected
+                            ═══════════════════════════════════════════ -->
+                            <m:Button
+                                id="costButton"
+                                text="Cost"
+                                icon="sap-icon://money-bills"
+                                type="Emphasized"
+                                press=".onOpenCost"
+                                enabled="{costModel>/costButtonEnabled}"
+                                tooltip="Open cost simulation for selected items"
+                                class="sapUiTinyMarginBegin"/>
                         </m:OverflowToolbar>
                     </extension>
 
@@ -165,7 +179,6 @@
 
                     <!-- ── Formula row ── -->
                     <m:Label id="_IDGenLabel7" text="Formula"/>
-                    <!-- FIX 1: FlexItemData growFactor makes Select fill all available width beside the button -->
                     <m:HBox id="mainFormulaHBox" alignItems="Center" width="100%">
                         <m:Select id="formulaSelect" forceSelection="false"
                                   items="{path: '/Formulas'}" change=".onFormulaSelected">
@@ -175,7 +188,6 @@
                             <core:Item id="_IDGenItem9"  key="" text="— None (enter qty manually) —"/>
                             <core:Item id="_IDGenItem2"  key="{formulaCode}" text="{description}"/>
                         </m:Select>
-                        <!-- Visible only when a formula is currently selected; pressing it clears everything -->
                         <m:Button id="btnClearFormula"
                                   icon="sap-icon://decline"
                                   type="Reject"
@@ -275,7 +287,6 @@
                             <core:Item id="_IDGenItem7"  key="" text="— None (enter qty manually) —"/>
                             <core:Item id="_IDGenItem7b" key="{formulaCode}" text="{description}"/>
                         </m:Select>
-                        <!-- FIX 1: same clear pattern for sub item formula -->
                         <m:Button id="btnClearSubFormula"
                                   icon="sap-icon://decline"
                                   type="Reject"
