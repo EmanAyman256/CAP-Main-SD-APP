@@ -30,7 +30,8 @@ sap.ui.define([
         Uom: [],
         ServiceTypes: [],
         MaterialGroup: [],
-        ServiceNumbers: []
+        ServiceNumbers: [],
+        Currencies: []
       });
       this.getView().setModel(oModel);
 
@@ -95,6 +96,23 @@ sap.ui.define([
           }
         })
         .catch(err => console.error("Error fetching MaterialGroups:", err));
+
+      fetch("./odata/v4/sales-cloud/Currencies")
+        .then(response => {
+          if (!response.ok) throw new Error(response.statusText);
+          return response.json();
+        })
+        .then(data => {
+          if (data && data.value) {
+            const Currencies = data.value.map(item => ({
+              currencyCode: item.currencyCode, // UUID key
+              code: item.code,                 // actual currency string e.g. "SAR"
+              description: item.description
+            }));
+            this.getView().getModel().setProperty("/Currencies", Currencies);
+          }
+        })
+        .catch(err => console.error("Error fetching Currencies:", err));
     },
 
     _onRouteMatched: function (oEvent) {
@@ -192,7 +210,6 @@ sap.ui.define([
           content: new sap.m.HBox({
             justifyContent: "SpaceAround",
             alignItems: "Center",
-            class: "sapUiSmallMargin",
             items: [
               new sap.m.Button({
                 text: "Quotations",
@@ -313,10 +330,24 @@ sap.ui.define([
 
       oDialog.addContent(oTable);
 
-      fetch("./odata/v4/sales-cloud/InvoiceMainItems", { method: "GET" })
+      // The InvoiceMainItems (quotation items) have referenceId = the quotation number (referenceSDDocument).
+      // The current sales order's referenceSDDocument is stored on each loaded execution order.
+      // Use it to filter InvoiceMainItems to show only items from the referenced quotation.
+      var oMainModel = oView.getModel();
+      var aMainItems = oMainModel.getProperty("/MainItems") || [];
+      var sRefSDDoc = aMainItems.length > 0 ? (aMainItems[0].referenceSDDocument || "") : "";
+
+      var fetchUrl = "./odata/v4/sales-cloud/fetchByReferenceId";
+      var fetchOptions = {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ referenceId: sRefSDDoc || oModel.getProperty("/docNumber") || "" })
+      };
+
+      fetch(fetchUrl, fetchOptions)
         .then(response => response.json())
         .then(data => {
-          var oTableModel = new sap.ui.model.json.JSONModel(data.value || []);
+          var oTableModel = new sap.ui.model.json.JSONModel(data.value || data || []);
           oTable.setModel(oTableModel);
           oTable.bindItems("/", new sap.m.ColumnListItem({
             cells: [
@@ -882,6 +913,18 @@ sap.ui.define([
         item.total = qty * amount;
       });
 
+      // FIX: resolve currencyCode UUID → actual currency string (e.g. "SAR")
+      // The Currency entity uses a UUID as its PK; the real SAP currency code is stored in `code`.
+      const aCurrencies = oModel.getProperty("/Currencies") || [];
+      const resolveCurrency = (val) => {
+        if (!val) return "";
+        // If it looks like a UUID, look it up; otherwise assume it's already a code string
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+        if (!isUUID) return val;
+        const match = aCurrencies.find(c => c.currencyCode === val);
+        return match ? match.code : val;
+      };
+
       // FIX 4: Build executionOrders array matching ExecutionOrderMainCommand type in CDS
       // Mirror the Spring Boot controller: list of commands + salesOrder/salesOrderItem/pricing as top-level params
       const executionOrders = MainItems.map(item => ({
@@ -890,7 +933,7 @@ sap.ui.define([
         serviceNumberCode:         parseInt(item.serviceNumberCode) || 0,
         description:               item.description || "",
         unitOfMeasurementCode:     item.unitOfMeasurementCode || "",
-        currencyCode:              item.currencyCode || "",
+        currencyCode:              resolveCurrency(item.currencyCode),
         materialGroupCode:         item.materialGroupCode || "",
         personnelNumberCode:       item.personnelNumberCode || "",
         lineTypeCode:              item.lineTypeCode || "",

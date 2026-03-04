@@ -5,6 +5,15 @@ const { Buffer } = require('buffer');
 const tempDataService = {
   store: new Map(),
 
+  // Mirror Java TempExecutionOrderData.getCurrentQuantity()
+  _currentQuantity(data) {
+    const { quantities, currentQuantityIndex } = data;
+    if (!quantities.length || currentQuantityIndex < 0 || currentQuantityIndex >= quantities.length) {
+      return null;
+    }
+    return quantities[currentQuantityIndex];
+  },
+
   getOrCreate(code) {
     if (!this.store.has(code)) {
       this.store.set(code, {
@@ -24,6 +33,12 @@ const tempDataService = {
 
   get(code) {
     return this.store.get(code);
+  },
+
+  // Convenience — matches Java getCurrentQuantity() semantics
+  getCurrentQuantity(code) {
+    const data = this.store.get(code);
+    return data ? this._currentQuantity(data) : null;
   },
 
   update(code, data) {
@@ -928,13 +943,13 @@ module.exports = cds.service.impl(async function () {
   // Fetch by referenceId
   this.on('fetchByReferenceId', async (req) => {
     const { referenceId } = req.data;
-    return await SELECT.from(InvoiceMainItem).where({ referenceId });
+    return await SELECT.from(InvoiceMainItems).where({ referenceId });
   });
 
   // Calculate total for one item
   this.on('calculateTotal', async (req) => {
     const { invoiceMainItemCode } = req.data;
-    const item = await SELECT.one.from(InvoiceMainItem).where({ invoiceMainItemCode });
+    const item = await SELECT.one.from(InvoiceMainItems).where({ invoiceMainItemCode });
 
     if (!item) return 0;
 
@@ -945,7 +960,7 @@ module.exports = cds.service.impl(async function () {
 
   // Calculate total header
   this.on('calculateTotalHeader', async () => {
-    const all = await SELECT.from(InvoiceMainItem);
+    const all = await SELECT.from(InvoiceMainItems);
     let total = 0;
     for (const i of all) {
       const base = Number(i.quantity) * Number(i.amountPerUnit);
@@ -958,7 +973,7 @@ module.exports = cds.service.impl(async function () {
   // Search keyword in referenceId or salesQuotation
   this.on('search', async (req) => {
     const { keyword } = req.data;
-    return await SELECT.from(InvoiceMainItem).where(
+    return await SELECT.from(InvoiceMainItems).where(
       { referenceId: { like: `%${keyword}%` } }
     );
   });
@@ -967,7 +982,7 @@ module.exports = cds.service.impl(async function () {
   this.before('CREATE', 'InvoiceMainItems', async (req) => {
     if (!req.data.invoiceMainItemCode) {
       // generate unique ID
-      const max = await SELECT.one.from(InvoiceMainItem).columns('max(invoiceMainItemCode) as max');
+      const max = await SELECT.one.from(InvoiceMainItems).columns('max(invoiceMainItemCode) as max');
       req.data.invoiceMainItemCode = (max?.max || 0) + 1;
     }
   });
@@ -1150,7 +1165,7 @@ module.exports = cds.service.impl(async function () {
     const { referenceId } = req.data;
 
     // Query local db table
-    const items = await SELECT.from(InvoiceMainItem).where({ referenceId });
+    const items = await SELECT.from(InvoiceMainItems).where({ referenceId });
 
     if (!items.length) {
       req.error(404, `No items found for referenceId=${referenceId}`);
@@ -2504,14 +2519,17 @@ module.exports = cds.service.impl(async function () {
         }
 
         // --- Quantity resolution logic ---
-        let quantity = tempData.currentQuantity ?? null;
-        if (quantity == null || tempData.quantities.length === 0) {
-          if (tempData.quantities.length > 0) {
-            quantity = tempData.quantities[tempData.quantities.length - 1];
-          } else if (cmd.quantity) {
-            tempData.quantities.push(cmd.quantity);
-            tempData.currentQuantityIndex = 0;
-            quantity = cmd.quantity;
+        // Use currentQuantity helper (mirrors Java getCurrentQuantity())
+        // Falls back to the payload quantity if tempData has no entry yet
+        let quantity = tempDataService.getCurrentQuantity(code);
+        if (quantity == null) {
+          // tempData has no quantity yet — use what the frontend sent (set by onSaveEdit)
+          const payloadQty = Number(cmd.quantity);
+          if (payloadQty > 0) {
+            tempData.quantities.push(payloadQty);
+            tempData.currentQuantityIndex = tempData.quantities.length - 1;
+            tempData.amountPerUnit = tempData.amountPerUnit || Number(cmd.amountPerUnit) || 0;
+            quantity = payloadQty;
           }
         }
         if (quantity == null) throw new Error(`Quantity missing for execution order ${code}`);
@@ -2521,6 +2539,10 @@ module.exports = cds.service.impl(async function () {
         if (amountPerUnit == null) throw new Error(`Amount per unit missing for execution order ${code}`);
 
         const total = quantity * amountPerUnit;
+        const totalQuantity = Number(cmd.totalQuantity) || 0;
+
+        // Mirror Java: invoice.calculateCurrentPercentage() = (quantity / totalQuantity) * 100
+        const currentPercentage = totalQuantity > 0 ? Math.round((quantity / totalQuantity) * 100 * 1000) / 1000 : 0;
 
         // --- Compose entry ---
         const entry = {
@@ -2531,6 +2553,8 @@ module.exports = cds.service.impl(async function () {
           quantity,
           amountPerUnit,
           total,
+          totalQuantity,
+          currentPercentage,                          // FIX 5: calculated, not hardcoded 0
           actualQuantity: quantity,
           remainingQuantity: tempData.remainingQuantity ?? 0,
           actualPercentage: tempData.actualPercentage ?? 0,
@@ -2541,8 +2565,10 @@ module.exports = cds.service.impl(async function () {
         const inserted = await tx.run(INSERT.into(ServiceInvoiceMains).entries(entry));
         savedInvoices.push(inserted[0] ?? entry);
 
-        // Clear temp data after saving
-        tempDataService.remove(code);
+        // FIX 6: do NOT remove tempData after saving.
+        // Spring Boot keeps it alive (saveOrUpdate, not remove) so subsequent
+        // saves for the same execution order still have the quantity in temp state.
+        // tempDataService.remove(code);  ← removed
       }
 
       // Step 4: Update related ExecutionOrderMain totals

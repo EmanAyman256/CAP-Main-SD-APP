@@ -185,9 +185,9 @@ controllerName="invoice.controller.invoice"
             </table:Column>
 
             <table:Column id="_IDGenColumn10" width="120px">
-            <table:label><Text id="_IDGenText38" text="Total Quantity"/></table:label>
+            <table:label><Text id="_IDGenText38" text="Total Quantity (Planned)"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText12" text="{total}"/>
+                    <Text id="_IDGenText12" text="{totalQuantity}"/>
                 </table:template>
             </table:Column>
 
@@ -214,7 +214,7 @@ controllerName="invoice.controller.invoice"
             <table:Column id="_IDGenColumn13" width="120px">
                 <table:label><Text id="_IDGenText29" text="Actual Total Quantity"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText15" text="{total}"/>
+                    <Text id="_IDGenText15" text="{actualQuantity}"/>
                 </table:template>
             </table:Column>   
 

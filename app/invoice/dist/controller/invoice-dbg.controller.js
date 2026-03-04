@@ -163,17 +163,20 @@ sap.ui.define([
 
                 // Map fields properly to match your table’s bindings
                 aMainItems.push({
-                  executionOrderMainCode: oData.executionOrderMainCode, // ✅ correct field
-                  lineNumber: "", // if you want to auto-generate, use aMainItems.length + 1
+                  executionOrderMainCode: oData.executionOrderMainCode,
+                  lineNumber: "",
                   serviceNumberCode: oData.serviceNumberCode,
                   description: oData.description,
-                  actualQuantity: oData.actualQuantity,
                   unitOfMeasurementCode: oData.unitOfMeasurementCode,
                   amountPerUnit: oData.amountPerUnit,
                   currencyCode: oData.currencyCode,
-                  total: oData.total,
-                  totalQuantity: oData.totalQuantity
-                  //* oData.amountPerUnit
+                  total: 0,                              // FIX F: starts at 0; set after user enters currentQty in edit dialog
+                  totalQuantity: oData.totalQuantity,    // planned order quantity — used as totalQuantity in calculateQuantities
+                  currentQuantity: 0,                    // FIX F: user fills this in edit dialog (how much to bill now)
+                  actualQuantity: 0,                     // FIX F: set by calculateQuantities response
+                  remainingQuantity: oData.totalQuantity,// starts equal to full planned qty
+                  actualPercentage: 0,
+                  totalHeader: 0
                 });
 
 
@@ -237,7 +240,7 @@ sap.ui.define([
           oTable.setModel(oModel);
           oTable.bindItems("/", new sap.m.ColumnListItem({
             cells: [
-              new sap.m.Text({ text: "{invoiceMainItemCode}" }),
+              new sap.m.Text({ text: "{executionOrderMainCode}" }),  // FIX 5 (was invoiceMainItemCode — wrong field)
               new sap.m.Text({ text: "{serviceNumberCode}" }),
               new sap.m.Text({ text: "{description}" }),
               new sap.m.Text({ text: "{unitOfMeasurementCode}" }),
@@ -304,7 +307,7 @@ sap.ui.define([
         amountPerUnit: String(item.amountPerUnit || "0"),
         biddersLine: item.biddersLine !== undefined ? item.biddersLine : true,
         currencyCode: item.currencyCode || null,
-        currentPercentage: "0",
+        currentPercentage: item.totalQuantity > 0 ? Math.round((parseFloat(item.actualQuantity || 0) / parseFloat(item.totalQuantity)) * 100 * 1000) / 1000 : 0,
         debitMemoRequestItem: item.debitMemoRequestItem || "10",
         debitMemoRequestItemText: null,
         description: item.description || null,
@@ -319,7 +322,9 @@ sap.ui.define([
 
         overFulfillmentPercent: String(item.overFulfillmentPercent || "0"),
         personnelNumberCode: item.personnelNumberCode || null,
-        quantity: String(item.totalQuantity || "0"),
+        // FIX 4: quantity = the billed qty (actualQuantity set by calculateQuantities)
+        //         totalQuantity = the original planned order quantity
+        quantity: String(item.actualQuantity || "0"),
         referenceId: oModel.getProperty("/docNumber") || "70000000",
         referenceSDDocument: item.referenceSDDocument || "2",
         remainingQuantity: String(item.remainingQuantity || "0"),
@@ -332,7 +337,7 @@ sap.ui.define([
         temporaryDeletion: null,
         total: String(item.total || "0"),
         totalHeader: String(item.totalHeader || "0"),
-        totalQuantity: String(item.quantity || "0"),
+        totalQuantity: String(item.totalQuantity || "0"),
         unitOfMeasurementCode: item.unitOfMeasurementCode || null,
         unlimitedOverFulfillment: item.unlimitedOverFulfillment !== undefined ? item.unlimitedOverFulfillment : true
       }));
@@ -340,7 +345,7 @@ sap.ui.define([
         serviceInvoiceCommands: serviceInvoiceCommands,
         debitMemoRequest: oModel.getProperty("/docNumber") || "",
         debitMemoRequestItem: oModel.getProperty("/itemNumber") || "",
-        pricingProcedureStep: 10,
+        pricingProcedureStep: 20,
         pricingProcedureCounter: 1,
         customerNumber: "120000"
         // oModel.getProperty("/customerNumber") || "120000"
@@ -371,7 +376,11 @@ sap.ui.define([
             };
           });
           oModel.setProperty("/MainItems", newItems);
-          // oModel.setProperty("/MainItems", savedItem.value);
+
+          // Recalculate totalValue from the freshly saved items
+          const savedTotal = newItems.reduce((sum, r) => sum + Number(r.total || 0), 0);
+          oModel.setProperty("/totalValue", savedTotal);
+
           sap.m.MessageToast.show("Document saved successfully!");
 
         })
@@ -500,11 +509,10 @@ sap.ui.define([
               //liveChange: this._onValueChange.bind(this)
             }),
 
-            new sap.m.Label({ text: "Total Quantity" }),
+            new sap.m.Label({ text: "Total Quantity (Planned)" }),
             new sap.m.Input({
-              value: "{/editRow/total}", editable: false,
-              type: "Number",
-              //liveChange: this._onValueChange.bind(this)
+              value: "{/editRow/totalQuantity}", editable: false,  // FIX D: was {/editRow/total} — showed money, not qty
+              type: "Number"
             }),
 
             new sap.m.Label({ text: "Current Quantity" }),
@@ -593,20 +601,22 @@ sap.ui.define([
     },
     onSaveEdit: function () {
       const oModel = this.getView().getModel();
-      const updatedData = oModel.getProperty("/editRow");
       const oEditRow = oModel.getProperty("/editRow");
 
+      // FIX 1: totalQuantity must be the PLANNED order quantity, NOT the monetary total.
+      // The backend uses it to compute: remainingQty = totalQuantity - currentQuantity
+      // and actualPercentage = (currentQuantity / totalQuantity) * 100
       const payload = {
         executionOrderMainCode: oEditRow.executionOrderMainCode,
-        quantity: (oEditRow.currentQuantity) || 0,
-        totalQuantity: (oEditRow.total) || 0,
-        amountPerUnit: (oEditRow.amountPerUnit) || 0,
-        // overFulfillmentPercentage: (oEditRow.overFulfillmentPercent) || 0,
-        // unlimitedOverFulfillment: oEditRow.unlimitedOverFulfillment === true
+        quantity:      parseFloat(oEditRow.currentQuantity)  || 0,
+        totalQuantity: parseFloat(oEditRow.totalQuantity)    || 0,   // FIX 1 (was oEditRow.total — wrong)
+        amountPerUnit: parseFloat(oEditRow.amountPerUnit)    || 0
       };
 
       console.log("Payload sent to /calculateQuantities:", payload);
 
+      // FIX 3: all model updates AND dialog close must happen INSIDE .then()
+      // so calculated values from the API are saved before the dialog closes.
       fetch("./odata/v4/sales-cloud/calculateQuantitiesWithoutAccumulation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -619,37 +629,36 @@ sap.ui.define([
         .then(result => {
           console.log("Calculation API response:", result);
 
-          // Update the editable row data with calculated values
-          oEditRow.actualQuantity = parseInt(result.total);
-          oEditRow.remainingQuantity = parseInt(result.remainingQuantity);
-          // oEditRow.total = parseInt(result.total);
-          oEditRow.actualPercentage = parseFloat(result.actualPercentage);
-          oEditRow.totalHeader = parseInt(result.totalHeader);
+          // FIX 2: map fields correctly from the response.
+          // result.actualQuantity  = the current billed quantity
+          // result.remainingQuantity = totalQuantity - currentQuantity
+          // result.actualPercentage  = (currentQuantity / totalQuantity) * 100
+          // result.totalHeader       = currentQuantity * amountPerUnit
+          oEditRow.actualQuantity    = result.actualQuantity;
+          oEditRow.remainingQuantity = result.remainingQuantity;
+          oEditRow.actualPercentage  = result.actualPercentage;
+          oEditRow.totalHeader       = result.totalHeader;
+          oEditRow.total             = result.total;             // FIX E: billing amount = currentQty * amountPerUnit
 
-          // Update the model
+          // Write updated row back to the model AND to the main table row
           oModel.setProperty("/editRow", oEditRow);
+          if (this._editPath) {
+            oModel.setProperty(this._editPath, oEditRow);  // FIX 3 (was updatedData — stale)
+          }
+
+          const mainItems = oModel.getProperty("/MainItems") || [];
+          const totalValue = mainItems.reduce((sum, r) => sum + Number(r.total || 0), 0);
+          oModel.setProperty("/totalValue", totalValue);
+
+          this._EditItemDialog.close();    // FIX 3 (was outside .then — race condition)
+          this._EditItemDialog.destroy();
+          this._EditItemDialog = null;
+          sap.m.MessageToast.show("Item updated successfully!");
         })
         .catch(err => {
           console.error("Error calling calculateQuantities:", err);
-          sap.m.MessageToast.show("Failed to calculate quantities");
+          sap.m.MessageToast.show("Failed to calculate quantities. Please try again.");
         });
-      if (this._editPath) {
-        oModel.setProperty(this._editPath, updatedData);
-      }
-      const mainItems = oModel.getProperty("/MainItems")
-      // Calculate the total sum
-      this.totalValue = mainItems.reduce(
-        (sum, record) => sum + Number(record.total || 0),
-        0
-      );
-      console.log(this.totalValue);
-      oModel.setProperty("/totalValue", this.totalValue);
-
-      this._EditItemDialog.close();
-      this._EditItemDialog.destroy();
-      this._EditItemDialog = null;
-
-      sap.m.MessageToast.show("Item updated successfully!");
     },
     _onValueChange: function () {
       const oModel = this.getView().getModel();
