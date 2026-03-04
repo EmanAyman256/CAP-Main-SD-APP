@@ -880,29 +880,38 @@ module.exports = cds.service.impl(async function () {
       });
   });
   // === CREATE /ModelSpecificationsDetails
+  // Auto-generate Integer key for ModelSpecificationsDetails (same pattern as InvoiceMainItems)
+  this.before('CREATE', ModelSpecificationsDetails, async (req) => {
+    const max = await SELECT.one.from(ModelSpecificationsDetails).columns('max(modelSpecDetailsCode) as max');
+    req.data.modelSpecDetailsCode = (max?.max || 0) + 1;
+
+    // When inserting via navigation property (ModelSpecifications(X)/modelSpecificationsDetails),
+    // CAP populates up__modelSpecCode on req.data. Normalise it to our FK column name.
+    if (!req.data.modelSpecifications_modelSpecCode && req.data.up__modelSpecCode) {
+      req.data.modelSpecifications_modelSpecCode = req.data.up__modelSpecCode;
+    }
+  });
+
   this.on('CREATE', ModelSpecificationsDetails, async (req) => {
     const data = req.data;
 
     try {
-      // 1️⃣ Ensure parent key exists
+      // Ensure parent FK is set (direct POST must supply it; navigation POST auto-fills via before hook)
       if (!data.modelSpecifications_modelSpecCode) {
         return req.error(400, 'Parent modelSpecifications_modelSpecCode is required.');
       }
 
-      // 2️⃣ Insert child record
-      const inserted = await INSERT.into(ModelSpecificationsDetails).entries(data);
+      await INSERT.into(ModelSpecificationsDetails).entries(data);
 
-      // 3️⃣ Return full record (with parent info)
+      // Read back using the key we just generated in the before hook
       const result = await SELECT
-        .from(ModelSpecificationsDetails, d => {
-          d('*', d.modelSpecifications('*'));
-        })
+        .one.from(ModelSpecificationsDetails)
         .where({ modelSpecDetailsCode: data.modelSpecDetailsCode });
 
       return result;
 
     } catch (err) {
-      console.error("❌ Error creating ModelSpecificationsDetails:", err);
+      console.error('❌ Error creating ModelSpecificationsDetails:', err);
       req.error(500, err.message);
     }
   });

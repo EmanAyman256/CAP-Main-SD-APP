@@ -92,7 +92,14 @@ sap.ui.define([
 
             fetch("./odata/v4/sales-cloud/Currencies")
                 .then(r => r.json())
-                .then(data => { oModel.setProperty("/Currency", Array.isArray(data.value) ? data.value : []); oModel.refresh(true); });
+                .then(function(data) {
+                    var currency = Array.isArray(data.value) ? data.value : [];
+                    oModel.setProperty("/Currency", currency);
+                    // Cache the SAR currency UUID so dialog-open handlers can use it
+                    var sarItem = currency.find(function (c) { return c.code === "SAR"; });
+                    this._sarCurrencyKey = sarItem ? sarItem.currencyCode : "";
+                    oModel.refresh(true);
+                }.bind(this));
         },
 
         _onRouteMatched: function (oEvent) {
@@ -382,7 +389,7 @@ sap.ui.define([
 
             oView.byId("mainServiceNoSelect").setSelectedKey("");
             oView.byId("mainUOMSelect").setSelectedKey("");
-            oView.byId("mainCurrencySelect").setSelectedKey("");
+            oView.byId("mainCurrencySelect").setSelectedKey(this._sarCurrencyKey || "");  // default SAR
             oView.byId("formulaSelect").setSelectedKey("");
 
             oModel.setProperty("/Total", 0);
@@ -469,7 +476,7 @@ sap.ui.define([
             this.byId("subUOMInput").setSelectedKey("");
             this.byId("subFormulaSelect").setSelectedKey("");
             this.byId("subAmountPerUnitInput").setValue("");
-            this.byId("subCurrencyInput").setSelectedKey("");
+            this.byId("subCurrencyInput").setSelectedKey(this._sarCurrencyKey || "");  // default SAR
             this.byId("subTotalInput").setValue("");
 
             var oSubQty = this.byId("subQuantityInput");

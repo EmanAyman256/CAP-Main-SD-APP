@@ -1,4 +1,3 @@
-
 sap.ui.define([
     "sap/ui/core/mvc/Controller",
     "sap/m/MessageToast",
@@ -399,8 +398,20 @@ sap.ui.define([
         },
         onOpenMainDialog: function () {
             const oModel = this.getView().getModel();
-            oModel.setProperty("/newModelService", {}); // Reset before opening
+            oModel.setProperty("/newModelService", { currencyCode: "SAR" }); // Default currency to SAR
             this.byId("addModelServiceDialog").open();
+            // Pre-select SAR in the currency dropdown — find the UUID for SAR from loaded list
+            const oCurrencySelect = this.byId("mainCurrencySelect");
+            if (oCurrencySelect) {
+                const aCurrencies = oModel.getProperty("/Currency") || [];
+                const oSAR = aCurrencies.find(c =>
+                    (c.code && c.code.toUpperCase() === "SAR") ||
+                    (c.description && c.description.toLowerCase().includes("saudi"))
+                );
+                if (oSAR && oSAR.currencyCode) {
+                    oCurrencySelect.setSelectedKey(oSAR.currencyCode);
+                }
+            }
         },
         onAddModelSpecDetails: async function () {
             const oView = this.getView();
@@ -441,7 +452,7 @@ sap.ui.define([
                     : "",
                 currencyCode: oCurrencySelect && oCurrencySelect.getSelectedItem()
                     ? oCurrencySelect.getSelectedItem().getText()
-                    : "",
+                    : "Saudi Riyal",
                 lineTypeCode: oLineTypeSelect && oLineTypeSelect.getSelectedItem()
                     ? oLineTypeSelect.getSelectedItem().getText()
                     : "",

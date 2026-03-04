@@ -1055,6 +1055,7 @@ sap.ui.define([
                 totalQuantity:           qty,
                 actualQuantity:          0,
                 unitOfMeasurementCode:   this.byId("itemUOM").getValue(),
+                currencyCode:            "SAR",
                 amountPerUnit:           amt,
                 total:                   qty * amt,
                 overFulfillmentPercent:  parseFloat(this.byId("itemOverFulf").getValue()) || 0,
