@@ -81,7 +81,7 @@ sap.ui.define([
 
                             console.log("✅ Selected debit memo:", sDebitMemo);
 
-                            fetch(`./odata/v4/sales-cloud/findItemsByDebitMemoRequest?debitMemoRequest'${sDebitMemo}'`, {
+                            fetch(`/odata/v4/sales-cloud/findItemsByDebitMemoRequest?debitMemoRequest'${sDebitMemo}'`, {
                                 method: "GET",
                                 headers: { "Content-Type": "application/json" }
                             })

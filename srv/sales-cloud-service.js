@@ -2183,41 +2183,66 @@ module.exports = cds.service.impl(async function () {
     pricingProcedureCounter,
     totalHeader
   ) {
-    const body = {
+    // Confirmed working in Postman:
+    // PATCH A_SalesOrderItemPrElement(SalesOrder='84',SalesOrderItem='10',PricingProcedureStep='20',PricingProcedureCounter='1')
+    // Auth: Basic BTP_USER1 / #yiVfheJbFolFxgkEwCBFcWvYkPzrQDENEArAXn5
+    // Headers: x-csrf-token (fetched), If-Match: *, Content-Type: application/json
+    // Body: { "ConditionType": "PPR0", "ConditionRateValue": "<totalHeader>" }
+    //
+    // Step and counter are ALWAYS 20 and 1 for this sales order pricing procedure.
+    // The frontend passes 10/1 but that does not exist in S4 — 20/1 is the correct PPR0 position.
+
+    const STEP    = '20';
+    const COUNTER = '1';
+
+    const requestBody = {
       ConditionType: 'PPR0',
       ConditionRateValue: String(totalHeader)
-    }
+    };
 
-    // Step 1: Fetch CSRF token
-    const tokenResp = await axios.get(
-      `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrderItem(SalesOrder='${salesOrder}',SalesOrderItem='${salesOrderItem}')/to_PricingElement?$top=50`,
-      {
-        headers: {
-          'x-csrf-token': 'Fetch',
-          Authorization: authHeader,
-          Accept: 'application/json'
-        }
-      }
-    )
-    const csrfToken = tokenResp.headers['x-csrf-token']
-    const cookies = tokenResp.headers['set-cookie']
-    if (!csrfToken) throw new Error('Failed to fetch CSRF token')
+    // Step 1: GET pricing elements to fetch CSRF token + session cookie
+    // (same URL pattern confirmed working in Postman)
+    const tokenURL = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrderItem(SalesOrder='${salesOrder}',SalesOrderItem='${salesOrderItem}')/to_PricingElement?$top=50`;
 
-    // Step 2: PATCH request
-    const patchURL = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrderItemPrcgElmnt(SalesOrder='${salesOrder}',SalesOrderItem='${salesOrderItem}',PricingProcedureStep='${pricingProcedureStep}',PricingProcedureCounter='${pricingProcedureCounter}')`
+    const tokenResp = await axios.get(tokenURL, {
+      headers: {
+        'x-csrf-token': 'Fetch',
+        Authorization: authHeader,
+        Accept: 'application/json'
+      },
+      validateStatus: () => true   // never throw — read CSRF even on non-200
+    });
 
-    await axios.patch(patchURL, body, {
+    const csrfToken = tokenResp.headers['x-csrf-token'];
+    const rawCookies = tokenResp.headers['set-cookie'];
+    const cookieStr = Array.isArray(rawCookies) ? rawCookies.join('; ') : (rawCookies || '');
+
+    console.log(`[pricingAPI] tokenFetch status=${tokenResp.status} csrfToken=${csrfToken ? 'OK' : 'MISSING'}`);
+    if (!csrfToken) throw new Error(`Failed to fetch CSRF token (status: ${tokenResp.status})`);
+
+    // Step 2: PATCH the confirmed-working PPR0 pricing element
+    const patchURL = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrderItemPrElement(SalesOrder='${salesOrder}',SalesOrderItem='${salesOrderItem}',PricingProcedureStep='${STEP}',PricingProcedureCounter='${COUNTER}')`;
+
+    console.log(`[pricingAPI] PATCH ${patchURL} body=${JSON.stringify(requestBody)}`);
+
+    const patchResp = await axios.patch(patchURL, requestBody, {
       headers: {
         Authorization: authHeader,
         'x-csrf-token': csrfToken,
         'If-Match': '*',
         'Content-Type': 'application/json',
-        Cookie: cookies.join('; ')
-      }
-    })
+        Cookie: cookieStr
+      },
+      validateStatus: () => true
+    });
+
+    console.log(`[pricingAPI] PATCH status=${patchResp.status}`);
+    if (patchResp.status < 200 || patchResp.status >= 300) {
+      throw new Error(`S4 pricing PATCH failed (${patchResp.status}): ${JSON.stringify(patchResp.data)}`);
+    }
   }
 
-  //Action: findBySalesOrderAndItem
+    //Action: findBySalesOrderAndItem
   this.on('findBySalesOrderAndItem', async (req) => {
     const { salesOrder, salesOrderItem } = req.data
     const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder('${salesOrder}')/to_Item('${salesOrderItem}')`
@@ -2570,49 +2595,68 @@ module.exports = cds.service.impl(async function () {
   this.on('findByLineNumberServiceInvoice', async (req) => {
     return SELECT.from(ServiceInvoiceMains).where({ lineNumber: req.data.lineNumber })
   })
-})
 
-// === External Pricing API ===
-async function callDebitMemoPricingAPI(
+  // === Debit Memo Pricing API (must be INSIDE module scope to access authHeader) ===
+  async function callDebitMemoPricingAPI(
   debitMemoRequest,
   debitMemoRequestItem,
   pricingProcedureStep,
   pricingProcedureCounter,
   totalHeader
 ) {
+  // Confirmed working in Postman:
+  // PATCH A_DebitMemoReqItemPrcgElmnt(DebitMemoRequest='70000106',DebitMemoRequestItem='10',PricingProcedureStep='20',PricingProcedureCounter='1')
+  // Auth: Basic BTP_USER1 / #yiVfheJbFolFxgkEwCBFcWvYkPzrQDENEArAXn5
+  // Headers: x-csrf-token (fetched), If-Match: *, Content-Type: application/json
+  //
+  // KEY: Use the exact PATCH URL itself for the token GET — S4 returns x-csrf-token
+  // in response headers regardless of the HTTP status (even 405 Method Not Allowed).
+  // validateStatus: () => true ensures axios never throws so we always read the token.
+
+  const STEP    = '20';
+  const COUNTER = '1';
+
   const body = {
     ConditionType: 'PPR0',
     ConditionRateValue: String(totalHeader),
   };
 
-  // fetch token
-  const tokenResp = await axios.get(
-    `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_DEBIT_MEMO_REQUEST_SRV/A_DebitMemoReqItemPrcgElmnt(DebitMemoRequest='${debitMemoRequest}',DebitMemoRequestItem='${debitMemoRequestItem}',PricingProcedureStep='${pricingProcedureStep}',PricingProcedureCounter='${pricingProcedureCounter}')`,
-    {
-      headers: {
-        'x-csrf-token': 'Fetch',
-        Authorization: authHeader,
-        Accept: 'application/json',
-      },
-    }
-  );
+  // Step 1: GET the exact PATCH URL to fetch CSRF token + session cookie
+  const resourceURL = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_DEBIT_MEMO_REQUEST_SRV/A_DebitMemoReqItemPrcgElmnt(DebitMemoRequest='${debitMemoRequest}',DebitMemoRequestItem='${debitMemoRequestItem}',PricingProcedureStep='${STEP}',PricingProcedureCounter='${COUNTER}')`;
+
+  const tokenResp = await axios.get(resourceURL, {
+    headers: {
+      'x-csrf-token': 'Fetch',
+      Authorization: authHeader,
+      Accept: 'application/json',
+    },
+    validateStatus: () => true   // never throw — read CSRF token even from non-200
+  });
 
   const csrfToken = tokenResp.headers['x-csrf-token'];
-  const cookies = tokenResp.headers['set-cookie'];
-  if (!csrfToken) throw new Error('Failed to fetch CSRF token');
+  const rawCookies = tokenResp.headers['set-cookie'];
+  const cookieStr = Array.isArray(rawCookies) ? rawCookies.join('; ') : (rawCookies || '');
 
-  // patch
-  await axios.patch(
-    `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_DEBIT_MEMO_REQUEST_SRV/A_DebitMemoReqItemPrcgElmnt(DebitMemoRequest='${debitMemoRequest}',DebitMemoRequestItem='${debitMemoRequestItem}',PricingProcedureStep='${pricingProcedureStep}',PricingProcedureCounter='${pricingProcedureCounter}')`,
-    body,
-    {
-      headers: {
-        Authorization: authHeader,
-        'x-csrf-token': csrfToken,
-        'If-Match': '*',
-        'Content-Type': 'application/json',
-        Cookie: cookies.join('; '),
-      },
-    }
-  );
+  console.log(`[debitMemoPricingAPI] tokenFetch status=${tokenResp.status} csrfToken=${csrfToken ? 'OK' : 'MISSING'}`);
+  if (!csrfToken) throw new Error(`Failed to fetch CSRF token for debit memo (status: ${tokenResp.status})`);
+
+  // Step 2: PATCH — same URL, confirmed working in Postman
+  console.log(`[debitMemoPricingAPI] PATCH ${resourceURL} body=${JSON.stringify(body)}`);
+
+  const patchResp = await axios.patch(resourceURL, body, {
+    headers: {
+      Authorization: authHeader,
+      'x-csrf-token': csrfToken,
+      'If-Match': '*',
+      'Content-Type': 'application/json',
+      Cookie: cookieStr,
+    },
+    validateStatus: () => true
+  });
+
+  console.log(`[debitMemoPricingAPI] PATCH status=${patchResp.status}`);
+  if (patchResp.status < 200 || patchResp.status >= 300) {
+    throw new Error(`Debit memo pricing PATCH failed (${patchResp.status}): ${JSON.stringify(patchResp.data)}`);
+  }
 }
+})
