@@ -51,18 +51,36 @@ sap.ui.define([
             this._loadModels();
         },
         _loadModels: function () {
-            var oModel = new sap.ui.model.json.JSONModel();
-            fetch("./odata/v4/sales-cloud/ModelSpecifications")
-                .then(response => response.json())
-                .then(data => {
-                    oModel.setData({ Models: data.value });
-                    console.log("Models",data.value);
-                    
-                    this.getView().byId("modelTable").setModel(oModel);
-                })
-                .catch(err => {
-                    console.error("Error fetching models", err);
+            var oView = this.getView();
+            // ── ISSUE 2 FIX ─────────────────────────────────────────────────────────
+            // ModelSpecifications stores currencyCode as a UUID (the entity PK).
+            // The view binds to {currencyDescription}, so we fetch both currencies and
+            // models together and cross-reference to build the description field.
+            Promise.all([
+                fetch("./odata/v4/sales-cloud/Currencies").then(r => r.json()),
+                fetch("./odata/v4/sales-cloud/ModelSpecifications").then(r => r.json())
+            ])
+            .then(([currencyData, modelData]) => {
+                var aCurrencies = Array.isArray(currencyData.value) ? currencyData.value : [];
+                var aModels = Array.isArray(modelData.value) ? modelData.value : [];
+
+                // Enrich each model with a human-readable currencyDescription
+                var aEnriched = aModels.map(function (m) {
+                    var oCur = aCurrencies.find(function (c) {
+                        return c.currencyCode === m.currencyCode;
+                    });
+                    return Object.assign({}, m, {
+                        currencyDescription: oCur ? (oCur.code || oCur.description) : (m.currencyCode || "")
+                    });
                 });
+
+                console.log("Models", aEnriched);
+                var oModel = new sap.ui.model.json.JSONModel({ Models: aEnriched });
+                oView.byId("modelTable").setModel(oModel);
+            })
+            .catch(err => {
+                console.error("Error fetching models", err);
+            });
         },
         onEdit: function (oEvent) {
             var oButton = oEvent.getSource();
@@ -153,16 +171,8 @@ sap.ui.define([
                                 })
                                 .then((updatedItem) => {
                                     console.log(updatedItem);
-
-                                    var oModel1 = this.getView().byId("modelTable").getModel();
-                                    var aModels = oModel1.getProperty("/Models") || [];
-                                    var iIndex = aModels.findIndex(st => st.modelSpecCode === oSelectedData.modelSpecCode);
-                                    console.log(iIndex);
-
-                                    if (iIndex > -1) {
-                                        aModels[iIndex] = updatedData;
-                                        oModel1.setProperty("/Models", aModels);
-                                    }
+                                    // Reload the full list so currency description is re-enriched
+                                    this._loadModels();
                                     sap.m.MessageToast.show("Model updated successfully");
                                     this._oEditDialog.close();
                                 })

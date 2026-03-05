@@ -16,7 +16,7 @@ sap.ui.define([
             oView.setModel(oViewModel, "view");
 
             // currency
-            fetch("/odata/v4/sales-cloud/Currencies")
+            fetch("./odata/v4/sales-cloud/Currencies")
                 .then(res => res.json())
                 .then(data => {
                     var oModel = new sap.ui.model.json.JSONModel(data.value);
@@ -66,7 +66,7 @@ sap.ui.define([
 
             }
 
-            fetch("/odata/v4/sales-cloud/ModelSpecifications", {
+            fetch("./odata/v4/sales-cloud/ModelSpecifications", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(newModel)

@@ -980,7 +980,7 @@ sap.ui.define([
         totalQuantity:             parseFloat(item.totalQuantity) || 0,
         remainingQuantity:         parseFloat(item.remainingQuantity) || 0,
         actualQuantity:            parseFloat(item.actualQuantity) || 0,
-        actualPercentage:          parseFloat(item.actualPercentage) || 0,
+        actualPercentage:          parseFloat((parseFloat(item.actualPercentage) || 0).toFixed(3)),
         overFulfillmentPercent:    parseFloat(item.overFulfillmentPercent) || 0,
         unlimitedOverFulfillment:  item.unlimitedOverFulfillment ?? false,
         manualPriceEntryAllowed:   item.manualPriceEntryAllowed ?? false,
@@ -1031,99 +1031,245 @@ sap.ui.define([
     },
 
     onAddMianItem: function () {
+      // ── ISSUE 3 FIX ────────────────────────────────────────────────────────
+      // Replaces the old plain-Input dialog with a full-featured add dialog
+      // that mirrors the Spring Boot "add item" and the import-from-model flow:
+      // dropdowns for Service Number, UOM, Currency, Material Group, Service Type
+      // so the user always selects descriptions, never types raw codes/UUIDs.
+      var that = this;
+      var oModel = this.getView().getModel();
+
       if (!this._AddItemDialog) {
+        var oForm = new sap.ui.layout.form.SimpleForm({
+          layout: "ResponsiveGridLayout",
+          editable: true,
+          labelSpanXL: 4, labelSpanL: 4, labelSpanM: 4, labelSpanS: 12,
+          adjustLabelSpan: false,
+          emptySpanXL: 1, emptySpanL: 1, emptySpanM: 1, emptySpanS: 0,
+          columnsXL: 2, columnsL: 2, columnsM: 1,
+          content: [
+            // ── Service Number (dropdown) ──────────────────────────────────
+            new sap.m.Label({ text: "Service No" }),
+            new sap.m.Select(this.createId("addExecServiceNo"), {
+              forceSelection: false,
+              width: "100%",
+              items: {
+                path: "/ServiceNumbers",
+                template: new sap.ui.core.Item({
+                  key: "{serviceNumberCode}",
+                  text: "{description}"
+                })
+              },
+              change: function (oEvent) {
+                var oItem = oEvent.getParameter("selectedItem");
+                if (oItem) {
+                  that.byId("addExecDescription").setValue(oItem.getText());
+                }
+              }
+            }),
+
+            // ── Description ────────────────────────────────────────────────
+            new sap.m.Label({ text: "Description" }),
+            new sap.m.Input(this.createId("addExecDescription")),
+
+            // ── Quantity ──────────────────────────────────────────────────
+            new sap.m.Label({ text: "QTY" }),
+            new sap.m.Input(this.createId("addExecQTY"), {
+              type: "Number",
+              liveChange: function () {
+                var qty = parseFloat(that.byId("addExecQTY").getValue()) || 0;
+                var amt = parseFloat(that.byId("addExecAmtPerUnit").getValue()) || 0;
+                that.byId("addExecTotal").setValue((qty * amt).toFixed(3));
+              }
+            }),
+
+            // ── UOM (dropdown) ────────────────────────────────────────────
+            new sap.m.Label({ text: "UOM" }),
+            new sap.m.Select(this.createId("addExecUOM"), {
+              forceSelection: false,
+              width: "100%",
+              items: {
+                path: "/Uom",
+                template: new sap.ui.core.Item({
+                  key: "{code}",
+                  text: "{description}"
+                })
+              }
+            }),
+
+            // ── Amount Per Unit ────────────────────────────────────────────
+            new sap.m.Label({ text: "Amount Per Unit" }),
+            new sap.m.Input(this.createId("addExecAmtPerUnit"), {
+              type: "Number",
+              liveChange: function () {
+                var qty = parseFloat(that.byId("addExecQTY").getValue()) || 0;
+                var amt = parseFloat(that.byId("addExecAmtPerUnit").getValue()) || 0;
+                that.byId("addExecTotal").setValue((qty * amt).toFixed(3));
+              }
+            }),
+
+            // ── Currency (dropdown) ────────────────────────────────────────
+            new sap.m.Label({ text: "Currency" }),
+            new sap.m.Select(this.createId("addExecCurrency"), {
+              forceSelection: false,
+              width: "100%",
+              items: {
+                path: "/Currencies",
+                template: new sap.ui.core.Item({
+                  key: "{code}",
+                  text: "{description}"
+                })
+              }
+            }),
+
+            // ── Total (read-only) ─────────────────────────────────────────
+            new sap.m.Label({ text: "Total" }),
+            new sap.m.Input(this.createId("addExecTotal"), { editable: false }),
+
+            // ── Over Fulfillment % ─────────────────────────────────────────
+            new sap.m.Label({ text: "Over Fulfillment %" }),
+            new sap.m.Input(this.createId("addExecOverFulf"), { type: "Number" }),
+
+            // ── Unlimited Over Fulfillment ────────────────────────────────
+            new sap.m.Label({ text: "Unlimited Over Fulfillment" }),
+            new sap.m.CheckBox(this.createId("addExecUnlimOF")),
+
+            // ── Manual Price Entry Allowed ────────────────────────────────
+            new sap.m.Label({ text: "Manual Price Entry Allowed" }),
+            new sap.m.CheckBox(this.createId("addExecManualPrice")),
+
+            // ── Material Group (dropdown) ─────────────────────────────────
+            new sap.m.Label({ text: "Material Group" }),
+            new sap.m.Select(this.createId("addExecMatGroup"), {
+              forceSelection: false,
+              width: "100%",
+              items: {
+                path: "/MaterialGroup",
+                template: new sap.ui.core.Item({
+                  key: "{materialGroupCode}",
+                  text: "{description}"
+                })
+              }
+            }),
+
+            // ── Service Type (dropdown) ───────────────────────────────────
+            new sap.m.Label({ text: "Service Type" }),
+            new sap.m.Select(this.createId("addExecSrvType"), {
+              forceSelection: false,
+              width: "100%",
+              items: {
+                path: "/ServiceTypes",
+                template: new sap.ui.core.Item({
+                  key: "{serviceTypeCode}",
+                  text: "{description}"
+                })
+              }
+            }),
+
+            // ── Remaining text / checkbox fields ──────────────────────────
+            new sap.m.Label({ text: "External Service Number" }),
+            new sap.m.Input(this.createId("addExecExtSrvNo")),
+
+            new sap.m.Label({ text: "Service Text" }),
+            new sap.m.Input(this.createId("addExecSrvText")),
+
+            new sap.m.Label({ text: "Line Text" }),
+            new sap.m.Input(this.createId("addExecLineText")),
+
+            new sap.m.Label({ text: "Personnel NR" }),
+            new sap.m.Input(this.createId("addExecPersoNr")),
+
+            new sap.m.Label({ text: "Line Type" }),
+            new sap.m.Input(this.createId("addExecLineType")),
+
+            new sap.m.Label({ text: "Bidders' Line" }),
+            new sap.m.CheckBox(this.createId("addExecBiddersLine")),
+
+            new sap.m.Label({ text: "Supplementary Line" }),
+            new sap.m.CheckBox(this.createId("addExecSuppLine")),
+
+            new sap.m.Label({ text: "Lot Cost One" }),
+            new sap.m.CheckBox(this.createId("addExecLCO"))
+          ]
+        });
+
         this._AddItemDialog = new sap.m.Dialog({
           title: "Add New Item",
-          content: new sap.m.VBox({
-            items: [
-              new sap.m.Label({ text: "Service No" }),
-              new sap.m.Input(this.createId("itemServiceNo")),
-              new sap.m.Label({ text: "Description" }),
-              new sap.m.Input(this.createId("itemDescription")),
-              new sap.m.Label({ text: "QTY" }),
-              new sap.m.Input(this.createId("itemQTY")),
-              new sap.m.Label({ text: "UOM" }),
-              new sap.m.Input(this.createId("itemUOM")),
-              new sap.m.Label({ text: "Amount Per Unit" }),
-              new sap.m.Input(this.createId("itemAmountPerUnit")),
-              new sap.m.Label({ text: "Over Fulfillment %" }),
-              new sap.m.Input(this.createId("itemOverFulf")),
-              new sap.m.Label({ text: "Unlimited Over Fulfillment %" }),
-              new sap.m.CheckBox(this.createId("itemUlimitedOFul")),
-              new sap.m.Label({ text: "Manual Price Entry Allowed" }),
-              new sap.m.CheckBox(this.createId("itemManualPrice")),
-              new sap.m.Label({ text: "Select Material Grp" }),
-              new sap.m.Input(this.createId("itemMaterialGrp")),
-              new sap.m.Label({ text: "Service Type" }),
-              new sap.m.Input(this.createId("itemSrvType")),
-              new sap.m.Label({ text: "External Service Number" }),
-              new sap.m.Input(this.createId("itemExtSrvNo")),
-              new sap.m.Label({ text: "Service Text" }),
-              new sap.m.Input(this.createId("itemSrvText")),
-              new sap.m.Label({ text: "Line Text" }),
-              new sap.m.Input(this.createId("itemLineText")),
-              new sap.m.Label({ text: "Personnel NR" }),
-              new sap.m.Input(this.createId("itemPersoNr")),
-              new sap.m.Label({ text: "Line Type" }),
-              new sap.m.Input(this.createId("itemLineType")),
-              new sap.m.Label({ text: "Bidders' Line" }),
-              new sap.m.CheckBox(this.createId("itemBiddersLine")),
-              new sap.m.Label({ text: "Supplementary Line" }),
-              new sap.m.CheckBox(this.createId("itemSuppLine")),
-              new sap.m.Label({ text: "Lot Cost One" }),
-              new sap.m.CheckBox(this.createId("itemLCO"))
-            ]
-          }),
+          contentWidth: "750px",
+          contentHeight: "auto",
+          resizable: true,
+          draggable: true,
+          content: [oForm],
           beginButton: new sap.m.Button({
             text: "Add",
             type: "Emphasized",
             press: function () {
-              var qty = parseFloat(this.byId("itemQTY").getValue()) || 0;
-              var amt = parseFloat(this.byId("itemAmountPerUnit").getValue()) || 0;
-              var oMainModel = this.getView().getModel();
-              var aItems = oMainModel.getProperty("/MainItems") || [];
+              var qty = parseFloat(that.byId("addExecQTY").getValue()) || 0;
+              var amt = parseFloat(that.byId("addExecAmtPerUnit").getValue()) || 0;
+
+              // Resolve selected items — store getText() (the description)
+              // so it matches the convention used by tendering/model import.
+              var oUOMItem      = that.byId("addExecUOM").getSelectedItem();
+              var oCurrItem     = that.byId("addExecCurrency").getSelectedItem();
+              var oMatGrpItem   = that.byId("addExecMatGroup").getSelectedItem();
+              var oSrvTypeItem  = that.byId("addExecSrvType").getSelectedItem();
+              var oSrvNoItem    = that.byId("addExecServiceNo").getSelectedItem();
+
               var newItem = {
-                serviceNumberCode:       this.byId("itemServiceNo").getValue(),
-                description:             this.byId("itemDescription").getValue(),
+                serviceNumberCode:       oSrvNoItem  ? oSrvNoItem.getKey()   : "",
+                description:             that.byId("addExecDescription").getValue(),
                 totalQuantity:           qty,
                 actualQuantity:          0,
-                unitOfMeasurementCode:   this.byId("itemUOM").getValue(),
+                unitOfMeasurementCode:   oUOMItem    ? oUOMItem.getText()    : "",
                 amountPerUnit:           amt,
+                currencyCode:            oCurrItem   ? oCurrItem.getText()   : "",
                 total:                   qty * amt,
-                overFulfillmentPercent:  parseFloat(this.byId("itemOverFulf").getValue()) || 0,
-                unlimitedOverFulfillment: this.byId("itemUlimitedOFul").getSelected(),
-                manualPriceEntryAllowed: this.byId("itemManualPrice").getSelected(),
-                materialGroupCode:       this.byId("itemMaterialGrp").getValue(),
-                serviceTypeCode:         this.byId("itemSrvType").getValue(),
-                externalServiceNumber:   this.byId("itemExtSrvNo").getValue(),
-                serviceText:             this.byId("itemSrvText").getValue(),
-                lineText:                this.byId("itemLineText").getValue(),
-                personnelNumberCode:     this.byId("itemPersoNr").getValue(),
-                lineTypeCode:            this.byId("itemLineType").getValue(),
-                biddersLine:             this.byId("itemBiddersLine").getSelected(),
-                supplementaryLine:       this.byId("itemSuppLine").getSelected(),
-                lotCostOne:              this.byId("itemLCO").getSelected()
+                overFulfillmentPercent:  parseFloat(that.byId("addExecOverFulf").getValue()) || 0,
+                unlimitedOverFulfillment: that.byId("addExecUnlimOF").getSelected(),
+                manualPriceEntryAllowed: that.byId("addExecManualPrice").getSelected(),
+                materialGroupCode:       oMatGrpItem ? oMatGrpItem.getText() : "",
+                serviceTypeCode:         oSrvTypeItem? oSrvTypeItem.getText(): "",
+                externalServiceNumber:   that.byId("addExecExtSrvNo").getValue(),
+                serviceText:             that.byId("addExecSrvText").getValue(),
+                lineText:                that.byId("addExecLineText").getValue(),
+                personnelNumberCode:     that.byId("addExecPersoNr").getValue(),
+                lineTypeCode:            that.byId("addExecLineType").getValue(),
+                biddersLine:             that.byId("addExecBiddersLine").getSelected(),
+                supplementaryLine:       that.byId("addExecSuppLine").getSelected(),
+                lotCostOne:              that.byId("addExecLCO").getSelected()
               };
+
+              var oMainModel = that.getView().getModel();
+              var aItems = oMainModel.getProperty("/MainItems") || [];
               aItems.push(newItem);
               oMainModel.setProperty("/MainItems", aItems);
+
               var totalValue = aItems.reduce((sum, r) => sum + Number(r.total || 0), 0);
               oMainModel.setProperty("/totalValue", totalValue);
               oMainModel.refresh(true);
-              sap.m.MessageToast.show("New line has been created successfully!");
-              this._AddItemDialog.close();
-              this._AddItemDialog.destroy();
-              this._AddItemDialog = null;
-            }.bind(this)
+
+              sap.m.MessageToast.show("New line added successfully!");
+
+              that._AddItemDialog.close();
+              that._AddItemDialog.destroy();
+              that._AddItemDialog = null;
+            }
           }),
           endButton: new sap.m.Button({
             text: "Cancel",
             press: function () {
-              this._AddItemDialog.close();
-            }.bind(this)
+              that._AddItemDialog.close();
+              that._AddItemDialog.destroy();
+              that._AddItemDialog = null;
+            }
           })
         });
+
         this.getView().addDependent(this._AddItemDialog);
       }
+
+      // Set the model on the dialog so dropdown paths resolve correctly
+      this._AddItemDialog.setModel(oModel);
       this._AddItemDialog.open();
     }
   });

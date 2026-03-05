@@ -435,9 +435,9 @@ sap.ui.define([
                 serviceNumberCode: oView.byId("mainServiceNoSelect").getSelectedKey() || "",
                 description: sDesc,
                 quantity: qty,
-                unitOfMeasurementCode: oUOM ? oUOM.getKey() : "",
-                formulaCode: oFormula ? oFormula.getKey() : "",
-                currencyCode: oCurrency ? oCurrency.getKey() : "",
+                unitOfMeasurementCode: oUOM ? oUOM.getText() : "",
+                formulaCode: oFormula ? oFormula.getText() : "",
+                currencyCode: oCurrency ? oCurrency.getText() : "",
                 amountPerUnit: amt,
                 total: total.toFixed(3),
                 profitMargin: pm,
@@ -522,10 +522,10 @@ sap.ui.define([
                 serviceNumberCode: oSvcItem ? oSvcItem.getKey() : "",
                 description: sDesc,
                 quantity: qty,
-                unitOfMeasurementCode: oUOMItem ? oUOMItem.getKey() : "",
-                formulaCode: sFormKey,
+                unitOfMeasurementCode: oUOMItem ? oUOMItem.getText() : "",
+                formulaCode: oFormItem ? oFormItem.getText() : "",
                 amountPerUnit: amt,
-                currencyCode: oCurItem ? oCurItem.getKey() : "",
+                currencyCode: oCurItem ? oCurItem.getText() : "",
                 total: (qty * amt).toFixed(3)
             };
 

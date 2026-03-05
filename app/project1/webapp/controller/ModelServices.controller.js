@@ -44,7 +44,7 @@ sap.ui.define([
             });
             this.getView().setModel(oModel, "view");
             // Removed general fetch for ModelSpecificationsDetails as we load specific in route matched
-            fetch("/odata/v4/sales-cloud/ServiceNumbers")
+            fetch("./odata/v4/sales-cloud/ServiceNumbers")
                 .then(response => {
                     if (!response.ok) throw new Error(response.statusText);
                     return response.json();
@@ -65,7 +65,7 @@ sap.ui.define([
                 .catch(err => {
                     console.error("Error fetching ServiceNumbers:", err);
                 });
-            fetch("/odata/v4/sales-cloud/PersonnelNumbers")
+            fetch("./odata/v4/sales-cloud/PersonnelNumbers")
                 .then(response => {
                     if (!response.ok) throw new Error(response.statusText);
                     return response.json();
@@ -86,7 +86,7 @@ sap.ui.define([
                 .catch(err => {
                     console.error("Error fetching ServiceNumbers:", err);
                 });
-            fetch("/odata/v4/sales-cloud/ServiceTypes")
+            fetch("./odata/v4/sales-cloud/ServiceTypes")
                 .then(response => {
                     if (!response.ok) throw new Error(response.statusText);
                     return response.json();
@@ -107,7 +107,7 @@ sap.ui.define([
                 .catch(err => {
                     console.error("Error fetching ServiceNumbers:", err);
                 });
-            fetch("/odata/v4/sales-cloud/LineTypes")
+            fetch("./odata/v4/sales-cloud/LineTypes")
                 .then(response => {
                     if (!response.ok) throw new Error(response.statusText);
                     return response.json();
@@ -129,7 +129,7 @@ sap.ui.define([
                     console.error("Error fetching ServiceNumbers:", err);
                 });
             // Fetch Formulas
-            fetch("/odata/v4/sales-cloud/Formulas")
+            fetch("./odata/v4/sales-cloud/Formulas")
                 .then(r => r.json())
                 .then(data => {
                     const formulas = Array.isArray(data.value) ? data.value : [];
@@ -141,7 +141,7 @@ sap.ui.define([
                     console.error("Error fetching Formulas:", err);
                     sap.m.MessageToast.show("Failed to load formulas.");
                 });
-            fetch("/odata/v4/sales-cloud/UnitOfMeasurements")
+            fetch("./odata/v4/sales-cloud/UnitOfMeasurements")
                 .then(r => r.json())
                 .then(data => {
                     const uom = Array.isArray(data.value) ? data.value : [];
@@ -150,7 +150,7 @@ sap.ui.define([
                 });
 
             // Fetch Currencies
-            fetch("/odata/v4/sales-cloud/Currencies")
+            fetch("./odata/v4/sales-cloud/Currencies")
                 .then(r => r.json())
                 .then(data => {
                     const currency = Array.isArray(data.value) ? data.value : [];
@@ -158,7 +158,7 @@ sap.ui.define([
                     oModel.refresh(true);
                 });
             // Added fetch for MaterialGroups (assuming endpoint and fields match others)
-            fetch("/odata/v4/sales-cloud/MaterialGroups")
+            fetch("./odata/v4/sales-cloud/MaterialGroups")
                 .then(response => {
                     if (!response.ok) throw new Error(response.statusText);
                     return response.json();
@@ -201,7 +201,7 @@ sap.ui.define([
         },
         _loadModelSpecificationDetails: function (sModelSpecCode) {
             const oModel = this.getView().getModel("view");
-            const sUrl = `/odata/v4/sales-cloud/ModelSpecifications(${sModelSpecCode})?$expand=modelSpecificationsDetails`;
+            const sUrl = `./odata/v4/sales-cloud/ModelSpecifications(${sModelSpecCode})?$expand=modelSpecificationsDetails`;
             console.log(sUrl);
 
             fetch(sUrl)
@@ -210,11 +210,21 @@ sap.ui.define([
                     console.log("API Resp:", data);
                     console.log("The Model Specification Details:", data.modelSpecificationsDetails);
 
-                    // const aData = Array.isArray(data) ? data : [data];
-                    oModel.setProperty("/ModelServices", data.modelSpecificationsDetails);
-                    console.log("Fetched ModelServices for", sModelSpecCode, data.modelSpecificationsDetails);
+                    // The DB stores description text directly in unitOfMeasurementCode /
+                    // currencyCode / formulaCode (they are String fields, not FK UUIDs).
+                    // The table columns bind to the virtual *Description fields, so we
+                    // just copy the stored value across here on every load.
+                    const aDetails = (data.modelSpecificationsDetails || []).map(item => ({
+                        ...item,
+                        unitOfMeasurementDescription: item.unitOfMeasurementCode || "",
+                        currencyDescription:          item.currencyCode           || "",
+                        formulaDescription:           item.formulaCode            || ""
+                    }));
 
-                    // NEW: Update total after loading data
+                    oModel.setProperty("/ModelServices", aDetails);
+                    console.log("Fetched ModelServices for", sModelSpecCode, aDetails);
+
+                    // Update total after loading data
                     this.updateTotalValue();
                 })
                 .catch(err => {
@@ -452,7 +462,7 @@ sap.ui.define([
                     : "",
                 currencyCode: oCurrencySelect && oCurrencySelect.getSelectedItem()
                     ? oCurrencySelect.getSelectedItem().getText()
-                    : "Saudi Riyal",
+                    : "",
                 lineTypeCode: oLineTypeSelect && oLineTypeSelect.getSelectedItem()
                     ? oLineTypeSelect.getSelectedItem().getText()
                     : "",
@@ -478,7 +488,7 @@ sap.ui.define([
                 modelSpecifications_modelSpecCode: parseInt(modelSpecCode), // Ensure numeric as per example
                 serviceNumber_serviceNumberCode: oView.byId("mainModelServiceNoSelect").getSelectedKey() || ""
             };
-            const sUrl = `/odata/v4/sales-cloud/ModelSpecifications(${modelSpecCode})/modelSpecificationsDetails`;
+            const sUrl = `./odata/v4/sales-cloud/ModelSpecifications(${modelSpecCode})/modelSpecificationsDetails`;
             try {
                 const response = await fetch(sUrl, {
                     method: "POST",
@@ -494,37 +504,42 @@ sap.ui.define([
                 sap.m.MessageToast.show("Model Specification Detail added successfully!");
                 this._loadModelSpecificationDetails(modelSpecCode);
 
-                // Clear all dialog fields so they are blank for next entry
-                oView.byId("mainModelServiceNoSelect").setSelectedKey("");
-                oView.byId("mainShortTextInput").setValue("");
-                oView.byId("mainShortTextInput").setEditable(true);
-                oView.byId("mainQuantityInput").setValue("");
-                oView.byId("mainAmountPerUnitInput").setValue("");
-                oView.byId("mainTotalInput").setValue("");
-                oView.byId("formulaSelect").setSelectedKey("");
-                oView.byId("mainUOMSelect").setSelectedKey("");
-                oView.byId("mainCurrencySelect").setSelectedKey("");
-                oView.byId("mainOverFInput").setValue("");
-                oView.byId("mainPriceChangeAllowed").setSelected(false);
-                oView.byId("mainUnlimitedOverF").setSelected(false);
-                oView.byId("mainPricePerUnitInput").setValue("");
-                oView.byId("mainMatGroupSelect").setSelectedKey("");
-                oView.byId("mainServiceTypeSelect").setSelectedKey("");
-                oView.byId("mainExternalServiceNo").setValue("");
-                oView.byId("mainServiceText").setValue("");
-                oView.byId("mainLineText").setValue("");
-                oView.byId("personnelNumber").setSelectedKey("");
-                oView.byId("lineTypes").setSelectedKey("");
-                oView.byId("_IDGenInput6").setValue("");
-                oView.byId("_IDGenInput7").setValue("");
-                oView.byId("_IDGenCheckBox").setSelected(false);
-                oView.byId("_IDGenCheckBox2").setSelected(false);
-                oView.byId("_IDGenCheckBox6").setSelected(false);
-                // Reset view model new entry object
-                oModel.setProperty("/newModelService", {});
-
                 const oDialog = oView.byId("addModelServiceDialog");
-                if (oDialog) oDialog.close();
+                if (oDialog) {
+                    // Clear all fields for the next entry
+                    oView.byId("mainModelServiceNoSelect").setSelectedKey("");
+                    oView.byId("mainShortTextInput").setValue("");
+                    oView.byId("mainShortTextInput").setEditable(true);
+                    oView.byId("mainQuantityInput").setValue("");
+                    oView.byId("mainAmountPerUnitInput").setValue("");
+                    oView.byId("mainTotalInput").setValue("");
+                    oView.byId("formulaSelect").setSelectedKey("");
+                    oView.byId("mainUOMSelect").setSelectedKey("");
+                    oView.byId("mainCurrencySelect").setSelectedKey("");
+                    oView.byId("mainOverFInput").setValue("");
+                    oView.byId("mainPriceChangeAllowed").setSelected(false);
+                    oView.byId("mainUnlimitedOverF").setSelected(false);
+                    oView.byId("mainPricePerUnitInput").setValue("");
+                    oView.byId("mainMatGroupSelect").setSelectedKey("");
+                    oView.byId("mainServiceTypeSelect").setSelectedKey("");
+                    oView.byId("mainExternalServiceNo").setValue("");
+                    oView.byId("mainServiceText").setValue("");
+                    oView.byId("mainLineText").setValue("");
+                    oView.byId("personnelNumber").setSelectedKey("");
+                    oView.byId("lineTypes").setSelectedKey("");
+                    oView.byId("_IDGenInput6").setValue("");
+                    oView.byId("_IDGenInput7").setValue("");
+                    oView.byId("_IDGenCheckBox").setSelected(false);
+                    oView.byId("_IDGenCheckBox2").setSelected(false);
+                    oView.byId("_IDGenCheckBox6").setSelected(false);
+                    oModel.setProperty("/newModelService", {});
+                    oModel.setProperty("/SelectedServiceNumber", "");
+                    oModel.setProperty("/SelectedServiceNumberDescription", "");
+                    oModel.setProperty("/HasSelectedFormula", false);
+                    oModel.setProperty("/SelectedFormula", null);
+                    oModel.setProperty("/IsFormulaBasedQuantity", false);
+                    oDialog.close();
+                }
 
             } catch (err) {
                 console.error("Error adding Model Specification Detail:", err);
@@ -586,7 +601,7 @@ sap.ui.define([
                         // If key is numeric -> no quotes; if string -> add quotes
                         var keyIsNumeric = !isNaN(Number(sKey));
                         var keySegment = keyIsNumeric ? sKey : `'${encodeURIComponent(String(sKey))}'`;
-                        var sUrl = `/odata/v4/sales-cloud/ModelSpecificationsDetails(${keySegment})`;
+                        var sUrl = `./odata/v4/sales-cloud/ModelSpecificationsDetails(${keySegment})`;
 
                         // Optional: show busy indicator on table while deleting
                         oTable.setBusy(true);
@@ -784,18 +799,16 @@ sap.ui.define([
                             new sap.m.Input({ type: "Number", value: "{editModel>/netValue}", editable: false }),
 
                             new sap.m.Label({ text: "Formula" }),
-                            new sap.m.Select({                                
+                            new sap.m.Select({
+                                selectedKey: "{editModel>/formulaCode}",
                                 change: function (oEvent) {
-                                    console.log('Formula change fired');
                                     var oModel = this._oEditDialog.getModel("editModel");
                                     var oSelectedItem = oEvent.getParameter("selectedItem");
-                                    console.log('Formula selectedItem:', oSelectedItem);  // Debug: Full item
-                                    var key = oSelectedItem ? oSelectedItem.getKey() : "";
-                                    console.log('Setting formula key:', key);
-                                    oModel.setProperty("/formulaCode", key);
-                                    console.log('Model formula value:', oModel.getProperty("/formulaCode"));
+                                    // Store description text (same as what DB holds)
+                                    var text = oSelectedItem ? oSelectedItem.getText() : "";
+                                    oModel.setProperty("/formulaCode", text);
                                 }.bind(this),
-                                items: { path: "/Formulas", template: new sap.ui.core.Item({ key: "{formulaCode}", text: "{description}" }) }
+                                items: { path: "/Formulas", template: new sap.ui.core.Item({ key: "{description}", text: "{description}" }) }
                             }),
                             new sap.m.Button({
                                 text: "Enter Parameters", press: this.onOpenEditFormulaDialog.bind(this)
@@ -807,35 +820,25 @@ sap.ui.define([
                             new sap.m.Select({
                                 selectedKey: "{editModel>/unitOfMeasurementCode}",
                                 change: function (oEvent) {
-                                    console.log('UOM change fired');
                                     var oModel = this._oEditDialog.getModel("editModel");
                                     var oSelectedItem = oEvent.getParameter("selectedItem");
-                                    console.log('UOM selectedItem:', oSelectedItem);
-                                    var key = oSelectedItem ? oSelectedItem.getKey() : "";
-                                    if (!key && oSelectedItem) {
-                                        key = oSelectedItem.getText(); 
-                                        console.log('Fallback UOM key from text:', key);
-                                    }
-                                    console.log('Setting UOM key:', key);
-                                    oModel.setProperty("/unitOfMeasurementCode", key);
-                                    console.log('Model UOM value:', oModel.getProperty("/unitOfMeasurementCode"));
+                                    // Store description text (same as what DB holds)
+                                    var text = oSelectedItem ? oSelectedItem.getText() : "";
+                                    oModel.setProperty("/unitOfMeasurementCode", text);
                                 }.bind(this),
-                                items: { path: "/UOM", template: new sap.ui.core.Item({ key: "{code}", text: "{description}" }) }
+                                items: { path: "/UOM", template: new sap.ui.core.Item({ key: "{description}", text: "{description}" }) }
                             }),
                             new sap.m.Label({ text: "Currency" }),
                             new sap.m.Select({
                                 selectedKey: "{editModel>/currencyCode}",
                                 change: function (oEvent) {
-                                    console.log('Currency change fired');
                                     var oModel = this._oEditDialog.getModel("editModel");
                                     var oSelectedItem = oEvent.getParameter("selectedItem");
-                                    console.log('Currency selectedItem:', oSelectedItem);
-                                    var key = oSelectedItem ? oSelectedItem.getKey() : "";
-                                    console.log('Setting currency key:', key);
-                                    oModel.setProperty("/currencyCode", key);
-                                    console.log('Model currency value:', oModel.getProperty("/currencyCode"));
+                                    // Store description text (same as what DB holds)
+                                    var text = oSelectedItem ? oSelectedItem.getText() : "";
+                                    oModel.setProperty("/currencyCode", text);
                                 }.bind(this),
-                                items: { path: "/Currency", template: new sap.ui.core.Item({ key: "{code}", text: "{description}" }) }
+                                items: { path: "/Currency", template: new sap.ui.core.Item({ key: "{description}", text: "{description}" }) }
                             }),
                             new sap.m.Label({ text: "OverF.Percentage" }),
                             new sap.m.Input({ type: "Number", value: "{editModel>/overFulfilmentPercentage}" }),
@@ -918,9 +921,7 @@ sap.ui.define([
             if (oViewModel) {
                 this._oEditDialog.setModel(oViewModel);
             }
-            var oEditModelData = Object.assign({}, oSelectedData, {
-                formulaCode: ""
-            });
+            var oEditModelData = Object.assign({}, oSelectedData);
             var oEditModel = new sap.ui.model.json.JSONModel(oEditModelData);
             this._oEditDialog.setModel(oEditModel, "editModel");
             this._oEditDialog.open();
@@ -937,12 +938,14 @@ sap.ui.define([
             }
 
             try {
-                // Remove local-only fields before sending PATCH
+                // Remove virtual-only fields before sending PATCH.
+                // unitOfMeasurementCode / currencyCode / formulaCode already hold description
+                // text (the edit dialog selects now use description as key, matching DB storage).
                 const { currencyDescription, unitOfMeasurementDescription, formulaDescription, ...payload } = oData;
 
                 // --- API PATCH ---
                 const response = await fetch(
-                    `/odata/v4/sales-cloud/ModelSpecificationsDetails(${oData.modelSpecDetailsCode})`,
+                    `./odata/v4/sales-cloud/ModelSpecificationsDetails(${oData.modelSpecDetailsCode})`,
                     {
                         method: "PATCH",
                         headers: { "Content-Type": "application/json" },
@@ -960,21 +963,14 @@ sap.ui.define([
                 var oRow = aRows.find(r => r.modelSpecDetailsCode === oData.modelSpecDetailsCode);
 
                 if (oRow) {
-                    var oViewModel = this.getView().getModel();
-
-                    // Lookup descriptions from the master lists
-                    const uom = oViewModel.getProperty("/UOM").find(u => u.code === oData.unitOfMeasurementCode);
-                    const curr = oViewModel.getProperty("/Currency").find(c => c.currencyCode === oData.currencyCode);
-                    const formula = oViewModel.getProperty("/Formulas").find(f => f.formulaCode === oData.formulaCode);
-
-                    oRow.unitOfMeasurementCode = oData.unitOfMeasurementCode;
-                    oRow.unitOfMeasurementDescription = uom ? uom.description : "";
-
-                    oRow.currencyCode = oData.currencyCode;
-                    oRow.currencyDescription = curr ? curr.description : "";
-
-                    oRow.formulaCode = oData.formulaCode;
-                    oRow.formulaDescription = formula ? formula.description : "";
+                    // unitOfMeasurementCode / currencyCode / formulaCode in oData already
+                    // hold description text — just copy straight across.
+                    oRow.unitOfMeasurementCode        = oData.unitOfMeasurementCode;
+                    oRow.unitOfMeasurementDescription = oData.unitOfMeasurementCode;
+                    oRow.currencyCode                 = oData.currencyCode;
+                    oRow.currencyDescription          = oData.currencyCode;
+                    oRow.formulaCode                  = oData.formulaCode;
+                    oRow.formulaDescription           = oData.formulaCode;
 
                     // Copy remaining edited fields
                     Object.assign(oRow, payload);
@@ -1098,7 +1094,7 @@ sap.ui.define([
                                 };
 
                                 // Post to API
-                                const sUrl = `/odata/v4/sales-cloud/ModelSpecifications(${modelSpecCode})/modelSpecificationsDetails`;
+                                const sUrl = `./odata/v4/sales-cloud/ModelSpecifications(${modelSpecCode})/modelSpecificationsDetails`;
                                 try {
                                     const response = await fetch(sUrl, {
                                         method: "POST",

@@ -26,6 +26,13 @@
 
                 <m:HBox id="_IDGenHBox1">
                     <m:Button
+                        id="btnAddItem"
+                        text="Add Item"
+                        icon="sap-icon://add"
+                        type="Emphasized"
+                        press=".onAddMianItem"
+                    />
+                    <m:Button
                         id="_IDGenButton2"
                         text="Save Document"
                         icon="sap-icon://save"

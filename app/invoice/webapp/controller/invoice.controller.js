@@ -372,7 +372,12 @@ sap.ui.define([
             return {
               ...oldItem,
               ...newItem,
-              executionOrderMainCode: oldItem.executionOrderMainCode || newItem.executionOrderMainCode || null
+              executionOrderMainCode: oldItem.executionOrderMainCode || newItem.executionOrderMainCode || null,
+              // Preserve these fields from oldItem if the backend response does not return them
+              unitOfMeasurementCode: newItem.unitOfMeasurementCode || oldItem.unitOfMeasurementCode || null,
+              currencyCode: newItem.currencyCode || oldItem.currencyCode || null,
+              description: newItem.description || oldItem.description || null,
+              serviceNumberCode: newItem.serviceNumberCode || oldItem.serviceNumberCode || null
             };
           });
           oModel.setProperty("/MainItems", newItems);

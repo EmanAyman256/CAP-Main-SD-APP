@@ -52,7 +52,7 @@
                         <Text id="_IDGenText17" text="{serviceSelection}" />
                         <Text id="_IDGenText18" text="{description}" />
                         <Text id="_IDGenText19" text="{searchTerm}" />
-                        <Text id="_IDGenText20" text="{currencyCode}" />
+                        <Text id="_IDGenText20" text="{currencyDescription}" />
                          <Button id="_IDGenButton15" icon="sap-icon://share" press=".onNavigateToModelServices" text="Services" />
                         <HBox id="_IDGenHBox2">
                             <Button id="_IDGenButton4" icon="sap-icon://edit" press="onEdit" />
