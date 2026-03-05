@@ -29,7 +29,7 @@ sap.ui.define([
 
 
             // currency
-            fetch("./odata/v4/sales-cloud/Currencies")
+            fetch("/odata/v4/sales-cloud/Currencies")
                 .then(res => res.json())
                 .then(data => {
                     var oModel = new sap.ui.model.json.JSONModel(data.value);
@@ -37,7 +37,7 @@ sap.ui.define([
                 });
             // Fetch data from CAP OData service
 
-            fetch("./odata/v4/sales-cloud/ModelSpecifications")
+            fetch("/odata/v4/sales-cloud/ModelSpecifications")
                 .then(response => response.json())
                 .then(data => {
                     oModel.setData({ Models: data.value });
@@ -52,7 +52,7 @@ sap.ui.define([
         },
         _loadModels: function () {
             var oModel = new sap.ui.model.json.JSONModel();
-            fetch("./odata/v4/sales-cloud/ModelSpecifications")
+            fetch("/odata/v4/sales-cloud/ModelSpecifications")
                 .then(response => response.json())
                 .then(data => {
                     oModel.setData({ Models: data.value });
@@ -140,7 +140,7 @@ sap.ui.define([
                                 currencyCode: this._oCurrencyCodeSelect.getSelectedKey()
                             };
 
-                            fetch(`./odata/v4/sales-cloud/ModelSpecifications('${(oSelectedData.modelSpecCode)}')`, {
+                            fetch(`/odata/v4/sales-cloud/ModelSpecifications('${(oSelectedData.modelSpecCode)}')`, {
                                 method: "PATCH",
                                 headers: {
                                     "Content-Type": "application/json"
@@ -208,7 +208,7 @@ sap.ui.define([
                     onClose: function (oAction) {
                         if (oAction === MessageBox.Action.OK) {
                             // 🔥 Call CAP backend DELETE
-                            fetch(`./odata/v4/sales-cloud/ModelSpecifications('${oItem.modelSpecCode}')`, {
+                            fetch(`/odata/v4/sales-cloud/ModelSpecifications('${oItem.modelSpecCode}')`, {
                                 method: "DELETE"
                             })
                                 .then(response => {

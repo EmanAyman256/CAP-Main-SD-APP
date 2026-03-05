@@ -44,7 +44,7 @@ sap.ui.define([
             });
             this.getView().setModel(oModel, "view");
             // Removed general fetch for ModelSpecificationsDetails as we load specific in route matched
-            fetch("./odata/v4/sales-cloud/ServiceNumbers")
+            fetch("/odata/v4/sales-cloud/ServiceNumbers")
                 .then(response => {
                     if (!response.ok) throw new Error(response.statusText);
                     return response.json();
@@ -65,7 +65,7 @@ sap.ui.define([
                 .catch(err => {
                     console.error("Error fetching ServiceNumbers:", err);
                 });
-            fetch("./odata/v4/sales-cloud/PersonnelNumbers")
+            fetch("/odata/v4/sales-cloud/PersonnelNumbers")
                 .then(response => {
                     if (!response.ok) throw new Error(response.statusText);
                     return response.json();
@@ -86,7 +86,7 @@ sap.ui.define([
                 .catch(err => {
                     console.error("Error fetching ServiceNumbers:", err);
                 });
-            fetch("./odata/v4/sales-cloud/ServiceTypes")
+            fetch("/odata/v4/sales-cloud/ServiceTypes")
                 .then(response => {
                     if (!response.ok) throw new Error(response.statusText);
                     return response.json();
@@ -107,7 +107,7 @@ sap.ui.define([
                 .catch(err => {
                     console.error("Error fetching ServiceNumbers:", err);
                 });
-            fetch("./odata/v4/sales-cloud/LineTypes")
+            fetch("/odata/v4/sales-cloud/LineTypes")
                 .then(response => {
                     if (!response.ok) throw new Error(response.statusText);
                     return response.json();
@@ -129,7 +129,7 @@ sap.ui.define([
                     console.error("Error fetching ServiceNumbers:", err);
                 });
             // Fetch Formulas
-            fetch("./odata/v4/sales-cloud/Formulas")
+            fetch("/odata/v4/sales-cloud/Formulas")
                 .then(r => r.json())
                 .then(data => {
                     const formulas = Array.isArray(data.value) ? data.value : [];
@@ -141,7 +141,7 @@ sap.ui.define([
                     console.error("Error fetching Formulas:", err);
                     sap.m.MessageToast.show("Failed to load formulas.");
                 });
-            fetch("./odata/v4/sales-cloud/UnitOfMeasurements")
+            fetch("/odata/v4/sales-cloud/UnitOfMeasurements")
                 .then(r => r.json())
                 .then(data => {
                     const uom = Array.isArray(data.value) ? data.value : [];
@@ -150,7 +150,7 @@ sap.ui.define([
                 });
 
             // Fetch Currencies
-            fetch("./odata/v4/sales-cloud/Currencies")
+            fetch("/odata/v4/sales-cloud/Currencies")
                 .then(r => r.json())
                 .then(data => {
                     const currency = Array.isArray(data.value) ? data.value : [];
@@ -158,7 +158,7 @@ sap.ui.define([
                     oModel.refresh(true);
                 });
             // Added fetch for MaterialGroups (assuming endpoint and fields match others)
-            fetch("./odata/v4/sales-cloud/MaterialGroups")
+            fetch("/odata/v4/sales-cloud/MaterialGroups")
                 .then(response => {
                     if (!response.ok) throw new Error(response.statusText);
                     return response.json();
@@ -201,7 +201,7 @@ sap.ui.define([
         },
         _loadModelSpecificationDetails: function (sModelSpecCode) {
             const oModel = this.getView().getModel("view");
-            const sUrl = `./odata/v4/sales-cloud/ModelSpecifications(${sModelSpecCode})?$expand=modelSpecificationsDetails`;
+            const sUrl = `/odata/v4/sales-cloud/ModelSpecifications(${sModelSpecCode})?$expand=modelSpecificationsDetails`;
             console.log(sUrl);
 
             fetch(sUrl)
@@ -478,7 +478,7 @@ sap.ui.define([
                 modelSpecifications_modelSpecCode: parseInt(modelSpecCode), // Ensure numeric as per example
                 serviceNumber_serviceNumberCode: oView.byId("mainModelServiceNoSelect").getSelectedKey() || ""
             };
-            const sUrl = `./odata/v4/sales-cloud/ModelSpecifications(${modelSpecCode})/modelSpecificationsDetails`;
+            const sUrl = `/odata/v4/sales-cloud/ModelSpecifications(${modelSpecCode})/modelSpecificationsDetails`;
             try {
                 const response = await fetch(sUrl, {
                     method: "POST",
@@ -493,6 +493,35 @@ sap.ui.define([
 
                 sap.m.MessageToast.show("Model Specification Detail added successfully!");
                 this._loadModelSpecificationDetails(modelSpecCode);
+
+                // Clear all dialog fields so they are blank for next entry
+                oView.byId("mainModelServiceNoSelect").setSelectedKey("");
+                oView.byId("mainShortTextInput").setValue("");
+                oView.byId("mainShortTextInput").setEditable(true);
+                oView.byId("mainQuantityInput").setValue("");
+                oView.byId("mainAmountPerUnitInput").setValue("");
+                oView.byId("mainTotalInput").setValue("");
+                oView.byId("formulaSelect").setSelectedKey("");
+                oView.byId("mainUOMSelect").setSelectedKey("");
+                oView.byId("mainCurrencySelect").setSelectedKey("");
+                oView.byId("mainOverFInput").setValue("");
+                oView.byId("mainPriceChangeAllowed").setSelected(false);
+                oView.byId("mainUnlimitedOverF").setSelected(false);
+                oView.byId("mainPricePerUnitInput").setValue("");
+                oView.byId("mainMatGroupSelect").setSelectedKey("");
+                oView.byId("mainServiceTypeSelect").setSelectedKey("");
+                oView.byId("mainExternalServiceNo").setValue("");
+                oView.byId("mainServiceText").setValue("");
+                oView.byId("mainLineText").setValue("");
+                oView.byId("personnelNumber").setSelectedKey("");
+                oView.byId("lineTypes").setSelectedKey("");
+                oView.byId("_IDGenInput6").setValue("");
+                oView.byId("_IDGenInput7").setValue("");
+                oView.byId("_IDGenCheckBox").setSelected(false);
+                oView.byId("_IDGenCheckBox2").setSelected(false);
+                oView.byId("_IDGenCheckBox6").setSelected(false);
+                // Reset view model new entry object
+                oModel.setProperty("/newModelService", {});
 
                 const oDialog = oView.byId("addModelServiceDialog");
                 if (oDialog) oDialog.close();
@@ -557,7 +586,7 @@ sap.ui.define([
                         // If key is numeric -> no quotes; if string -> add quotes
                         var keyIsNumeric = !isNaN(Number(sKey));
                         var keySegment = keyIsNumeric ? sKey : `'${encodeURIComponent(String(sKey))}'`;
-                        var sUrl = `./odata/v4/sales-cloud/ModelSpecificationsDetails(${keySegment})`;
+                        var sUrl = `/odata/v4/sales-cloud/ModelSpecificationsDetails(${keySegment})`;
 
                         // Optional: show busy indicator on table while deleting
                         oTable.setBusy(true);
@@ -913,7 +942,7 @@ sap.ui.define([
 
                 // --- API PATCH ---
                 const response = await fetch(
-                    `./odata/v4/sales-cloud/ModelSpecificationsDetails(${oData.modelSpecDetailsCode})`,
+                    `/odata/v4/sales-cloud/ModelSpecificationsDetails(${oData.modelSpecDetailsCode})`,
                     {
                         method: "PATCH",
                         headers: { "Content-Type": "application/json" },
@@ -1069,7 +1098,7 @@ sap.ui.define([
                                 };
 
                                 // Post to API
-                                const sUrl = `./odata/v4/sales-cloud/ModelSpecifications(${modelSpecCode})/modelSpecificationsDetails`;
+                                const sUrl = `/odata/v4/sales-cloud/ModelSpecifications(${modelSpecCode})/modelSpecificationsDetails`;
                                 try {
                                     const response = await fetch(sUrl, {
                                         method: "POST",
