@@ -880,13 +880,10 @@ module.exports = cds.service.impl(async function () {
       });
   });
   // === CREATE /ModelSpecificationsDetails
-  // Auto-generate Integer key for ModelSpecificationsDetails (same pattern as InvoiceMainItems)
   this.before('CREATE', ModelSpecificationsDetails, async (req) => {
     const max = await SELECT.one.from(ModelSpecificationsDetails).columns('max(modelSpecDetailsCode) as max');
     req.data.modelSpecDetailsCode = (max?.max || 0) + 1;
 
-    // When inserting via navigation property (ModelSpecifications(X)/modelSpecificationsDetails),
-    // CAP populates up__modelSpecCode on req.data. Normalise it to our FK column name.
     if (!req.data.modelSpecifications_modelSpecCode && req.data.up__modelSpecCode) {
       req.data.modelSpecifications_modelSpecCode = req.data.up__modelSpecCode;
     }
@@ -896,22 +893,22 @@ module.exports = cds.service.impl(async function () {
     const data = req.data;
 
     try {
-      // Ensure parent FK is set (direct POST must supply it; navigation POST auto-fills via before hook)
       if (!data.modelSpecifications_modelSpecCode) {
         return req.error(400, 'Parent modelSpecifications_modelSpecCode is required.');
       }
 
       await INSERT.into(ModelSpecificationsDetails).entries(data);
 
-      // Read back using the key we just generated in the before hook
       const result = await SELECT
-        .one.from(ModelSpecificationsDetails)
+        .from(ModelSpecificationsDetails, d => {
+          d('*', d.modelSpecifications('*'));
+        })
         .where({ modelSpecDetailsCode: data.modelSpecDetailsCode });
 
       return result;
 
     } catch (err) {
-      console.error('❌ Error creating ModelSpecificationsDetails:', err);
+      console.error("❌ Error creating ModelSpecificationsDetails:", err);
       req.error(500, err.message);
     }
   });
@@ -1926,107 +1923,107 @@ module.exports = cds.service.impl(async function () {
   //   }
   // })
 
- // ==================== READ - UnitOfMeasurements ====================
-    this.on('READ', 'UnitOfMeasurements', async (req) => {
-        console.log("✅ Fetching UnitOfMeasurements from local DB...");
-        
-        try {
-            const tx = cds.transaction(req);
-            
-            // Use full qualified name
-            const result = await tx.run(
-                SELECT.from('salesdb.UnitOfMeasurement')
-                    .columns('code', 'description')
-            );
-            
-            console.log(`✅ Fetched ${result.length} UnitOfMeasurements`);
-            return result;
-            
-        } catch (error) {
-            console.error("❌ Error fetching UnitOfMeasurements:", error);
-            req.error(500, `Failed to fetch UnitOfMeasurements: ${error.message}`);
-        }
-    });
-    
-    // ==================== CREATE - Standard POST ====================
-    this.before('CREATE', 'UnitOfMeasurements', async (req) => {
-        const { code, description } = req.data;
-        
-        // Validations
-        if (!code || !description) {
-            req.error(400, 'Code and Description are mandatory');
-        }
-        
-        // Normalize code to uppercase
-        const normalizedCode = code.trim().toUpperCase();
-        req.data.code = normalizedCode;
-        req.data.description = description.trim();
-        
-        const tx = cds.transaction(req);
-        
-        // Check for duplicates
-        const existing = await tx.run(
-            SELECT.one.from('salesdb.UnitOfMeasurement').where({ code: normalizedCode })
-        );
-        
-        if (existing) {
-            req.error(409, `Unit of Measurement '${normalizedCode}' already exists`);
-        }
-        
-        // Add UUID for DB entity
-        req.data.unitOfMeasurementCode = cds.utils.uuid();
-    });
-    
-    this.after('CREATE', 'UnitOfMeasurements', (data) => {
-        console.log(`✅ Created UoM: ${data.code} - ${data.description}`);
-    });
-    
-    // ==================== Action: postUnitOfMeasurement ====================
-    this.on('postUnitOfMeasurement', async (req) => {
-        const { code, description } = req.data;
-        
-        if (!code || !description) {
-            return req.error(400, 'Code and Description are mandatory');
-        }
-        
-        const normalizedCode = code.trim().toUpperCase();
-        const tx = cds.transaction(req);
-        
-        try {
-            // Check for duplicates
-            const existing = await tx.run(
-                SELECT.one.from('salesdb.UnitOfMeasurement').where({ code: normalizedCode })
-            );
-            
-            if (existing) {
-                return req.error(409, `Unit of Measurement '${normalizedCode}' already exists`);
-            }
-            
-            // Create the record with UUID
-            const newUoM = {
-                unitOfMeasurementCode: cds.utils.uuid(),
-                code: normalizedCode,
-                description: description.trim()
-            };
-            
-            const inserted = await tx.run(
-                INSERT.into('salesdb.UnitOfMeasurement').entries(newUoM)
-            );
-            
-            // Fetch the created record
-            const created = await tx.run(
-                SELECT.from('salesdb.UnitOfMeasurement')
-                    .columns('code', 'description')
-                    .where({ code: normalizedCode })
-            );
-            
-            console.log(`✅ Created UoM via action: ${created[0].code}`);
-            return created[0];
-            
-        } catch (err) {
-            return req.error(500, `Error creating UnitOfMeasurement: ${err.message}`);
-        }
-    });
+  // ==================== READ - UnitOfMeasurements ====================
+  this.on('READ', 'UnitOfMeasurements', async (req) => {
+    console.log("✅ Fetching UnitOfMeasurements from local DB...");
+
+    try {
+      const tx = cds.transaction(req);
+
+      // Use full qualified name
+      const result = await tx.run(
+        SELECT.from('salesdb.UnitOfMeasurement')
+          .columns('code', 'description')
+      );
+
+      console.log(`✅ Fetched ${result.length} UnitOfMeasurements`);
+      return result;
+
+    } catch (error) {
+      console.error("❌ Error fetching UnitOfMeasurements:", error);
+      req.error(500, `Failed to fetch UnitOfMeasurements: ${error.message}`);
+    }
+  });
+
+  // ==================== CREATE - Standard POST ====================
+  this.before('CREATE', 'UnitOfMeasurements', async (req) => {
+    const { code, description } = req.data;
+
+    // Validations
+    if (!code || !description) {
+      req.error(400, 'Code and Description are mandatory');
+    }
+
+    // Normalize code to uppercase
+    const normalizedCode = code.trim().toUpperCase();
+    req.data.code = normalizedCode;
+    req.data.description = description.trim();
+
+    const tx = cds.transaction(req);
+
+    // Check for duplicates
+    const existing = await tx.run(
+      SELECT.one.from('salesdb.UnitOfMeasurement').where({ code: normalizedCode })
+    );
+
+    if (existing) {
+      req.error(409, `Unit of Measurement '${normalizedCode}' already exists`);
+    }
+
+    // Add UUID for DB entity
+    req.data.unitOfMeasurementCode = cds.utils.uuid();
+  });
+
+  this.after('CREATE', 'UnitOfMeasurements', (data) => {
+    console.log(`✅ Created UoM: ${data.code} - ${data.description}`);
+  });
+
+  // ==================== Action: postUnitOfMeasurement ====================
+  this.on('postUnitOfMeasurement', async (req) => {
+    const { code, description } = req.data;
+
+    if (!code || !description) {
+      return req.error(400, 'Code and Description are mandatory');
+    }
+
+    const normalizedCode = code.trim().toUpperCase();
+    const tx = cds.transaction(req);
+
+    try {
+      // Check for duplicates
+      const existing = await tx.run(
+        SELECT.one.from('salesdb.UnitOfMeasurement').where({ code: normalizedCode })
+      );
+
+      if (existing) {
+        return req.error(409, `Unit of Measurement '${normalizedCode}' already exists`);
+      }
+
+      // Create the record with UUID
+      const newUoM = {
+        unitOfMeasurementCode: cds.utils.uuid(),
+        code: normalizedCode,
+        description: description.trim()
+      };
+
+      const inserted = await tx.run(
+        INSERT.into('salesdb.UnitOfMeasurement').entries(newUoM)
+      );
+
+      // Fetch the created record
+      const created = await tx.run(
+        SELECT.from('salesdb.UnitOfMeasurement')
+          .columns('code', 'description')
+          .where({ code: normalizedCode })
+      );
+
+      console.log(`✅ Created UoM via action: ${created[0].code}`);
+      return created[0];
+
+    } catch (err) {
+      return req.error(500, `Error creating UnitOfMeasurement: ${err.message}`);
+    }
+  });
 
   // -------------------------------- Third App - Execution order main ------------------------------ //
   //GET all
@@ -2216,7 +2213,7 @@ module.exports = cds.service.impl(async function () {
     // Step and counter are ALWAYS 20 and 1 for this sales order pricing procedure.
     // The frontend passes 10/1 but that does not exist in S4 — 20/1 is the correct PPR0 position.
 
-    const STEP    = '20';
+    const STEP = '20';
     const COUNTER = '1';
 
     const requestBody = {
@@ -2266,10 +2263,11 @@ module.exports = cds.service.impl(async function () {
     }
   }
 
-    //Action: findBySalesOrderAndItem
+  //Action: findBySalesOrderAndItem
+  // Mirror Spring Boot: navigate item → to_SalesOrder (header) which carries ReferenceSDDocument
   this.on('findBySalesOrderAndItem', async (req) => {
     const { salesOrder, salesOrderItem } = req.data
-    const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder('${salesOrder}')/to_Item('${salesOrderItem}')`
+    const url = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrderItem(SalesOrder='${salesOrder}',SalesOrderItem='${salesOrderItem}')/to_SalesOrder`
     const res = await axios.get(url, { headers: { Authorization: authHeader, Accept: 'application/json' } })
     return JSON.stringify(res.data)
   })
@@ -2633,65 +2631,65 @@ module.exports = cds.service.impl(async function () {
 
   // === Debit Memo Pricing API (must be INSIDE module scope to access authHeader) ===
   async function callDebitMemoPricingAPI(
-  debitMemoRequest,
-  debitMemoRequestItem,
-  pricingProcedureStep,
-  pricingProcedureCounter,
-  totalHeader
-) {
-  // Confirmed working in Postman:
-  // PATCH A_DebitMemoReqItemPrcgElmnt(DebitMemoRequest='70000106',DebitMemoRequestItem='10',PricingProcedureStep='20',PricingProcedureCounter='1')
-  // Auth: Basic BTP_USER1 / #yiVfheJbFolFxgkEwCBFcWvYkPzrQDENEArAXn5
-  // Headers: x-csrf-token (fetched), If-Match: *, Content-Type: application/json
-  //
-  // KEY: Use the exact PATCH URL itself for the token GET — S4 returns x-csrf-token
-  // in response headers regardless of the HTTP status (even 405 Method Not Allowed).
-  // validateStatus: () => true ensures axios never throws so we always read the token.
+    debitMemoRequest,
+    debitMemoRequestItem,
+    pricingProcedureStep,
+    pricingProcedureCounter,
+    totalHeader
+  ) {
+    // Confirmed working in Postman:
+    // PATCH A_DebitMemoReqItemPrcgElmnt(DebitMemoRequest='70000106',DebitMemoRequestItem='10',PricingProcedureStep='20',PricingProcedureCounter='1')
+    // Auth: Basic BTP_USER1 / #yiVfheJbFolFxgkEwCBFcWvYkPzrQDENEArAXn5
+    // Headers: x-csrf-token (fetched), If-Match: *, Content-Type: application/json
+    //
+    // KEY: Use the exact PATCH URL itself for the token GET — S4 returns x-csrf-token
+    // in response headers regardless of the HTTP status (even 405 Method Not Allowed).
+    // validateStatus: () => true ensures axios never throws so we always read the token.
 
-  const STEP    = '20';
-  const COUNTER = '1';
+    const STEP = '20';
+    const COUNTER = '1';
 
-  const body = {
-    ConditionType: 'PPR0',
-    ConditionRateValue: String(totalHeader),
-  };
+    const body = {
+      ConditionType: 'PPR0',
+      ConditionRateValue: String(totalHeader),
+    };
 
-  // Step 1: GET the exact PATCH URL to fetch CSRF token + session cookie
-  const resourceURL = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_DEBIT_MEMO_REQUEST_SRV/A_DebitMemoReqItemPrcgElmnt(DebitMemoRequest='${debitMemoRequest}',DebitMemoRequestItem='${debitMemoRequestItem}',PricingProcedureStep='${STEP}',PricingProcedureCounter='${COUNTER}')`;
+    // Step 1: GET the exact PATCH URL to fetch CSRF token + session cookie
+    const resourceURL = `https://my418629.s4hana.cloud.sap/sap/opu/odata/sap/API_DEBIT_MEMO_REQUEST_SRV/A_DebitMemoReqItemPrcgElmnt(DebitMemoRequest='${debitMemoRequest}',DebitMemoRequestItem='${debitMemoRequestItem}',PricingProcedureStep='${STEP}',PricingProcedureCounter='${COUNTER}')`;
 
-  const tokenResp = await axios.get(resourceURL, {
-    headers: {
-      'x-csrf-token': 'Fetch',
-      Authorization: authHeader,
-      Accept: 'application/json',
-    },
-    validateStatus: () => true   // never throw — read CSRF token even from non-200
-  });
+    const tokenResp = await axios.get(resourceURL, {
+      headers: {
+        'x-csrf-token': 'Fetch',
+        Authorization: authHeader,
+        Accept: 'application/json',
+      },
+      validateStatus: () => true   // never throw — read CSRF token even from non-200
+    });
 
-  const csrfToken = tokenResp.headers['x-csrf-token'];
-  const rawCookies = tokenResp.headers['set-cookie'];
-  const cookieStr = Array.isArray(rawCookies) ? rawCookies.join('; ') : (rawCookies || '');
+    const csrfToken = tokenResp.headers['x-csrf-token'];
+    const rawCookies = tokenResp.headers['set-cookie'];
+    const cookieStr = Array.isArray(rawCookies) ? rawCookies.join('; ') : (rawCookies || '');
 
-  console.log(`[debitMemoPricingAPI] tokenFetch status=${tokenResp.status} csrfToken=${csrfToken ? 'OK' : 'MISSING'}`);
-  if (!csrfToken) throw new Error(`Failed to fetch CSRF token for debit memo (status: ${tokenResp.status})`);
+    console.log(`[debitMemoPricingAPI] tokenFetch status=${tokenResp.status} csrfToken=${csrfToken ? 'OK' : 'MISSING'}`);
+    if (!csrfToken) throw new Error(`Failed to fetch CSRF token for debit memo (status: ${tokenResp.status})`);
 
-  // Step 2: PATCH — same URL, confirmed working in Postman
-  console.log(`[debitMemoPricingAPI] PATCH ${resourceURL} body=${JSON.stringify(body)}`);
+    // Step 2: PATCH — same URL, confirmed working in Postman
+    console.log(`[debitMemoPricingAPI] PATCH ${resourceURL} body=${JSON.stringify(body)}`);
 
-  const patchResp = await axios.patch(resourceURL, body, {
-    headers: {
-      Authorization: authHeader,
-      'x-csrf-token': csrfToken,
-      'If-Match': '*',
-      'Content-Type': 'application/json',
-      Cookie: cookieStr,
-    },
-    validateStatus: () => true
-  });
+    const patchResp = await axios.patch(resourceURL, body, {
+      headers: {
+        Authorization: authHeader,
+        'x-csrf-token': csrfToken,
+        'If-Match': '*',
+        'Content-Type': 'application/json',
+        Cookie: cookieStr,
+      },
+      validateStatus: () => true
+    });
 
-  console.log(`[debitMemoPricingAPI] PATCH status=${patchResp.status}`);
-  if (patchResp.status < 200 || patchResp.status >= 300) {
-    throw new Error(`Debit memo pricing PATCH failed (${patchResp.status}): ${JSON.stringify(patchResp.data)}`);
+    console.log(`[debitMemoPricingAPI] PATCH status=${patchResp.status}`);
+    if (patchResp.status < 200 || patchResp.status >= 300) {
+      throw new Error(`Debit memo pricing PATCH failed (${patchResp.status}): ${JSON.stringify(patchResp.data)}`);
+    }
   }
-}
 })

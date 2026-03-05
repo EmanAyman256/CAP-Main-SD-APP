@@ -337,33 +337,66 @@ sap.ui.define([
       var aMainItems = oMainModel.getProperty("/MainItems") || [];
       var sRefSDDoc = aMainItems.length > 0 ? (aMainItems[0].referenceSDDocument || "") : "";
 
-      var fetchUrl = "./odata/v4/sales-cloud/fetchByReferenceId";
-      var fetchOptions = {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ referenceId: sRefSDDoc || oModel.getProperty("/docNumber") || "" })
+      // Mirror Spring Boot findBySalesOrderAndItem → to_SalesOrder → ReferenceSDDocument
+      // If sRefSDDoc is already known (orders saved), use it directly.
+      // If not (first time, no saved orders), call findBySalesOrderAndItem which navigates
+      // A_SalesOrderItem/to_SalesOrder to get ReferenceSDDocument from the header.
+      var fnLoadQuotationItems = function (referenceId) {
+        console.log("fetchByReferenceId:", { referenceId: referenceId });
+        fetch("./odata/v4/sales-cloud/fetchByReferenceId", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ referenceId: referenceId })
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            var oTableModel = new sap.ui.model.json.JSONModel(data.value || data || []);
+            oTable.setModel(oTableModel);
+            oTable.bindItems("/", new sap.m.ColumnListItem({
+              cells: [
+                new sap.m.Text({ text: "{invoiceMainItemCode}" }),
+                new sap.m.Text({ text: "{serviceNumberCode}" }),
+                new sap.m.Text({ text: "{description}" }),
+                new sap.m.Text({ text: "{unitOfMeasurementCode}" }),
+                new sap.m.Text({ text: "{quantity}" }),
+                new sap.m.Text({ text: "{amountPerUnit}" }),
+                new sap.m.Text({ text: "{currencyCode}" })
+              ]
+            }));
+          })
+          .catch(function () {
+            sap.m.MessageToast.show("Failed to fetch quotations data.");
+          });
       };
 
-      fetch(fetchUrl, fetchOptions)
-        .then(response => response.json())
-        .then(data => {
-          var oTableModel = new sap.ui.model.json.JSONModel(data.value || data || []);
-          oTable.setModel(oTableModel);
-          oTable.bindItems("/", new sap.m.ColumnListItem({
-            cells: [
-              new sap.m.Text({ text: "{invoiceMainItemCode}" }),
-              new sap.m.Text({ text: "{serviceNumberCode}" }),
-              new sap.m.Text({ text: "{description}" }),
-              new sap.m.Text({ text: "{unitOfMeasurementCode}" }),
-              new sap.m.Text({ text: "{quantity}" }),
-              new sap.m.Text({ text: "{amountPerUnit}" }),
-              new sap.m.Text({ text: "{currencyCode}" })
-            ]
-          }));
-        })
-        .catch(function () {
-          sap.m.MessageToast.show("Failed to fetch quotations data.");
-        });
+      if (sRefSDDoc) {
+        fnLoadQuotationItems(sRefSDDoc);
+      } else {
+        // No saved execution orders yet — ask S4 via findBySalesOrderAndItem.
+        // The CAP handler navigates A_SalesOrderItem(..)/to_SalesOrder which
+        // returns the sales order HEADER, and the header has ReferenceSDDocument.
+        var sSalesOrder   = oModel.getProperty("/docNumber") || "";
+        var sSalesOrderItem = oModel.getProperty("/itemNumber") || "";
+        fetch("./odata/v4/sales-cloud/findBySalesOrderAndItem?salesOrder='"
+              + sSalesOrder + "'&salesOrderItem='" + sSalesOrderItem + "'")
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            var sRaw = typeof data.value === "string" ? data.value : JSON.stringify(data.value || "");
+            var oHeader = {};
+            try { oHeader = JSON.parse(sRaw); } catch (e) { oHeader = data.value || {}; }
+            // response is { d: { ReferenceSDDocument: "20000071", ... } }
+            var sRef = (oHeader.d && oHeader.d.ReferenceSDDocument) || "";
+            if (!sRef) {
+              sap.m.MessageToast.show("No Quotation reference found for this Sales Order.");
+              return;
+            }
+            console.log("Resolved ReferenceSDDocument from S4:", sRef);
+            fnLoadQuotationItems(sRef);
+          })
+          .catch(function () {
+            sap.m.MessageToast.show("Failed to resolve Sales Order reference from S4.");
+          });
+      }
 
       oDialog.open();
     },
@@ -1055,7 +1088,6 @@ sap.ui.define([
                 totalQuantity:           qty,
                 actualQuantity:          0,
                 unitOfMeasurementCode:   this.byId("itemUOM").getValue(),
-                currencyCode:            "SAR",
                 amountPerUnit:           amt,
                 total:                   qty * amt,
                 overFulfillmentPercent:  parseFloat(this.byId("itemOverFulf").getValue()) || 0,
