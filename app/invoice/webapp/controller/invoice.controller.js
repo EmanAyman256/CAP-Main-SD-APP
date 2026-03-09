@@ -164,19 +164,22 @@ sap.ui.define([
                 // Map fields properly to match your table’s bindings
                 aMainItems.push({
                   executionOrderMainCode: oData.executionOrderMainCode,
-                  lineNumber: "",
-                  serviceNumberCode: oData.serviceNumberCode,
-                  description: oData.description,
-                  unitOfMeasurementCode: oData.unitOfMeasurementCode,
-                  amountPerUnit: oData.amountPerUnit,
-                  currencyCode: oData.currencyCode,
-                  total: 0,                              // FIX F: starts at 0; set after user enters currentQty in edit dialog
-                  totalQuantity: oData.totalQuantity,    // planned order quantity — used as totalQuantity in calculateQuantities
-                  currentQuantity: 0,                    // FIX F: user fills this in edit dialog (how much to bill now)
-                  actualQuantity: 0,                     // FIX F: set by calculateQuantities response
-                  remainingQuantity: oData.totalQuantity,// starts equal to full planned qty
-                  actualPercentage: 0,
-                  totalHeader: 0
+                  lineNumber:             "",
+                  serviceNumberCode:      oData.serviceNumberCode,
+                  description:            oData.description,
+                  unitOfMeasurementCode:  oData.unitOfMeasurementCode,
+                  amountPerUnit:          oData.amountPerUnit,
+                  currencyCode:           oData.currencyCode,
+                  total:                  0,
+                  totalQuantity:          oData.totalQuantity,
+                  currentQuantity:        0,
+                  // Use ExecutionOrderMain's live cumulative fields so the row
+                  // already reflects all previously saved invoices for this order.
+                  quantity:               0,
+                  actualQuantity:         oData.actualQuantity  || 0,
+                  remainingQuantity:      oData.remainingQuantity || oData.totalQuantity,
+                  actualPercentage:       oData.actualPercentage || 0,
+                  totalHeader:            oData.totalHeader      || 0
                 });
 
 
@@ -322,9 +325,8 @@ sap.ui.define([
 
         overFulfillmentPercent: String(item.overFulfillmentPercent || "0"),
         personnelNumberCode: item.personnelNumberCode || null,
-        // FIX 4: quantity = the billed qty (actualQuantity set by calculateQuantities)
-        //         totalQuantity = the original planned order quantity
-        quantity: String(item.actualQuantity || "0"),
+        // quantity = this invoice's billed qty (per-invoice, NOT cumulative actualQuantity)
+        quantity: String(item.quantity || item.currentQuantity || "0"),
         referenceId: oModel.getProperty("/docNumber") || "70000000",
         referenceSDDocument: item.referenceSDDocument || "2",
         remainingQuantity: String(item.remainingQuantity || "0"),
@@ -611,18 +613,24 @@ sap.ui.define([
       // FIX 1: totalQuantity must be the PLANNED order quantity, NOT the monetary total.
       // The backend uses it to compute: remainingQty = totalQuantity - currentQuantity
       // and actualPercentage = (currentQuantity / totalQuantity) * 100
+      // Store the per-invoice qty so it can be saved and displayed correctly,
+      // independent of the cumulative actualQuantity set by calculateQuantities.
+      oEditRow.quantity = parseFloat(oEditRow.currentQuantity) || 0;
+
       const payload = {
-        executionOrderMainCode: oEditRow.executionOrderMainCode,
-        quantity:      parseFloat(oEditRow.currentQuantity)  || 0,
-        totalQuantity: parseFloat(oEditRow.totalQuantity)    || 0,   // FIX 1 (was oEditRow.total — wrong)
-        amountPerUnit: parseFloat(oEditRow.amountPerUnit)    || 0
+        executionOrderMainCode:    oEditRow.executionOrderMainCode,
+        quantity:                  oEditRow.quantity,
+        totalQuantity:             parseFloat(oEditRow.totalQuantity)          || 0,
+        amountPerUnit:             parseFloat(oEditRow.amountPerUnit)          || 0,
+        overFulfillmentPercentage: parseFloat(oEditRow.overFulfillmentPercent) || 0,
+        unlimitedOverFulfillment:  !!oEditRow.unlimitedOverFulfillment
       };
 
       console.log("Payload sent to /calculateQuantities:", payload);
 
       // FIX 3: all model updates AND dialog close must happen INSIDE .then()
       // so calculated values from the API are saved before the dialog closes.
-      fetch("./odata/v4/sales-cloud/calculateQuantitiesWithoutAccumulation", {
+      fetch("./odata/v4/sales-cloud/calculateQuantities", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -634,16 +642,16 @@ sap.ui.define([
         .then(result => {
           console.log("Calculation API response:", result);
 
-          // FIX 2: map fields correctly from the response.
-          // result.actualQuantity  = the current billed quantity
-          // result.remainingQuantity = totalQuantity - currentQuantity
-          // result.actualPercentage  = (currentQuantity / totalQuantity) * 100
-          // result.totalHeader       = currentQuantity * amountPerUnit
-          oEditRow.actualQuantity    = result.actualQuantity;
-          oEditRow.remainingQuantity = result.remainingQuantity;
-          oEditRow.actualPercentage  = result.actualPercentage;
-          oEditRow.totalHeader       = result.totalHeader;
-          oEditRow.total             = result.total;             // FIX E: billing amount = currentQty * amountPerUnit
+          // calculateQuantities returns the full tempData object.
+          // actualQuantity = cumulative (postedAQ + this qty) — for "Actual Total Quantity" column
+          // total          = this invoice only (qty * amountPerUnit)
+          // totalHeader    = cumulative monetary total
+          const rv = (result && result.value !== undefined) ? result.value : result;
+          oEditRow.actualQuantity    = rv.actualQuantity;    // cumulative
+          oEditRow.remainingQuantity = rv.remainingQuantity;
+          oEditRow.actualPercentage  = rv.actualPercentage;  // cumulative %
+          oEditRow.totalHeader       = rv.totalHeader;       // cumulative amount
+          oEditRow.total             = oEditRow.quantity * (parseFloat(oEditRow.amountPerUnit) || 0); // this invoice only
 
           // Write updated row back to the model AND to the main table row
           oModel.setProperty("/editRow", oEditRow);

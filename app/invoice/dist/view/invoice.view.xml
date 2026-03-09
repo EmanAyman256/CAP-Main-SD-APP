@@ -187,7 +187,7 @@ controllerName="invoice.controller.invoice"
             <table:Column id="_IDGenColumn11" width="120px">
             <table:label><Text id="_IDGenText39" text="Current Quantity"/></table:label>
                 <table:template>
-                    <Text id="_IDGenText13" text="{actualQuantity}"/>
+                    <Text id="_IDGenText13" text="{quantity}"/>
                 </table:template>
             </table:Column>
 

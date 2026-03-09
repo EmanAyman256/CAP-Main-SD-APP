@@ -2389,9 +2389,11 @@ module.exports = cds.service.impl(async function () {
     const tempData = tempDataService.getOrCreate(executionOrderMainCode);
     tempData.version++;
 
-    const postedInvoices = await SELECT.from(ServiceInvoiceMains).where({ executionOrderMainCode });
-    const postedAQ = postedInvoices.reduce((sum, inv) => sum + (inv.quantity || 0), 0);
-    const postedTotal = postedInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
+    // Read accumulated totals from ExecutionOrderMain — it is always up-to-date
+    // after each saveOrUpdateServiceInvoices call (Step 4 keeps it in sync).
+    const execOrder = await SELECT.one.from(ExecutionOrderMains).where({ executionOrderMainCode });
+    const postedAQ    = Number(execOrder?.actualQuantity) || 0;
+    const postedTotal = Number(execOrder?.totalHeader)    || 0;
 
     let allowedQuantity = totalQuantity || 0;
     if (overFulfillmentPercentage) allowedQuantity += (totalQuantity * overFulfillmentPercentage / 100);
@@ -2407,8 +2409,10 @@ module.exports = cds.service.impl(async function () {
     tempData.currentQuantityIndex = tempData.quantities.length - 1;
     tempData.amountPerUnit = amountPerUnit || tempData.amountPerUnit || 0;
     tempData.actualQuantity = postedAQ + currentQuantity;
-    tempData.total = tempData.actualQuantity * tempData.amountPerUnit;
-    tempData.totalHeader = postedTotal + tempData.total;
+    // total  = this invoice only (what calculateQuantitiesWithoutAccumulation also returns)
+    // totalHeader = cumulative across all invoices
+    tempData.total = currentQuantity * tempData.amountPerUnit;
+    tempData.totalHeader = postedTotal + (currentQuantity * tempData.amountPerUnit);
     tempData.remainingQuantity = Math.max((totalQuantity || 0) - tempData.actualQuantity, 0);
     tempData.actualPercentage = totalQuantity ? Math.min((tempData.actualQuantity / totalQuantity) * 100, 100) : 0;
 
@@ -2513,37 +2517,20 @@ module.exports = cds.service.impl(async function () {
       // Step 3: Process each service invoice command
       for (const cmd of serviceInvoiceCommands) {
         const code = cmd.executionOrderMainCode;
-        let tempData = tempDataService.get(code) || tempDataService.getOrCreate(code);
 
-        // Initialize if new
-        if (!tempData.version) {
-          tempData.version = 1;
-          if (cmd.quantity) {
-            tempData.quantities.push(cmd.quantity);
-            tempData.currentQuantityIndex = 0;
-            tempData.amountPerUnit = cmd.amountPerUnit;
-          }
-        }
-
-        // --- Quantity resolution logic ---
-        // Use currentQuantity helper (mirrors Java getCurrentQuantity())
-        // Falls back to the payload quantity if tempData has no entry yet
-        let quantity = tempDataService.getCurrentQuantity(code);
-        if (quantity == null) {
-          // tempData has no quantity yet — use what the frontend sent (set by onSaveEdit)
-          const payloadQty = Number(cmd.quantity);
-          if (payloadQty > 0) {
-            tempData.quantities.push(payloadQty);
-            tempData.currentQuantityIndex = tempData.quantities.length - 1;
-            tempData.amountPerUnit = tempData.amountPerUnit || Number(cmd.amountPerUnit) || 0;
-            quantity = payloadQty;
-          }
-        }
-        if (quantity == null) throw new Error(`Quantity missing for execution order ${code}`);
+        // Use cmd.quantity directly — this is the per-invoice billed quantity sent
+        // by the frontend (item.quantity, set in onSaveEdit before onSaveDocument).
+        // We do NOT use tempData for quantity resolution because tempData is keyed
+        // by executionOrderMainCode and shared across all rows for the same order:
+        // if a document has two rows for the same order, tempData would return the
+        // LAST calculateQuantities result (e.g. 10) for BOTH rows, overwriting the
+        // first row's correct quantity (e.g. 20).
+        const quantity = Number(cmd.quantity);
+        if (!quantity && quantity !== 0) throw new Error(`Quantity missing for execution order ${code}`);
 
         // --- Amount per unit ---
-        const amountPerUnit = tempData.amountPerUnit ?? cmd.amountPerUnit;
-        if (amountPerUnit == null) throw new Error(`Amount per unit missing for execution order ${code}`);
+        const amountPerUnit = Number(cmd.amountPerUnit);
+        if (!amountPerUnit) throw new Error(`Amount per unit missing for execution order ${code}`);
 
         const total = quantity * amountPerUnit;
         const totalQuantity = Number(cmd.totalQuantity) || 0;
@@ -2552,6 +2539,11 @@ module.exports = cds.service.impl(async function () {
         const currentPercentage = totalQuantity > 0 ? Math.round((quantity / totalQuantity) * 100 * 1000) / 1000 : 0;
 
         // --- Compose entry ---
+        // remainingQuantity, actualQuantity, actualPercentage, totalHeader are
+        // per-invoice snapshots at save time. Step 4 will recompute ExecutionOrderMain
+        // with the true cumulative values after all inserts are done.
+        // We use cmd.remainingQuantity / actualQuantity / actualPercentage / totalHeader
+        // which were set by calculateQuantities on the frontend before onSaveDocument ran.
         const entry = {
           ...cmd,
           referenceId: debitMemoRequest,
@@ -2561,44 +2553,48 @@ module.exports = cds.service.impl(async function () {
           amountPerUnit,
           total,
           totalQuantity,
-          currentPercentage,                          // FIX 5: calculated, not hardcoded 0
-          actualQuantity: quantity,
-          remainingQuantity: tempData.remainingQuantity ?? 0,
-          actualPercentage: tempData.actualPercentage ?? 0,
-          totalHeader: tempData.totalHeader ?? total
+          currentPercentage,
+          // Use values from cmd (set by calculateQuantities response in onSaveEdit)
+          actualQuantity:    Number(cmd.actualQuantity)    || quantity,
+          remainingQuantity: Number(cmd.remainingQuantity) ?? 0,
+          actualPercentage:  Number(cmd.actualPercentage)  ?? 0,
+          totalHeader:       Number(cmd.totalHeader)       || total
         };
 
         // --- Save invoice ---
         const inserted = await tx.run(INSERT.into(ServiceInvoiceMains).entries(entry));
-        savedInvoices.push(inserted[0] ?? entry);
-
-        // FIX 6: do NOT remove tempData after saving.
-        // Spring Boot keeps it alive (saveOrUpdate, not remove) so subsequent
-        // saves for the same execution order still have the quantity in temp state.
-        // tempDataService.remove(code);  ← removed
+        savedInvoices.push(inserted[0] ?? entry)
       }
 
-      // Step 4: Update related ExecutionOrderMain totals
+      // Step 4: Update ExecutionOrderMain with fresh cumulative totals.
+      // IMPORTANT: Step 1 already deleted old invoices for this document, and Step 3
+      // just inserted new ones. ExecutionOrderMain.actualQuantity is stale (still
+      // includes deleted rows). We must query ALL current ServiceInvoiceMains rows
+      // for each execution order to get the true cumulative state.
+      // Process each distinct executionOrderMainCode once.
+      const processedCodes = new Set();
       for (const cmd of serviceInvoiceCommands) {
         const code = cmd.executionOrderMainCode;
+        if (!code || processedCodes.has(code)) continue;
+        processedCodes.add(code);
 
-        const relatedInvoices = savedInvoices.filter(inv => inv.executionOrderMainCode === code);
+        // Query all invoices for this execution order that exist in the DB now
+        // (i.e. old invoices from this document are gone, new ones just inserted).
+        const allInvoices = await SELECT.from(ServiceInvoiceMains).where({ executionOrderMainCode: code });
 
-        const totalActualQuantity = relatedInvoices.reduce((sum, inv) => sum + (inv.actualQuantity || 0), 0);
-        const totalRemainingQuantity = relatedInvoices.reduce((sum, inv) => sum + (inv.remainingQuantity || 0), 0);
-        const avgPercentage =
-          relatedInvoices.length > 0
-            ? relatedInvoices.reduce((sum, inv) => sum + (inv.actualPercentage || 0), 0) / relatedInvoices.length
-            : 0;
-        const totalHeaderSum = relatedInvoices.reduce((sum, inv) => sum + (inv.totalHeader || 0), 0);
+        const totalActualQty  = allInvoices.reduce((s, inv) => s + (Number(inv.quantity) || 0), 0);
+        const totalHeaderSum  = allInvoices.reduce((s, inv) => s + (Number(inv.total)    || 0), 0);
+        const totalQty        = Number(cmd.totalQuantity) || 0;
+        const remainingQty    = totalQty > 0 ? Math.max(totalQty - totalActualQty, 0) : 0;
+        const cumulativePct   = totalQty > 0 ? Math.min((totalActualQty / totalQty) * 100, 100) : 0;
 
         await tx.run(
           UPDATE(ExecutionOrderMains)
             .set({
-              actualQuantity: totalActualQuantity,
-              remainingQuantity: totalRemainingQuantity,
-              actualPercentage: avgPercentage,
-              totalHeader: totalHeaderSum
+              actualQuantity:    totalActualQty,
+              remainingQuantity: remainingQty,
+              actualPercentage:  cumulativePct,
+              totalHeader:       totalHeaderSum
             })
             .where({ executionOrderMainCode: code })
         );
