@@ -188,7 +188,7 @@ module.exports = cds.service.impl(async function () {
   ) {
     const body = {
       ConditionType: 'PPR0',
-      ConditionRateValue: String(totalHeader)
+      ConditionRateValue: (Math.round(Number(totalHeader) * 100) / 100).toFixed(2)
     };
 
     const credentials = 'BTP_USER1:#yiVfheJbFolFxgkEwCBFcWvYkPzrQDENEArAXn5';
@@ -2218,7 +2218,7 @@ module.exports = cds.service.impl(async function () {
 
     const requestBody = {
       ConditionType: 'PPR0',
-      ConditionRateValue: String(totalHeader)
+      ConditionRateValue: (Math.round(Number(totalHeader) * 100) / 100).toFixed(2)
     };
 
     // Step 1: GET pricing elements to fetch CSRF token + session cookie
@@ -2647,7 +2647,7 @@ module.exports = cds.service.impl(async function () {
 
     const body = {
       ConditionType: 'PPR0',
-      ConditionRateValue: String(totalHeader),
+      ConditionRateValue: (Math.round(Number(totalHeader) * 100) / 100).toFixed(2)
     };
 
     // Step 1: GET the exact PATCH URL to fetch CSRF token + session cookie
